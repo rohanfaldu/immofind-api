@@ -8,7 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const agencyRoutes = require('./routes/agencyRoutes');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT;
 
 // Session setup
 app.use(session({ secret: 'we-api', resave: false, saveUninitialized: true }));
@@ -18,7 +18,7 @@ app.use(passport.session());
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/auth/google/callback"
+    callbackURL: `${process.env.BASE_URL}/auth/google/callback`,
 }, (accessToken, refreshToken, profile, done) => {
     return done(null, { profile, accessToken });
 }));
@@ -27,7 +27,7 @@ passport.use(new GoogleStrategy({
 passport.use(new FacebookStrategy({
     clientID: process.env.FACEBOOK_APP_ID,
     clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: "http://localhost:3000/auth/facebook/callback",
+    callbackURL: `${process.env.BASE_URL}/auth/facebook/callback`,
 }, (accessToken, refreshToken, profile, done) => {
     return done(null, { profile, accessToken });
 }));
@@ -47,5 +47,5 @@ app.get('/', (req, res) => {
 
 // Start server
 app.listen(PORT, () => {
-    console.log(`Server is running on http://localhost:${PORT}`);
+    console.log(`Server is running on ${process.env.BASE_URL}`);
 });
