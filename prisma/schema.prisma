@@ -8,7 +8,7 @@ datasource db {
 }
 
 model agencies {
-  id                                                        String           @id @default(uuid())
+  id                                                        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id                                                   String           @unique @db.Uuid
   credit                                                    String?          @db.VarChar
   description                                               String?
@@ -192,7 +192,7 @@ model states {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
-  id            String    @id @default(uuid())
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   roles         Role?
   full_name     String    @db.VarChar
   user_name     String    @db.VarChar
