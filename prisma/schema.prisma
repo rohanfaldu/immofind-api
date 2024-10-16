@@ -33,11 +33,10 @@ model agencies {
   updated_by                                                String?          @db.Uuid
   agency_packages_agencies_agency_packagesToagency_packages agency_packages? @relation("agencies_agency_packagesToagency_packages", fields: [agency_packages], references: [id], onDelete: NoAction, onUpdate: NoAction)
   meta_data                                                 meta_data?       @relation(fields: [meta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  users                                                     users            @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 }
 
 model agency_packages {
-  id                                                 String      @id @default(uuid())
+  id                                                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name                                               String      @unique @db.VarChar
   type                                               agency_type
   is_deleted                                         Boolean     @default(false)
@@ -49,7 +48,7 @@ model agency_packages {
 }
 
 model cities {
-  id               String             @id @default(uuid())
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   state_id         String             @db.Uuid
   name             String             @unique @db.VarChar
   is_deleted       Boolean            @default(false)
@@ -57,13 +56,13 @@ model cities {
   updated_at       DateTime?          @default(now()) @db.Timestamp(6)
   created_by       String?            @db.Uuid
   updated_by       String?            @db.Uuid
-  states           states             @relation(fields: [state_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  states           states             @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
   districts        districts[]
   property_details property_details[]
 }
 
 model districts {
-  id               String             @id @default(uuid())
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   city_id          String             @db.Uuid
   name             String             @unique @db.VarChar
   is_deleted       Boolean            @default(false)
@@ -71,12 +70,12 @@ model districts {
   updated_at       DateTime?          @default(now()) @db.Timestamp(6)
   created_by       String?            @db.Uuid
   updated_by       String?            @db.Uuid
-  cities           cities             @relation(fields: [city_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  cities           cities             @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "citiy_foreign_key")
   property_details property_details[]
 }
 
 model lang_translations {
-  id         String    @id @default(uuid())
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   en_string  String    @db.VarChar
   fr_string  String?   @db.VarChar
   is_deleted Boolean   @default(false)
@@ -87,7 +86,7 @@ model lang_translations {
 }
 
 model meta_data {
-  id          String     @id @default(uuid())
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title       String     @db.VarChar
   description String?
   keyword     String?
@@ -100,47 +99,45 @@ model meta_data {
 }
 
 model property_details {
-  id                    String                  @id @default(uuid())
-  title                 String                  @db.VarChar
-  link_uuid             String                  @db.VarChar
-  description           String
-  price                 Int
-  state_id              String                  @db.Uuid
-  city_id               String                  @db.Uuid
-  district_id           String                  @db.Uuid
-  latitude              String                  @db.VarChar
-  longitude             String                  @db.VarChar
-  vr_link               String?                 @db.VarChar
-  picture               String?                 @db.VarChar
-  video                 String?                 @db.VarChar
-  status                Boolean                 @default(false)
-  user_id               String                  @db.Uuid
-  is_deleted            Boolean                 @default(false)
-  created_at            DateTime?               @default(now()) @db.Timestamp(6)
-  updated_at            DateTime?               @default(now()) @db.Timestamp(6)
-  created_by            String?                 @db.Uuid
-  updated_by            String?                 @db.Uuid
-  cities                cities                  @relation(fields: [city_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  districts             districts               @relation(fields: [district_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  states                states                  @relation(fields: [state_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
-  property_meta_details property_meta_details[]
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String    @db.VarChar
+  link_uuid   String    @db.VarChar
+  description String
+  price       Int
+  state_id    String    @db.Uuid
+  city_id     String    @db.Uuid
+  district_id String    @db.Uuid
+  latitude    String    @db.VarChar
+  longitude   String    @db.VarChar
+  vr_link     String?   @db.VarChar
+  picture     String?   @db.VarChar
+  video       String?   @db.VarChar
+  status      Boolean   @default(false)
+  user_id     String    @db.Uuid
+  is_deleted  Boolean   @default(false)
+  created_at  DateTime? @default(now()) @db.Timestamp(6)
+  updated_at  DateTime? @default(now()) @db.Timestamp(6)
+  created_by  String?   @db.Uuid
+  updated_by  String?   @db.Uuid
+  cities      cities    @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
+  districts   districts @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
+  states      states    @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
 }
 
 model property_meta_details {
-  id                 String           @id @default(uuid())
-  property_detail_id String           @db.Uuid
-  key                String           @unique @db.VarChar
-  value              String           @db.VarChar
-  is_deleted         Boolean          @default(false)
-  created_at         DateTime?        @default(now()) @db.Timestamp(6)
-  updated_at         DateTime?        @default(now()) @db.Timestamp(6)
-  created_by         String?          @db.Uuid
-  updated_by         String?          @db.Uuid
-  property_details   property_details @relation(fields: [property_detail_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  property_detail_id String    @db.Uuid
+  key                String    @unique @db.VarChar
+  value              String    @db.VarChar
+  is_deleted         Boolean   @default(false)
+  created_at         DateTime? @default(now()) @db.Timestamp(6)
+  updated_at         DateTime? @default(now()) @db.Timestamp(6)
+  created_by         String?   @db.Uuid
+  updated_by         String?   @db.Uuid
 }
 
 model property_type_listings {
-  id              String               @id @default(uuid())
+  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name            String               @db.VarChar
   property_option property_option_enum
   property_cat    String?              @db.Uuid
@@ -153,7 +150,7 @@ model property_type_listings {
 }
 
 model property_types {
-  id         String    @id @default(uuid())
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title      String    @unique @db.VarChar
   is_deleted Boolean   @default(false)
   created_at DateTime? @default(now()) @db.Timestamp(6)
@@ -163,7 +160,7 @@ model property_types {
 }
 
 model roles {
-  id           String    @id @default(uuid())
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String    @unique @db.VarChar
   is_deleted   Boolean   @default(false)
   created_date DateTime? @default(now()) @db.Timestamp(6)
@@ -171,7 +168,7 @@ model roles {
 }
 
 model settings {
-  id         String    @id @default(uuid())
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   key        String    @unique @db.VarChar
   value      String    @db.VarChar
   is_deleted Boolean   @default(false)
@@ -182,7 +179,7 @@ model settings {
 }
 
 model states {
-  id               String             @id @default(uuid())
+  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String             @unique @db.VarChar
   is_deleted       Boolean            @default(false)
   created_at       DateTime?          @default(now()) @db.Timestamp(6)
@@ -195,20 +192,19 @@ model states {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model users {
-  id            String        @id @default(uuid())
-  roles         Role?      // Role enum type
-  full_name     String     @db.VarChar
-  user_name     String     @db.VarChar
-  fcm_token     String?    @db.VarChar
-  mobile_number String     @db.VarChar
-  password      String?    @db.VarChar
-  email_address String     @unique @db.VarChar
+  id            String    @id @default(uuid())
+  roles         Role?
+  full_name     String    @db.VarChar
+  user_name     String    @db.VarChar
+  fcm_token     String?   @db.VarChar
+  mobile_number String    @db.VarChar
+  password      String?   @db.VarChar
+  email_address String    @unique @db.VarChar
   address       String?
-  image         String?    @db.VarChar
-  is_deleted    Boolean    @default(false)
-  created_at    DateTime?  @default(now()) @db.Timestamp(6)
-  updated_at    DateTime?  @default(now()) @db.Timestamp(6)
-  agencies      agencies[]
+  image         String?   @db.VarChar
+  is_deleted    Boolean   @default(false)
+  created_at    DateTime? @default(now()) @db.Timestamp(6)
+  updated_at    DateTime? @default(now()) @db.Timestamp(6)
 }
 
 enum agency_type {
