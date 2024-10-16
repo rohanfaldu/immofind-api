@@ -85,7 +85,11 @@ exports.facebookAuthCallback = async (req, res) => {  // Added async here
             mobile_number: '1234567890', // Placeholder mobile number
             email_address: 'test@gmail.com',
             image: imageUrl,
-            roles: 'user',
+            roles: {
+                connect: {
+                  name: 'user',  // Use the role ID found earlier
+                },
+            },
             is_deleted: false,
         });
 

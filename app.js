@@ -8,7 +8,7 @@ const authRoutes = require('./routes/authRoutes');
 const agencyRoutes = require('./routes/agencyRoutes');
 
 const app = express();
-const PORT = process.env.PORT;
+const PORT = process.env.PORT || 3000;
 
 // Session setup
 app.use(session({ secret: 'we-api', resave: false, saveUninitialized: true }));
