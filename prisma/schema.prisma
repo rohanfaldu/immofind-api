@@ -8,7 +8,7 @@ datasource db {
 }
 
 model agencies {
-  id                                                        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                                                        String           @id @default(uuid())
   user_id                                                   String           @unique @db.Uuid
   credit                                                    String?          @db.VarChar
   description                                               String?
@@ -37,7 +37,7 @@ model agencies {
 }
 
 model agency_packages {
-  id                                                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                                                 String      @id @default(uuid())
   name                                               String      @unique @db.VarChar
   type                                               agency_type
   is_deleted                                         Boolean     @default(false)
@@ -49,7 +49,7 @@ model agency_packages {
 }
 
 model cities {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String             @id @default(uuid())
   state_id         String             @db.Uuid
   name             String             @unique @db.VarChar
   is_deleted       Boolean            @default(false)
@@ -63,7 +63,7 @@ model cities {
 }
 
 model districts {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String             @id @default(uuid())
   city_id          String             @db.Uuid
   name             String             @unique @db.VarChar
   is_deleted       Boolean            @default(false)
@@ -76,7 +76,7 @@ model districts {
 }
 
 model lang_translations {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String    @id @default(uuid())
   en_string  String    @db.VarChar
   fr_string  String?   @db.VarChar
   is_deleted Boolean   @default(false)
@@ -87,7 +87,7 @@ model lang_translations {
 }
 
 model meta_data {
-  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id          String     @id @default(uuid())
   title       String     @db.VarChar
   description String?
   keyword     String?
@@ -100,7 +100,7 @@ model meta_data {
 }
 
 model property_details {
-  id                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                    String                  @id @default(uuid())
   title                 String                  @db.VarChar
   link_uuid             String                  @db.VarChar
   description           String
@@ -127,7 +127,7 @@ model property_details {
 }
 
 model property_meta_details {
-  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                 String           @id @default(uuid())
   property_detail_id String           @db.Uuid
   key                String           @unique @db.VarChar
   value              String           @db.VarChar
@@ -140,7 +140,7 @@ model property_meta_details {
 }
 
 model property_type_listings {
-  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id              String               @id @default(uuid())
   name            String               @db.VarChar
   property_option property_option_enum
   property_cat    String?              @db.Uuid
@@ -153,7 +153,7 @@ model property_type_listings {
 }
 
 model property_types {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String    @id @default(uuid())
   title      String    @unique @db.VarChar
   is_deleted Boolean   @default(false)
   created_at DateTime? @default(now()) @db.Timestamp(6)
@@ -163,7 +163,7 @@ model property_types {
 }
 
 model roles {
-  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id           String    @id @default(uuid())
   name         String    @unique @db.VarChar
   is_deleted   Boolean   @default(false)
   created_date DateTime? @default(now()) @db.Timestamp(6)
@@ -171,7 +171,7 @@ model roles {
 }
 
 model settings {
-  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id         String    @id @default(uuid())
   key        String    @unique @db.VarChar
   value      String    @db.VarChar
   is_deleted Boolean   @default(false)
@@ -182,7 +182,7 @@ model settings {
 }
 
 model states {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id               String             @id @default(uuid())
   name             String             @unique @db.VarChar
   is_deleted       Boolean            @default(false)
   created_at       DateTime?          @default(now()) @db.Timestamp(6)
