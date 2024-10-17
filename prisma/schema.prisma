@@ -7,74 +7,82 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model agencies {
-  id                                                        String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id                                                   String           @unique @db.Uuid
-  credit                                                    String?          @db.VarChar
+model Agencies {
+  id                                                        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                                                   String          @unique @db.Uuid
+  credit                                                    String?         @db.VarChar
   description                                               String?
-  facebook_link                                             String?          @db.VarChar
-  twitter_link                                              String?          @db.VarChar
-  youtube_link                                              String?          @db.VarChar
-  pinterest_link                                            String?          @db.VarChar
-  linkedin_link                                             String?          @db.VarChar
-  instagram_link                                            String?          @db.VarChar
-  whatsup_number                                            String?          @db.VarChar
+  facebook_link                                             String?         @db.VarChar
+  twitter_link                                              String?         @db.VarChar
+  youtube_link                                              String?         @db.VarChar
+  pinterest_link                                            String?         @db.VarChar
+  linkedin_link                                             String?         @db.VarChar
+  instagram_link                                            String?         @db.VarChar
+  whatsup_number                                            String?         @db.VarChar
   service_area                                              String?
-  tax_number                                                String?          @db.VarChar
-  license_number                                            String?          @db.VarChar
-  agency_packages                                           String?          @db.Uuid
-  picture                                                   String?          @db.VarChar
-  cover                                                     String?          @db.VarChar
-  meta_id                                                   String?          @db.Uuid
-  is_deleted                                                Boolean          @default(false)
-  created_at                                                DateTime?        @default(now()) @db.Timestamp(6)
-  updated_at                                                DateTime?        @default(now()) @db.Timestamp(6)
-  created_by                                                String?          @db.Uuid
-  updated_by                                                String?          @db.Uuid
-  agency_packages_agencies_agency_packagesToagency_packages agency_packages? @relation("agencies_agency_packagesToagency_packages", fields: [agency_packages], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  meta_data                                                 meta_data?       @relation(fields: [meta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  tax_number                                                String?         @db.VarChar
+  license_number                                            String?         @db.VarChar
+  agency_packages                                           String?         @db.Uuid
+  picture                                                   String?         @db.VarChar
+  cover                                                     String?         @db.VarChar
+  meta_id                                                   String?         @db.Uuid
+  is_deleted                                                Boolean         @default(false)
+  created_at                                                DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at                                                DateTime?       @default(now()) @db.Timestamp(6)
+  created_by                                                String?         @db.Uuid
+  updated_by                                                String?         @db.Uuid
+  agency_packages_agencies_agency_packagesToagency_packages AgencyPackages? @relation("agencies_agency_packagesToagency_packages", fields: [agency_packages], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  meta_data                                                 MetaData?       @relation(fields: [meta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("agencies")
 }
 
-model agency_packages {
-  id                                                 String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name                                               String      @unique @db.VarChar
-  type                                               agency_type
-  is_deleted                                         Boolean     @default(false)
-  created_at                                         DateTime?   @default(now()) @db.Timestamp(6)
-  updated_at                                         DateTime?   @default(now()) @db.Timestamp(6)
-  created_by                                         String?     @db.Uuid
-  updated_by                                         String?     @db.Uuid
-  agencies_agencies_agency_packagesToagency_packages agencies[]  @relation("agencies_agency_packagesToagency_packages")
+model AgencyPackages {
+  id                                                 String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                                               String     @unique @db.VarChar
+  type                                               AgencyType
+  is_deleted                                         Boolean    @default(false)
+  created_at                                         DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at                                         DateTime?  @default(now()) @db.Timestamp(6)
+  created_by                                         String?    @db.Uuid
+  updated_by                                         String?    @db.Uuid
+  agencies_agencies_agency_packagesToagency_packages Agencies[] @relation("agencies_agency_packagesToagency_packages")
+
+  @@map("agency_packages")
 }
 
-model cities {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  state_id         String             @db.Uuid
-  name             String             @unique @db.VarChar
-  is_deleted       Boolean            @default(false)
-  created_at       DateTime?          @default(now()) @db.Timestamp(6)
-  updated_at       DateTime?          @default(now()) @db.Timestamp(6)
-  created_by       String?            @db.Uuid
-  updated_by       String?            @db.Uuid
-  states           states             @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
-  districts        districts[]
-  property_details property_details[]
+model Cities {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  state_id         String            @db.Uuid
+  name             String            @unique @db.VarChar
+  is_deleted       Boolean           @default(false)
+  created_at       DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
+  created_by       String?           @db.Uuid
+  updated_by       String?           @db.Uuid
+  states           States            @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
+  districts        Districts[]
+  property_details PropertyDetails[]
+
+  @@map("cities")
 }
 
-model districts {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  city_id          String             @db.Uuid
-  name             String             @unique @db.VarChar
-  is_deleted       Boolean            @default(false)
-  created_at       DateTime?          @default(now()) @db.Timestamp(6)
-  updated_at       DateTime?          @default(now()) @db.Timestamp(6)
-  created_by       String?            @db.Uuid
-  updated_by       String?            @db.Uuid
-  cities           cities             @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "citiy_foreign_key")
-  property_details property_details[]
+model Districts {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  city_id          String            @db.Uuid
+  name             String            @unique @db.VarChar
+  is_deleted       Boolean           @default(false)
+  created_at       DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
+  created_by       String?           @db.Uuid
+  updated_by       String?           @db.Uuid
+  cities           Cities            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "citiy_foreign_key")
+  property_details PropertyDetails[]
+
+  @@map("districts")
 }
 
-model lang_translations {
+model LangTranslations {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   en_string  String    @db.VarChar
   fr_string  String?   @db.VarChar
@@ -83,9 +91,11 @@ model lang_translations {
   updated_at DateTime? @default(now()) @db.Timestamp(6)
   created_by String?   @db.Uuid
   updated_by String?   @db.Uuid
+
+  @@map("lang_translations")
 }
 
-model meta_data {
+model MetaData {
   id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title       String     @db.VarChar
   description String?
@@ -95,10 +105,12 @@ model meta_data {
   updated_at  DateTime?  @default(now()) @db.Timestamp(6)
   created_by  String?    @db.Uuid
   updated_by  String?    @db.Uuid
-  agencies    agencies[]
+  agencies    Agencies[]
+
+  @@map("meta_data")
 }
 
-model property_details {
+model PropertyDetails {
   id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title       String    @db.VarChar
   link_uuid   String    @db.VarChar
@@ -119,12 +131,14 @@ model property_details {
   updated_at  DateTime? @default(now()) @db.Timestamp(6)
   created_by  String?   @db.Uuid
   updated_by  String?   @db.Uuid
-  cities      cities    @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
-  districts   districts @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
-  states      states    @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
+  cities      Cities    @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
+  districts   Districts @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
+  states      States    @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
+
+  @@map("property_details")
 }
 
-model property_meta_details {
+model PropertyMetaDetails {
   id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   property_detail_id String    @db.Uuid
   key                String    @unique @db.VarChar
@@ -134,22 +148,26 @@ model property_meta_details {
   updated_at         DateTime? @default(now()) @db.Timestamp(6)
   created_by         String?   @db.Uuid
   updated_by         String?   @db.Uuid
+
+  @@map("property_meta_details")
 }
 
-model property_type_listings {
-  id              String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name            String               @db.VarChar
-  property_option property_option_enum
-  property_cat    String?              @db.Uuid
-  icon            String?              @db.VarChar
-  is_deleted      Boolean              @default(false)
-  created_at      DateTime?            @default(now()) @db.Timestamp(6)
-  updated_at      DateTime?            @default(now()) @db.Timestamp(6)
-  created_by      String?              @db.Uuid
-  updated_by      String?              @db.Uuid
+model PropertyTypeListings {
+  id              String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name            String             @db.VarChar
+  property_option PropertyOptionEnum
+  property_cat    String?            @db.Uuid
+  icon            String?            @db.VarChar
+  is_deleted      Boolean            @default(false)
+  created_at      DateTime?          @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?          @default(now()) @db.Timestamp(6)
+  created_by      String?            @db.Uuid
+  updated_by      String?            @db.Uuid
+
+  @@map("property_type_listings")
 }
 
-model property_types {
+model PropertyTypes {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   title      String    @unique @db.VarChar
   is_deleted Boolean   @default(false)
@@ -157,17 +175,23 @@ model property_types {
   updated_at DateTime? @default(now()) @db.Timestamp(6)
   created_by String?   @db.Uuid
   updated_by String?   @db.Uuid
+
+  @@map("property_types")
 }
 
-model roles {
+model Roles {
   id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name         String    @unique @db.VarChar
   is_deleted   Boolean   @default(false)
   created_date DateTime? @default(now()) @db.Timestamp(6)
   updated_date DateTime? @default(now()) @db.Timestamp(6)
+  status       Boolean?  @default(true)
+  users        Users[]
+
+  @@map("roles")
 }
 
-model settings {
+model Settings {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   key        String    @unique @db.VarChar
   value      String    @db.VarChar
@@ -176,28 +200,32 @@ model settings {
   updated_at DateTime? @default(now()) @db.Timestamp(6)
   created_by String?   @db.Uuid
   updated_by String?   @db.Uuid
+
+  @@map("settings")
 }
 
-model states {
-  id               String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name             String             @unique @db.VarChar
-  is_deleted       Boolean            @default(false)
-  created_at       DateTime?          @default(now()) @db.Timestamp(6)
-  updated_at       DateTime?          @default(now()) @db.Timestamp(6)
-  created_by       String?            @db.Uuid
-  updated_by       String?            @db.Uuid
-  cities           cities[]
-  property_details property_details[]
+model States {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name             String            @unique @db.VarChar
+  is_deleted       Boolean           @default(false)
+  created_at       DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
+  created_by       String?           @db.Uuid
+  updated_by       String?           @db.Uuid
+  cities           Cities[]
+  property_details PropertyDetails[]
+
+  @@map("states")
 }
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
-model users {
+model Users {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  roles         Role?
+  role_id       String    @db.Uuid
   full_name     String    @db.VarChar
   user_name     String    @db.VarChar
   fcm_token     String?   @db.VarChar
-  mobile_number String    @db.VarChar
+  mobile_number String?   @db.VarChar
   password      String?   @db.VarChar
   email_address String    @unique @db.VarChar
   address       String?
@@ -205,19 +233,36 @@ model users {
   is_deleted    Boolean   @default(false)
   created_at    DateTime? @default(now()) @db.Timestamp(6)
   updated_at    DateTime? @default(now()) @db.Timestamp(6)
+  roles         Roles     @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_foreign_key")
+
+  @@map("users")
 }
 
-enum agency_type {
-  Agencies
-  Promoteurs
+enum AgencyType {
+  AGENCIES
+  PROMOTEURS
+
+  @@map("agency_type")
 }
 
-enum property_option_enum {
-  name
-  check_box
+enum PropertyOptionEnum {
+  NAME
+  CHECKBOX
+
+  @@map("property_option_enum")
+}
+
+enum LoginType {
+  GOOGLE
+  FACEBOOK
+  NONE
+
+  @@map("login_type")
 }
 
 enum Role {
-  user
-  admin
+  USER
+  ADMIN
+
+  @@map("role")
 }

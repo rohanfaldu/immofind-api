@@ -4,6 +4,9 @@ const authController = require('../controllers/authController');
 const passport = require('passport');
 
 // Google auth routes
+router.post('/user', authController.createUser);
+
+
 router.get('/google', authController.googleAuth);
 
 const googleAuth = passport.authenticate('google', { failureRedirect: '/' });

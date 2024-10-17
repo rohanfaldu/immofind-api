@@ -11,6 +11,7 @@ const UserModel = {
                     user_name: data.user_name,
                     mobile_number: data.mobile_number,
                     image: data.image,
+                    fcm_token: data.fcm_token,
                     roles: data.roles,
                     updated_at: new Date(),
                 },
@@ -19,6 +20,8 @@ const UserModel = {
                     full_name: data.full_name,
                     user_name: data.user_name,
                     mobile_number: data.mobile_number,
+                    fcm_token: data.fcm_token,
+                    image: data.image,
                     email_address: data.email_address,
                     password: data.password,  // Hash your password before storing
                     is_deleted: false,
