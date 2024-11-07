@@ -1,13 +1,15 @@
 const passport = require('passport');
 const UserModel = require('../models/userModel');
-const jwtGenerator = require("../utils/jwtGenerator");
+const jwtGenerator = require('../utils/jwtGenerator');
+const bcrypt = require('bcrypt');
+const jwt = require('jsonwebtoken');
 
 exports.googleAuth = passport.authenticate('google', { scope: ['profile', 'email'] });
 
 exports.createUser = async (req, res) => {
     try {
         const { user_name, full_name, email_address, fcm_token, image_url, type, mobile_number, password } = req.body;
-        
+
         if (!user_name ||!full_name || !email_address || !type) {
             return res.status(400).json({ error: "Please check the Fields." });
         }
@@ -22,12 +24,12 @@ exports.createUser = async (req, res) => {
             roles: {
                 connect: {
                   name: type,
-                  status: true, 
+                  status: true,
                 },
             },
             mobile_number: mobile_number,
             password: password,
-            is_deleted: false, 
+            is_deleted: false,
         });
         if(user){
             const CreateToken = jwtGenerator(user.id);
@@ -74,16 +76,16 @@ exports.googleAuthCallback = async (req, res) => {
             roles: {
                 connect: {
                   name: 'user',
-                  status: true, 
+                  status: true,
                 },
             },
-            is_deleted: false, 
+            is_deleted: false,
         });
         if(user){
             const CreateToken = generateAccessToken(user.id, user.email_address);
             res.json({
                 message: 'Google login successful',
-                userProfile: user, 
+                userProfile: user,
                 token: CreateToken
             });
         }
@@ -135,6 +137,40 @@ exports.facebookAuthCallback = async (req, res) => {  // Added async here
         });
     } catch (error) {
         console.error('Error during Facebook login:', error); // Log the error for debugging
+        res.status(500).json({ message: 'Internal server error', error: error.message });
+    }
+};
+exports.login = async (req, res) => {
+    const { email_address, password } = req.body;
+
+    console.log(req.body); // Log the request body for debugging
+
+    try {
+        // Find user by email
+        const user = await UserModel.findUserByEmail(email_address);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if password matches (assuming user.password is hashed)
+        if (user.password !== password) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user.id, email_address: user.email_address },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        res.status(200).json({
+            message: 'Login successful',
+            token,
+            userProfile: user
+        });
+    } catch (error) {
+        console.error('Error during login:', error);
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };

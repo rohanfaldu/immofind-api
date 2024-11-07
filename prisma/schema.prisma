@@ -9,7 +9,7 @@ datasource db {
 
 model Agencies {
   id                                                        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id                                                   String          @unique @db.Uuid
+  user_id                                                   String          @db.Uuid
   credit                                                    String?         @db.VarChar
   description                                               String?
   facebook_link                                             String?         @db.VarChar
@@ -33,6 +33,7 @@ model Agencies {
   updated_by                                                String?         @db.Uuid
   agency_packages_agencies_agency_packagesToagency_packages AgencyPackages? @relation("agencies_agency_packagesToagency_packages", fields: [agency_packages], references: [id], onDelete: NoAction, onUpdate: NoAction)
   meta_data                                                 MetaData?       @relation(fields: [meta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                                                     Users           @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("agencies")
 }
@@ -60,7 +61,7 @@ model Cities {
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
   created_by       String?           @db.Uuid
   updated_by       String?           @db.Uuid
-  states           States            @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
+  states           States            @relation(fields: [state_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "state_foreign_key")
   districts        Districts[]
   property_details PropertyDetails[]
 
@@ -76,7 +77,7 @@ model Districts {
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
   created_by       String?           @db.Uuid
   updated_by       String?           @db.Uuid
-  cities           Cities            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "citiy_foreign_key")
+  cities           Cities            @relation(fields: [city_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "citiy_foreign_key")
   property_details PropertyDetails[]
 
   @@map("districts")
@@ -111,43 +112,45 @@ model MetaData {
 }
 
 model PropertyDetails {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title       String    @db.VarChar
-  link_uuid   String    @db.VarChar
-  description String
-  price       Int
-  state_id    String    @db.Uuid
-  city_id     String    @db.Uuid
-  district_id String    @db.Uuid
-  latitude    String    @db.VarChar
-  longitude   String    @db.VarChar
-  vr_link     String?   @db.VarChar
-  picture     String?   @db.VarChar
-  video       String?   @db.VarChar
-  status      Boolean   @default(false)
-  user_id     String    @db.Uuid
-  is_deleted  Boolean   @default(false)
-  created_at  DateTime? @default(now()) @db.Timestamp(6)
-  updated_at  DateTime? @default(now()) @db.Timestamp(6)
-  created_by  String?   @db.Uuid
-  updated_by  String?   @db.Uuid
-  cities      Cities    @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
-  districts   Districts @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
-  states      States    @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                 String                @db.VarChar
+  link_uuid             String                @db.VarChar
+  description           String
+  price                 Int
+  state_id              String                @db.Uuid
+  city_id               String                @db.Uuid
+  district_id           String                @db.Uuid
+  latitude              String                @db.VarChar
+  longitude             String                @db.VarChar
+  vr_link               String?               @db.VarChar
+  picture               String?               @db.VarChar
+  video                 String?               @db.VarChar
+  status                Boolean               @default(false)
+  user_id               String                @db.Uuid
+  is_deleted            Boolean               @default(false)
+  created_at            DateTime?             @default(now()) @db.Timestamp(6)
+  updated_at            DateTime?             @default(now()) @db.Timestamp(6)
+  created_by            String?               @db.Uuid
+  updated_by            String?               @db.Uuid
+  cities                Cities                @relation(fields: [city_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "city_foreign_key")
+  districts             Districts             @relation(fields: [district_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "districts_foreign_key")
+  states                States                @relation(fields: [state_id], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "state_foreign_key")
+  property_meta_details PropertyMetaDetails[]
 
   @@map("property_details")
 }
 
 model PropertyMetaDetails {
-  id                 String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  property_detail_id String    @db.Uuid
-  key                String    @unique @db.VarChar
-  value              String    @db.VarChar
-  is_deleted         Boolean   @default(false)
-  created_at         DateTime? @default(now()) @db.Timestamp(6)
-  updated_at         DateTime? @default(now()) @db.Timestamp(6)
-  created_by         String?   @db.Uuid
-  updated_by         String?   @db.Uuid
+  id                 String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  property_detail_id String          @db.Uuid
+  key                String          @unique @db.VarChar
+  value              String          @db.VarChar
+  is_deleted         Boolean         @default(false)
+  created_at         DateTime?       @default(now()) @db.Timestamp(6)
+  updated_at         DateTime?       @default(now()) @db.Timestamp(6)
+  created_by         String?         @db.Uuid
+  updated_by         String?         @db.Uuid
+  property_details   PropertyDetails @relation(fields: [property_detail_id], references: [id], onDelete: Cascade, onUpdate: NoAction)
 
   @@map("property_meta_details")
 }
@@ -185,8 +188,6 @@ model Roles {
   is_deleted   Boolean   @default(false)
   created_date DateTime? @default(now()) @db.Timestamp(6)
   updated_date DateTime? @default(now()) @db.Timestamp(6)
-  status       Boolean?  @default(true)
-  users        Users[]
 
   @@map("roles")
 }
@@ -220,50 +221,35 @@ model States {
 
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model Users {
-  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  full_name     String    @db.VarChar
-  user_name     String    @db.VarChar
-  fcm_token     String?   @db.VarChar
-  mobile_number String?   @db.VarChar
-  password      String?   @db.VarChar
-  email_address String    @unique @db.VarChar
+  id            String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  roles         String?
+  full_name     String     @db.VarChar
+  user_name     String     @db.VarChar
+  fcm_token     String?    @db.VarChar
+  mobile_number String     @db.VarChar
+  password      String?    @db.VarChar
+  email_address String     @unique @db.VarChar
   address       String?
-  image         String?   @db.VarChar
-  is_deleted    Boolean   @default(false)
-  created_at    DateTime? @default(now()) @db.Timestamp(6)
-  updated_at    DateTime? @default(now()) @db.Timestamp(6)
-  role_id       String    @db.Uuid
-  status        Boolean?  @default(true)
-  roles         Roles     @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_foreign_key")
+  image         String?    @db.VarChar
+  is_deleted    Boolean    @default(false)
+  created_at    DateTime?  @default(now()) @db.Timestamp(6)
+  updated_at    DateTime?  @default(now()) @db.Timestamp(6)
+  userType      String?
+  agencies      Agencies[]
 
   @@map("users")
 }
 
 enum AgencyType {
-  AGENCIES
-  PROMOTEURS
+  Agencies
+  Promoteurs
 
   @@map("agency_type")
 }
 
 enum PropertyOptionEnum {
-  NAME
-  CHECKBOX
+  name
+  check_box
 
   @@map("property_option_enum")
-}
-
-enum LoginType {
-  GOOGLE
-  FACEBOOK
-  NONE
-
-  @@map("login_type")
-}
-
-enum Role {
-  USER
-  ADMIN
-
-  @@map("role")
 }

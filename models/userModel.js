@@ -35,9 +35,15 @@ const UserModel = {
         }
     },
     createUser: async (data) => {
-        return await prisma.user.create({
-        data,
+        return await prisma.users.create({
+            data,
         });
-    }
+    },
+     findUserByEmail: async (email_address) => {
+        return await prisma.users.findUnique({
+            where: { email_address },
+        });
+    },
+
 };
 module.exports = UserModel;
