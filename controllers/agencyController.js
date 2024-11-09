@@ -1,51 +1,81 @@
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
+const password = require('../utils/passwordGenerator');
 const Agency = require('../models/agencyModel');
 const User = require('../models/userModel'); // Assuming you have a User model defined
-
+const { use } = require('passport');
+const jwtGenerator = require("../utils/jwtGenerator");
+const bcrypt = require("bcrypt");
+const passwordGenerator = require("../utils/passwordGenerator");
 // Create an agency
 exports.createAgency = async (req, res) => {
-console.log(req.body);
+    const { roles,user_name, full_name, email_address, user_login_type, image, address, mobile_number, password, user_type, credit, description,
+        facebook_link,
+        twitter_link,
+        youtube_link,
+        pinterest_link,
+        linkedin_link,
+        instagram_link,
+        whatsup_number,
+        service_area,
+        tax_number,
+        license_number,
+        picture,
+        cover } = req.body;
+        
     // Extract user data from usertable
     const userData = {
-        roles: req.body.usertable.roles,
-        full_name: req.body.usertable.full_name,
-        user_name: req.body.usertable.user_name,
-        mobile_number: req.body.usertable.mobile_number,
-        email_address: req.body.usertable.email_address,
-        password: req.body.usertable.password, // Ensure this is hashed properly
-        is_deleted: req.body.usertable.is_deleted,
+        full_name: full_name,
+        user_name: user_name,
+        email_address: email_address,
+        mobile_number: mobile_number,
+        fcm_token: '',
+        image: image,
+        roles: {
+            connect: {
+                name: 'agency',
+                status: true, 
+            },
+        },
+        password: await passwordGenerator.encrypted(password),
+        user_login_type: "NONE"
     };
 
-    try {
-        // Step 1: Create the user
-        const user = await User.create(userData);
+    try { 
+        
+        const existingUser = await User.getUser(email_address, mobile_number);
 
-        // Step 2: Create the agency using the user ID
-        const agencyData = {
-            user_id: user.id, // Use the newly created user's ID
-            credit: req.body.agency.credit,
-            description: req.body.agency.description,
-            facebook_link: req.body.agency.facebook_link,
-            twitter_link: req.body.agency.twitter_link,
-            youtube_link: req.body.agency.youtube_link,
-            pinterest_link: req.body.agency.pinterest_link,
-            linkedin_link: req.body.agency.linkedin_link,
-            instagram_link: req.body.agency.instagram_link,
-            whatsup_number: req.body.agency.whatsup_number,
-            service_area: req.body.agency.service_area,
-            tax_number: req.body.agency.tax_number,
-            license_number: req.body.agency.license_number,
-            picture: req.body.agency.picture,
-            cover: req.body.agency.cover,
-        };
+        if(existingUser) {
+            return res.status(400).json({
+                status: false,
+                message: 'User already Exist',
+                data: null,
+            });
+        }
+    
+        const user = await User.createUser(userData);
+    
+        if(user){
 
-        // Step 3: Create the agency
-        const agency = await Agency.create(agencyData);
-
-        // Step 4: Respond with the created agency and user
-        res.status(201).json({ user, agency });
+            return res.status(200).json({
+                status: false,
+                message: 'Sucessful Working',
+                data: user,
+            });
+        } else {
+            return res.status(400).json({
+                status: false,
+                message: 'User not created',
+                data: null,
+            });
+        }
+        
     } catch (err) {
-        // If there is an error, respond with a status code and error message
-        res.status(400).json({ error: err.message });
+        return res.status(400).json({
+            status: false,
+            message: err.message,
+            data: null,
+        });
     }
 };
 

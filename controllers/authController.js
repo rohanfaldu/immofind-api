@@ -1,19 +1,20 @@
 const passport = require('passport');
 const UserModel = require('../models/userModel');
 const jwtGenerator = require("../utils/jwtGenerator");
+const passwordGenerator = require("../utils/passwordGenerator");
 
 exports.googleAuth = passport.authenticate('google', { scope: ['profile', 'email'] });
 
 exports.createUser = async (req, res) => {
     try {
-        const { user_name, full_name, email_address, fcm_token, image_url, type, mobile_number, password } = req.body;
+        const { user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, mobile_number, password } = req.body;
         
         if (!user_name ||!full_name || !email_address || !type) {
             return res.status(400).json({ error: "Please check the Fields." });
         }
 
         // Create or update the user in the database
-        const user = await UserModel.createOrUpdateUser({
+        const user = await UserModel.createUser({
             full_name: full_name,
             user_name: user_name,
             email_address: email_address,
@@ -25,6 +26,7 @@ exports.createUser = async (req, res) => {
                   status: true, 
                 },
             },
+            user_login_type: user_login_type,
             mobile_number: mobile_number,
             password: password,
             is_deleted: false, 
@@ -80,7 +82,7 @@ exports.googleAuthCallback = async (req, res) => {
             is_deleted: false, 
         });
         if(user){
-            const CreateToken = generateAccessToken(user.id, user.email_address);
+            const CreateToken = await jwtGenerator.generateToken(user.id, user.email_address);
             res.json({
                 message: 'Google login successful',
                 userProfile: user, 
@@ -138,3 +140,59 @@ exports.facebookAuthCallback = async (req, res) => {  // Added async here
         res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
+
+exports.getUser = async (req, res) => {
+    
+    const { email_address,password } = req.body;
+    
+    if (!email_address || !password) {
+        return res.status(400).json({
+            status: false,
+            message: 'Please check the Fields.',
+            data: null,
+        });
+    }
+    const user = await UserModel.getUser(email_address,email_address);
+    
+    if (user && user.password) {
+        
+        try {
+            const isMatch = await passwordGenerator.comparePassword(password, user.password);
+            if (isMatch) {
+                const CreateToken = await jwtGenerator.generateToken(user.id, user.email_address);
+            
+                return res.status(200).json({
+                    status: true,
+                    message: 'Login successful',
+                    data: {
+                        userProfile: user,
+                        token: CreateToken
+                    },
+                });
+            } else {
+                return res.status(400).json({
+                    status: false,
+                    message: 'Password doesn\'t Match',
+                    data: error.message,
+                });
+                }
+        } catch (error) {
+            return res.status(400).json({
+                status: false,
+                message: 'User not Found',
+                data: null,
+            });
+        }
+    } else {
+        return res.status(400).json({
+            status: false,
+            message: 'User not Found',
+            data: null,
+        });
+    }
+}
+exports.testData = async (req, res) => {
+    res.json({
+        message: 'Successful Working'
+    });
+}

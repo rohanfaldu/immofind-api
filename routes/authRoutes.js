@@ -4,8 +4,11 @@ const authController = require('../controllers/authController');
 const passport = require('passport');
 
 // Google auth routes
-router.post('/user', authController.createUser);
+router.post('/create/user', authController.createUser);
 
+router.post('/get/user', authController.getUser);
+
+router.get('/test', authController.testData);
 
 router.get('/google', authController.googleAuth);
 

@@ -1,6 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
+const { get } = require('mongoose');
 const prisma = new PrismaClient();
-
+const passwordGenerator = require('../utils/passwordGenerator');
 const UserModel = {
     createOrUpdateUser: async (data) => {
         try {
@@ -11,19 +12,25 @@ const UserModel = {
                     user_name: data.user_name,
                     mobile_number: data.mobile_number,
                     image: data.image,
+                    user_login_type: data.user_login_type,
                     fcm_token: data.fcm_token,
-                    roles: data.roles,
                     updated_at: new Date(),
                 },
                 create: {
-                    roles: data.roles,
+                    roles: {
+                        connect: {
+                            name: data.roles,
+                            status: true, 
+                        },
+                    },
                     full_name: data.full_name,
                     user_name: data.user_name,
                     mobile_number: data.mobile_number,
                     fcm_token: data.fcm_token,
                     image: data.image,
+                    user_login_type: data.user_login_type,
                     email_address: data.email_address,
-                    password: data.password,  // Hash your password before storing
+                    password: await passwordGenerator.encrypted(data.password),  // Hash your password before storing
                     is_deleted: false,
                     created_at: new Date(),
                     updated_at: new Date(),
@@ -35,8 +42,18 @@ const UserModel = {
         }
     },
     createUser: async (data) => {
-        return await prisma.user.create({
+        return await prisma.users.create({
         data,
+        });
+    },
+    getUser: async (email_address, mobile_number) => {
+        return await prisma.users.findFirst({
+            where: {
+              OR: [
+                { email_address: email_address },
+                { mobile_number: mobile_number }
+              ]
+            }
         });
     }
 };
