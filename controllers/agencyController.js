@@ -69,7 +69,6 @@ exports.createAgency = async (req, res) => {
                 data: null,
             });
         }
-        
     } catch (err) {
         return res.status(400).json({
             status: false,
@@ -82,7 +81,7 @@ exports.createAgency = async (req, res) => {
 // Get all agencies
 exports.getAllAgencies = async (req, res) => {
     try {
-        const agencies = await Agency.findAll();
+        const agencies = await Agency.getAllAgencies();
         res.status(200).json(agencies);
     } catch (err) {
         res.status(500).json({ error: err.message });
@@ -92,7 +91,7 @@ exports.getAllAgencies = async (req, res) => {
 // Get an agency by ID
 exports.getAgencyById = async (req, res) => {
     try {
-        const agency = await Agency.findByPk(req.params.id);
+        const agency = await Agency.getAgencyById(req.params.id);
         if (agency) {
             res.status(200).json(agency);
         } else {
@@ -129,5 +128,39 @@ exports.deleteAgency = async (req, res) => {
         }
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+};
+
+exports.login = async (req, res) => {
+    const { email_address, password } = req.body;
+
+    try {
+        // Find user by email
+        const user = await UserModel.findUserByEmail(email_address);
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if password matches
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // Generate JWT token
+        const token = jwt.sign(
+            { id: user.id, email_address: user.email_address },
+            process.env.JWT_SECRET,
+            { expiresIn: '1h' }
+        );
+
+        res.status(200).json({
+            message: 'Login successful',
+            token,
+            userProfile: user
+        });
+    } catch (error) {
+        console.error('Error during login:', error);
+        res.status(500).json({ message: 'Internal server error', error: error.message });
     }
 };
