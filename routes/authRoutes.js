@@ -22,10 +22,4 @@ const facebookAuth = passport.authenticate('facebook', { failureRedirect: '/' })
 router.get('/facebook/callback', facebookAuth, authController.facebookAuthCallback);
 
 
-// Register route
-
-// Login route
-router.post('/login', authController.login);
-
-
 module.exports = router;
