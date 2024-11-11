@@ -13,33 +13,95 @@ exports.createUser = async (req, res) => {
             return res.status(400).json({ error: "Please check the Fields." });
         }
 
-        // Create or update the user in the database
-        const user = await UserModel.createUser({
-            full_name: full_name,
-            user_name: user_name,
-            email_address: email_address,
-            fcm_token: fcm_token,
-            image: image_url,
-            roles: {
-                connect: {
-                  name: type,
-                  status: true, 
+        const checkUser = await UserModel.getUser(email_address,email_address);
+        let users;
+        let message;
+        if(checkUser){
+            users =  checkUser;
+            message = 'User already exist';
+        } else{
+            message = 'User created successfully';
+            users = await UserModel.createUser({
+                full_name: full_name,
+                user_name: user_name,
+                email_address: email_address,
+                fcm_token: fcm_token,
+                image: image_url,
+                roles: {
+                    connect: {
+                      name: type,
+                      status: true, 
+                    },
                 },
-            },
-            user_login_type: user_login_type,
-            mobile_number: mobile_number,
-            password: password,
-            is_deleted: false, 
-        });
-        if(user){
-            const CreateToken = jwtGenerator(user.id);
+                user_login_type: user_login_type,
+                mobile_number: mobile_number,
+                password: await passwordGenerator.encrypted(password),
+            });
+        }
+        // Create or update the user in the database
+        if(users){
+            const CreateToken = await jwtGenerator.generateToken(users.id, users.email_address);
             return res.status(200).json({
                 status: true,
-                message: 'Google login successful',
+                message: message,
                 data: {
-                    userProfile: user,
+                    userProfile: users,
                     token: CreateToken
                 },
+            });
+        }
+        // Respond with success message and user information
+    } catch (error) {
+        return res.status(400).json({
+            status: false,
+            message: 'Internal server error',
+            data: error.message,
+        });
+    }
+};
+
+exports.createNormalUser = async (req, res) => {
+    try {
+        const { user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, mobile_number, password } = req.body;
+        
+        if (!user_name ||!full_name || !email_address || !type || !password) {
+            return res.status(400).json({ error: "Please check the Fields." });
+        }
+
+        const checkUser = await UserModel.getUser(email_address,email_address);
+        let users;
+        let message;
+        if(checkUser){
+            return res.status(200).json({
+                status: false,
+                message: 'User already exist. Please login',
+                data: null,
+            });
+        } else{
+            users = await UserModel.createUser({
+                full_name: full_name,
+                user_name: user_name,
+                email_address: email_address,
+                fcm_token: fcm_token,
+                image: image_url,
+                roles: {
+                    connect: {
+                      name: type,
+                      status: true, 
+                    },
+                },
+                user_login_type: user_login_type,
+                mobile_number: mobile_number,
+                password: await passwordGenerator.encrypted(password),
+            });
+        }
+        // Create or update the user in the database
+        if(users){
+            const CreateToken = await jwtGenerator.generateToken(users.id, users.email_address);
+            return res.status(200).json({
+                status: true,
+                message: 'User created successfully',
+                data: users,
             });
         }
         // Respond with success message and user information
@@ -68,6 +130,7 @@ exports.googleAuthCallback = async (req, res) => {
 
         // Create or update the user in the database
         const user = await UserModel.createOrUpdateUser({
+            user_login_type: "GOOGLE",
             full_name: fullName,
             user_name: fullName,
             email_address: email,
@@ -160,7 +223,7 @@ exports.getUser = async (req, res) => {
             const isMatch = await passwordGenerator.comparePassword(password, user.password);
             if (isMatch) {
                 const CreateToken = await jwtGenerator.generateToken(user.id, user.email_address);
-            
+                
                 return res.status(200).json({
                     status: true,
                     message: 'Login successful',
@@ -170,24 +233,97 @@ exports.getUser = async (req, res) => {
                     },
                 });
             } else {
-                return res.status(400).json({
+                return res.status(200).json({
                     status: false,
                     message: 'Password doesn\'t Match',
                     data: error.message,
                 });
                 }
         } catch (error) {
-            return res.status(400).json({
+            return res.status(200).json({
                 status: false,
                 message: 'User not Found',
                 data: null,
             });
         }
     } else {
-        return res.status(400).json({
+        return res.status(200).json({
             status: false,
             message: 'User not Found',
             data: null,
+        });
+    }
+}
+exports.checkUserExists = async (req, res) => {
+    
+    const { email_address } = req.body;
+    
+    if (!email_address) {
+        return res.status(400).json({
+            status: false,
+            message: 'Please check the Fields.',
+            data: null,
+        });
+    }
+    const user = await UserModel.getUser(email_address,email_address);
+    
+    if (user) {
+        return res.status(200).json({
+            status: true,
+            message: 'User exists',
+            data: null,
+        });
+    } else {
+        return res.status(200).json({
+            status: false,
+            message: 'User not Found',
+            data: null,
+        });
+    }
+}
+exports.updatePassword = async (req, res) => {
+    try {
+        const { email_address, code, password } = req.body;
+        
+        if (!password ||!code || !email_address) {
+            return res.status(400).json({ error: "Please check the Fields." });
+        }
+
+        const checkEmail = await UserModel.getUser(req.body.email_address, req.body.email_address);
+        if(checkEmail){
+            const data = {
+                password: await passwordGenerator.encrypted(password),
+            }
+            const where = {
+                email_address: email_address,
+                reset_password_token: code
+            }
+            const userUpdate = await UserModel.updateUser(where, data);
+            if(userUpdate){
+                return res.status(200).json({
+                    status: true,
+                    message: 'Password updated successfully.',
+                    data: null,
+                });
+            }else {
+                return res.status(200).json({
+                    status: false,
+                    message: 'User data was not updated',
+                    data: null,
+                });
+            }
+        }else{
+            return res.status(200).json({
+                status: false,
+                message: 'User not Found',
+                data: null,
+            });
+        }
+    } catch (error) {
+        return res.status(400).json({
+            status: false,
+            message: 'Internal server error',
+            data: error.message,
         });
     }
 }

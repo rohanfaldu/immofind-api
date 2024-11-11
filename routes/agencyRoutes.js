@@ -9,6 +9,8 @@ const agencyController = require('../controllers/agencyController'); // Import a
 // Create an agency
 router.post('/agencies', agencyController.createAgency);
 
+router.post('/sendmail', agencyController.sendMail);
+
 // Get all agencies
 router.get('/agencies', agencyController.getAllAgencies);
 

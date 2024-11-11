@@ -42,7 +42,7 @@ passport.deserializeUser((obj, done) => done(null, obj));
 // Use auth routes
 
 app.use(cors({
-    origin: 'http://localhost:3000', // Adjust this to match your frontend URL
+    origin: ['http://localhost:3000','http://localhost:5000'], // Adjust this to match your frontend URL
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
     allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Methods'], // Add necessary headers
 }));

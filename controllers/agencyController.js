@@ -7,6 +7,9 @@ const { use } = require('passport');
 const jwtGenerator = require("../utils/jwtGenerator");
 const bcrypt = require("bcrypt");
 const passwordGenerator = require("../utils/passwordGenerator");
+const sendmail = require("../utils/sendmail");
+const crypto = require('crypto');
+
 // Create an agency
 exports.createAgency = async (req, res) => {
     const { roles,user_name, full_name, email_address, user_login_type, image, address, mobile_number, password, user_type, credit, description,
@@ -88,7 +91,53 @@ exports.getAllAgencies = async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 };
-
+exports.sendMail = async (req, res) => {
+    const checkEmail = await User.getUser(req.body.email_address, req.body.email_address);
+    if(checkEmail){
+        const code = crypto.randomInt(100000, 999999);
+        const to = req.body.email_address;
+        const subject = "Password Reset Code";
+        const text = `Your password reset code is: ${code}`;
+        try {
+            const emailData = await sendmail.gmail(to, subject, text); // Wait for email to send
+            console.log(emailData);
+            if(emailData){
+                const data = {
+                    reset_password_token: code
+                }
+                const where = {
+                    email_address: req.body.email_address
+                }
+                const userUpdate = await User.updateUser(where, data);
+                if(userUpdate){
+                    return res.status(200).json({
+                        status: true,
+                        message: 'Successfully email Send. Please check your email. Your have received a code',
+                        data: null,
+                    });
+                }else {
+                    return res.status(200).json({
+                        status: false,
+                        message: 'User data was not updated',
+                        data: null,
+                    });
+                }
+            }
+          } catch (error) {
+            return res.status(200).json({
+                status: false,
+                message: 'Email was not sent',
+                data: null,
+            });
+          }
+    } else {
+        return res.status(200).json({
+            status: false,
+            message: 'User was not found',
+            data: null,
+        });
+    }
+}
 // Get an agency by ID
 exports.getAgencyById = async (req, res) => {
     try {

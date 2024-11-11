@@ -53,8 +53,22 @@ const UserModel = {
                 { email_address: email_address },
                 { mobile_number: mobile_number }
               ]
-            }
+            },
+            include: {
+                roles: {
+                    select: {
+                      name: true, // Select only the role name
+                    },
+                },
+            },
         });
-    }
+    },
+    
+    updateUser: async (where, data) => {
+        return await prisma.users.update({
+            where,
+            data,
+        });
+    },
 };
 module.exports = UserModel;
