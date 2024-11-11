@@ -242,7 +242,7 @@ exports.getUser = async (req, res) => {
         } catch (error) {
             return res.status(200).json({
                 status: false,
-                message: 'User not Found',
+                message: 'Password doesn\'t Match',
                 data: null,
             });
         }
@@ -254,6 +254,7 @@ exports.getUser = async (req, res) => {
         });
     }
 }
+
 exports.checkUserExists = async (req, res) => {
     
     const { email_address } = req.body;
