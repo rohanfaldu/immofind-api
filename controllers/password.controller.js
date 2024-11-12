@@ -1,6 +1,6 @@
 const bcrypt = require("bcryptjs");
 const pool = require("../db");
-const jwtGenerator = require("../utils/jwtGenerator");
+const jwtGenerator = require("../components/utils/jwtGenerator");
 
 //FORGOT PASSWORD CONTROLLER
 module.exports.forgot_password = async (req, res) => {

@@ -1,10 +1,8 @@
 const passport = require('passport');
 const UserModel = require('../models/userModel');
-const jwtGenerator = require("../utils/jwtGenerator");
-const passwordGenerator = require("../utils/passwordGenerator");
-
-exports.googleAuth = passport.authenticate('google', { scope: ['profile', 'email'] });
-
+const jwtGenerator = require("../components/utils/jwtGenerator");
+const passwordGenerator = require("../components/utils/passwordGenerator");
+const response = require("../components/utils/response");
 exports.createUser = async (req, res) => {
     try {
         const { user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, mobile_number, password } = req.body;
@@ -113,107 +111,13 @@ exports.createNormalUser = async (req, res) => {
         });
     }
 };
-exports.googleAuthCallback = async (req, res) => {
-    try {
-        const { accessToken, profile } = req.user;
-
-        // Extract necessary user information
-        const googleId = profile.id;
-        const fullName = profile.displayName;
-        const email = profile.emails ? profile.emails[0].value : null; // Extract email if available
-        const imageUrl = profile.photos ? profile.photos[0].value : null; // Extract image URL if available
-
-        // Ensure required fields are present
-        if (!email) {
-            return res.status(400).json({ message: 'Email is required' });
-        }
-
-        // Create or update the user in the database
-        const user = await UserModel.createOrUpdateUser({
-            user_login_type: "GOOGLE",
-            full_name: fullName,
-            user_name: fullName,
-            email_address: email,
-            fcm_token: accessToken,
-            image: imageUrl,
-            roles: {
-                connect: {
-                  name: 'user',
-                  status: true, 
-                },
-            },
-            is_deleted: false, 
-        });
-        if(user){
-            const CreateToken = await jwtGenerator.generateToken(user.id, user.email_address);
-            res.json({
-                message: 'Google login successful',
-                userProfile: user, 
-                token: CreateToken
-            });
-        }
-        // Respond with success message and user information
-    } catch (error) {
-        console.error('Error during Google login:', error); // Log the error for debugging
-        res.status(500).json({ message: 'Internal server error', error: error.message });
-    }
-};
-exports.facebookAuth = passport.authenticate('facebook');
-exports.facebookAuthCallback = async (req, res) => {  // Added async here
-    try {
-        console.log('Login done for user:', req.user); // Logging the user details
-
-        // Get the profile and access token from the request
-        const { accessToken, profile } = req.user;
-
-        // Extract necessary user information
-        const fullName = profile.displayName;
-        const email = profile.emails ? profile.emails[0].value : null; // Extract email if available
-        const imageUrl = profile.photos ? profile.photos[0].value : null; // Extract image URL if available
-
-        // Ensure required fields are present
-        if (!email) {
-            return res.status(400).json({ message: 'Email is required' });
-        }
-
-        // Create or update the user in the database
-        const user = await UserModel.createOrUpdateUser({
-            full_name: fullName,
-            user_name: fullName,
-            mobile_number: '1234567890', // Placeholder mobile number
-            email_address: 'test@gmail.com',
-            image: imageUrl,
-            roles: {
-                connect: {
-                  name: 'user',  // Use the role ID found earlier
-                  status: true,  // Assuming the user is active
-                },
-            },
-            is_deleted: false,
-        });
-
-        // Respond with success message and user information
-        res.json({
-            message: 'Login successful',
-            accessToken: accessToken, // The access token from Facebook
-            userProfile: user,        // User profile from the database
-        });
-    } catch (error) {
-        console.error('Error during Facebook login:', error); // Log the error for debugging
-        res.status(500).json({ message: 'Internal server error', error: error.message });
-    }
-};
 
 exports.getUser = async (req, res) => {
     
     const { email_address,password } = req.body;
     
     if (!email_address || !password) {
-        return res.status(400).json({
-            status: false,
-            message: 'Please check the Fields.',
-            data: null,
-        });
+        return await response.error(res, res.__('messages.fieldError'));
     }
     const user = await UserModel.getUser(email_address,email_address);
     
@@ -223,35 +127,19 @@ exports.getUser = async (req, res) => {
             const isMatch = await passwordGenerator.comparePassword(password, user.password);
             if (isMatch) {
                 const CreateToken = await jwtGenerator.generateToken(user.id, user.email_address);
-                
-                return res.status(200).json({
-                    status: true,
-                    message: 'Login successful',
-                    data: {
-                        userProfile: user,
-                        token: CreateToken
-                    },
-                });
+                const responseData = {
+                    userProfile: user,
+                    token: CreateToken
+                };
+                return await response.success(res, res.__('messages.loginSuccessfully'), responseData);
             } else {
-                return res.status(200).json({
-                    status: false,
-                    message: 'Password doesn\'t Match',
-                    data: error.message,
-                });
+                return await response.error(res, res.__('messages.passwordDostMatch'));
                 }
         } catch (error) {
-            return res.status(200).json({
-                status: false,
-                message: 'Password doesn\'t Match',
-                data: null,
-            });
+            return await response.error(res, res.__('messages.passwordDostMatch'));
         }
     } else {
-        return res.status(200).json({
-            status: false,
-            message: 'User not Found',
-            data: null,
-        });
+        return await response.error(res, res.__('messages.userNotFound'));
     }
 }
 
@@ -260,26 +148,14 @@ exports.checkUserExists = async (req, res) => {
     const { email_address } = req.body;
     
     if (!email_address) {
-        return res.status(400).json({
-            status: false,
-            message: 'Please check the Fields.',
-            data: null,
-        });
+        return await response.error(res, res.__('messages.fieldError'));
     }
     const user = await UserModel.getUser(email_address,email_address);
     
     if (user) {
-        return res.status(200).json({
-            status: true,
-            message: 'User exists',
-            data: null,
-        });
+        return await response.success(res, res.__('messages.userExists'), null);
     } else {
-        return res.status(200).json({
-            status: false,
-            message: 'User not Found',
-            data: null,
-        });
+        return await response.error(res, res.__('messages.userNotFound'));
     }
 }
 exports.updatePassword = async (req, res) => {
@@ -287,7 +163,7 @@ exports.updatePassword = async (req, res) => {
         const { email_address, code, password } = req.body;
         
         if (!password ||!code || !email_address) {
-            return res.status(400).json({ error: "Please check the Fields." });
+            return await response.error(res, res.__('messages.fieldError'));
         }
 
         const checkEmail = await UserModel.getUser(req.body.email_address, req.body.email_address);
@@ -301,35 +177,14 @@ exports.updatePassword = async (req, res) => {
             }
             const userUpdate = await UserModel.updateUser(where, data);
             if(userUpdate){
-                return res.status(200).json({
-                    status: true,
-                    message: 'Password updated successfully.',
-                    data: null,
-                });
+                return await response.success(res, res.__('messages.passwordUpdateSuccessfully'), null);
             }else {
-                return res.status(200).json({
-                    status: false,
-                    message: 'User data was not updated',
-                    data: null,
-                });
+                return await response.error(res, res.__('messages.userDataNotUpdated'));
             }
         }else{
-            return res.status(200).json({
-                status: false,
-                message: 'User not Found',
-                data: null,
-            });
+            return await response.error(res, res.__('messages.userNotFound'));
         }
     } catch (error) {
-        return res.status(400).json({
-            status: false,
-            message: 'Internal server error',
-            data: error.message,
-        });
+        return await response.serverError(res, res.__('messages.internalServerError'));
     }
-}
-exports.testData = async (req, res) => {
-    res.json({
-        message: 'Successful Working'
-    });
 }

@@ -1,13 +1,12 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
-const password = require('../utils/passwordGenerator');
 const Agency = require('../models/agencyModel');
 const User = require('../models/userModel'); // Assuming you have a User model defined
 const { use } = require('passport');
-const jwtGenerator = require("../utils/jwtGenerator");
+const jwtGenerator = require("../components/utils/jwtGenerator");
 const bcrypt = require("bcrypt");
-const passwordGenerator = require("../utils/passwordGenerator");
-const sendmail = require("../utils/sendmail");
+const passwordGenerator = require("../components/utils/passwordGenerator");
+const sendmail = require("../components/utils/sendmail");
 const crypto = require('crypto');
 
 // Create an agency

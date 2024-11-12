@@ -1,0 +1,13 @@
+{
+    "messages": {
+        "fieldError": "Veuillez vérifier les champs",
+        "userExists": "L'utilisateur existe déjà",
+        "userNotFound": "Utilisateur introuvable",
+        "userDataNotUpdated": "Les données utilisateur n'ont pas été mises à jour",
+        "userCreated": "Utilisateur créé avec succès",
+        "loginSuccessfully": "Connectez-vous avec succès",
+        "passwordDostMatch": "Le mot de passe ne correspond pas",
+        "passwordUpdateSuccessfully": "Mot de passe mis à jour avec succès",
+        "internalServerError": "Erreur interne du serveur"
+    }
+}

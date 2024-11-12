@@ -1,0 +1,13 @@
+{
+    "messages": {
+        "fieldError": "Please check the fields",
+        "userExists": "User already exists",
+        "userNotFound": "User not Found",
+        "userCreated": "User created successfully",
+        "userDataNotUpdated": "User data was not updated",
+        "loginSuccessfully": "Login successfully",
+        "passwordDostMatch": "Password does not match",
+        "passwordUpdateSuccessfully": "Password updated successfully",
+        "internalServerError": "Internal server error"
+    }
+}

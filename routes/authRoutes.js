@@ -14,18 +14,4 @@ router.post('/check/user', authController.checkUserExists);
 
 router.post('/updatepassword', authController.updatePassword);
 
-router.get('/test', authController.testData);
-
-router.get('/google', authController.googleAuth);
-
-const googleAuth = passport.authenticate('google', { failureRedirect: '/' });
-router.get('/google/callback', googleAuth, authController.googleAuthCallback);
-
-// Facebook auth routes
-router.get('/facebook', authController.facebookAuth);
-
-const facebookAuth = passport.authenticate('facebook', { failureRedirect: '/' });
-router.get('/facebook/callback', facebookAuth, authController.facebookAuthCallback);
-
-
 module.exports = router;

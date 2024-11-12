@@ -1,7 +1,7 @@
 const { PrismaClient } = require('@prisma/client');
 const { get } = require('mongoose');
 const prisma = new PrismaClient();
-const passwordGenerator = require('../utils/passwordGenerator');
+const passwordGenerator = require('../components/utils/passwordGenerator');
 const UserModel = {
     createOrUpdateUser: async (data) => {
         try {

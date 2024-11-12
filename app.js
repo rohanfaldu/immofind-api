@@ -7,38 +7,29 @@ const FacebookStrategy = require('passport-facebook').Strategy;
 const authRoutes = require('./routes/authRoutes');
 const agencyRoutes = require('./routes/agencyRoutes');
 const cors = require('cors');
+const i18n = require('i18n');
+const path = require('path');
 
 const app = express();
 const PORT = process.env.PORT || 7000;
 
 // Session setup
 app.use(session({ secret: 'we-api', resave: false, saveUninitialized: true }));
+
 // app.use(passport.initialize());
 // app.use(passport.session());
-
 app.use(express.json());
-/*
-passport.use(new GoogleStrategy({
-    clientID: process.env.GOOGLE_CLIENT_ID,
-    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: `${process.env.BASE_URL}/auth/google/callback`,
-}, (accessToken, refreshToken, profile, done) => {
-    return done(null, { profile, accessToken });
-}));
 
-// Passport configuration for Facebook
-passport.use(new FacebookStrategy({
-    clientID: process.env.FACEBOOK_APP_ID,
-    clientSecret: process.env.FACEBOOK_APP_SECRET,
-    callbackURL: `${process.env.BASE_URL}/auth/facebook/callback`,
-}, (accessToken, refreshToken, profile, done) => {
-    return done(null, { profile, accessToken });
-}));
+// Language
+i18n.configure({
+    locales: ['en', 'fr'],  // Add other languages as needed
+    directory: path.join(__dirname,  'components','translations'),
+    defaultLocale: 'en',
+    objectNotation: true,
+});
+app.use(i18n.init);
 
-// Passport configuration for Google
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((obj, done) => done(null, obj));
-*/
+
 // Use auth routes
 
 app.use(cors({
@@ -56,13 +47,17 @@ app.use(cors({
 //     res.header("Content-Type", "application/json");
 //     next();
 // });
-
+app.use((req, res, next) => {
+    const lang = req.body.lang || 'en'; 
+    res.setLocale(lang);
+    next();
+});
 app.use('/auth', authRoutes);
 app.use('/api', agencyRoutes);
 
 // Home route
 app.get('/', (req, res) => {
-    res.send('Welcome to the Google and Facebook Login API!');
+    res.send('Welcome to the Immofind API!');
 });
 
 // Start server
