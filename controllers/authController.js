@@ -158,6 +158,7 @@ exports.checkUserExists = async (req, res) => {
         return await response.error(res, res.__('messages.userNotFound'));
     }
 }
+
 exports.updatePassword = async (req, res) => {
     try {
         const { email_address, code, password } = req.body;
