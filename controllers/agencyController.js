@@ -8,23 +8,14 @@ const bcrypt = require("bcrypt");
 const passwordGenerator = require("../components/utils/passwordGenerator");
 const sendmail = require("../components/utils/sendmail");
 const crypto = require('crypto');
+const response = require("../components/utils/response"); // Assuming response utility is in place
 
 // Create an agency
 exports.createAgency = async (req, res) => {
-    const { roles,user_name, full_name, email_address, user_login_type, image, address, mobile_number, password, user_type, credit, description,
-        facebook_link,
-        twitter_link,
-        youtube_link,
-        pinterest_link,
-        linkedin_link,
-        instagram_link,
-        whatsup_number,
-        service_area,
-        tax_number,
-        license_number,
-        picture,
-        cover } = req.body;
-        
+    const { roles, user_name, full_name, email_address, user_login_type, image, address, mobile_number, password, user_type, credit, description,
+        facebook_link, twitter_link, youtube_link, pinterest_link, linkedin_link, instagram_link, whatsup_number, service_area,
+        tax_number, license_number, picture, cover } = req.body;
+
     // Extract user data from usertable
     const userData = {
         full_name: full_name,
@@ -36,48 +27,29 @@ exports.createAgency = async (req, res) => {
         roles: {
             connect: {
                 name: 'agency',
-                status: true, 
+                status: true,
             },
         },
         password: await passwordGenerator.encrypted(password),
         user_login_type: "NONE"
     };
 
-    try { 
-        
+    try {
         const existingUser = await User.getUser(email_address, mobile_number);
 
-        if(existingUser) {
-            return res.status(400).json({
-                status: false,
-                message: 'User already Exist',
-                data: null,
-            });
+        if (existingUser) {
+            return response.error(res, res.__('messages.userAlreadyExists'), null);
         }
-    
-        const user = await User.createUser(userData);
-    
-        if(user){
 
-            return res.status(200).json({
-                status: false,
-                message: 'Sucessful Working',
-                data: user,
-            });
+        const user = await User.createUser(userData);
+
+        if (user) {
+            return response.success(res, res.__('messages.agencyCreatedSuccessfully'), user);
         } else {
-            return res.status(400).json({
-                status: false,
-                message: 'User not created',
-                data: null,
-            });
+            return response.error(res, res.__('messages.userNotCreated'), null);
         }
-        
     } catch (err) {
-        return res.status(400).json({
-            status: false,
-            message: err.message,
-            data: null,
-        });
+        return response.serverError(res, res.__('messages.internalServerError'), err.message);
     }
 };
 
@@ -85,69 +57,59 @@ exports.createAgency = async (req, res) => {
 exports.getAllAgencies = async (req, res) => {
     try {
         const agencies = await Agency.findAll();
-        res.status(200).json(agencies);
+        return response.success(res, res.__('messages.agenciesRetrievedSuccessfully'), agencies);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return response.serverError(res, res.__('messages.internalServerError'), err.message);
     }
 };
+
+// Send password reset email
 exports.sendMail = async (req, res) => {
     const checkEmail = await User.getUser(req.body.email_address, req.body.email_address);
-    if(checkEmail){
+
+    if (checkEmail) {
         const code = crypto.randomInt(100000, 999999);
         const to = req.body.email_address;
         const subject = "Password Reset Code";
         const text = `Your password reset code is: ${code}`;
+
         try {
             const emailData = await sendmail.gmail(to, subject, text); // Wait for email to send
-            console.log(emailData);
-            if(emailData){
+
+            if (emailData) {
                 const data = {
                     reset_password_token: code
-                }
+                };
                 const where = {
                     email_address: req.body.email_address
-                }
+                };
                 const userUpdate = await User.updateUser(where, data);
-                if(userUpdate){
-                    return res.status(200).json({
-                        status: true,
-                        message: 'Successfully email Send. Please check your email. Your have received a code',
-                        data: null,
-                    });
-                }else {
-                    return res.status(200).json({
-                        status: false,
-                        message: 'User data was not updated',
-                        data: null,
-                    });
+
+                if (userUpdate) {
+                    return response.success(res, res.__('messages.passwordResetEmailSent'), null);
+                } else {
+                    return response.error(res, res.__('messages.userDataNotUpdated'), null);
                 }
             }
-          } catch (error) {
-            return res.status(200).json({
-                status: false,
-                message: 'Email was not sent',
-                data: null,
-            });
-          }
+        } catch (error) {
+            return response.error(res, res.__('messages.emailSendFailed'), null);
+        }
     } else {
-        return res.status(200).json({
-            status: false,
-            message: 'User was not found',
-            data: null,
-        });
+        return response.error(res, res.__('messages.userNotFound'), null);
     }
-}
+};
+
 // Get an agency by ID
 exports.getAgencyById = async (req, res) => {
     try {
         const agency = await Agency.findByPk(req.params.id);
         if (agency) {
-            res.status(200).json(agency);
+            return response.success(res, res.__('messages.agencyRetrievedSuccessfully'), agency);
         } else {
-            res.status(404).json({ message: 'Agency not found' });
+            return response.error(res, res.__('messages.agencyNotFound'), null);
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return response.serverError(res, res.__('messages.internalServerError'), err.message);
     }
 };
 
@@ -157,12 +119,12 @@ exports.updateAgency = async (req, res) => {
         const [updated] = await Agency.update(req.body, { where: { id: req.params.id } });
         if (updated) {
             const updatedAgency = await Agency.findByPk(req.params.id);
-            res.status(200).json(updatedAgency);
+            return response.success(res, res.__('messages.agencyUpdatedSuccessfully'), updatedAgency);
         } else {
-            res.status(404).json({ message: 'Agency not found' });
+            return response.error(res, res.__('messages.agencyNotFound'), null);
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return response.serverError(res, res.__('messages.internalServerError'), err.message);
     }
 };
 
@@ -171,11 +133,11 @@ exports.deleteAgency = async (req, res) => {
     try {
         const deleted = await Agency.destroy({ where: { id: req.params.id } });
         if (deleted) {
-            res.status(204).json({ message: 'Agency deleted' });
+            return response.success(res, res.__('messages.agencyDeletedSuccessfully'), null);
         } else {
-            res.status(404).json({ message: 'Agency not found' });
+            return response.error(res, res.__('messages.agencyNotFound'), null);
         }
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        return response.serverError(res, res.__('messages.internalServerError'), err.message);
     }
 };

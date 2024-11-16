@@ -6,6 +6,11 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const FacebookStrategy = require('passport-facebook').Strategy;
 const authRoutes = require('./routes/authRoutes');
 const agencyRoutes = require('./routes/agencyRoutes');
+const imageRoutes = require('./routes/imageRoutes');
+const stateRoutes = require('./routes/stateRoutes');
+const cityRoutes = require('./routes/cityRoutes');
+const districtRoutes = require('./routes/districtRoutes');
+const propertyTypeListingsRoutes = require('./routes/propertyTypeListingsRoutes');
 const cors = require('cors');
 const i18n = require('i18n');
 const path = require('path');
@@ -48,12 +53,18 @@ app.use(cors({
 //     next();
 // });
 app.use((req, res, next) => {
-    const lang = req.body.lang || 'en'; 
+    const lang = req.body.lang || 'en';
     res.setLocale(lang);
     next();
 });
 app.use('/auth', authRoutes);
 app.use('/api', agencyRoutes);
+app.use('/api/images', imageRoutes); // Add image routes
+app.use('/api/state', stateRoutes);
+app.use('/api/city', cityRoutes);
+app.use('/api/district', districtRoutes);
+app.use('/api/property-type-listings', propertyTypeListingsRoutes);
+
 
 // Home route
 app.get('/', (req, res) => {

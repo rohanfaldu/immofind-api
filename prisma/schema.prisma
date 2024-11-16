@@ -55,14 +55,19 @@ model Cities {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   state_id         String            @db.Uuid
   name             String            @unique @db.VarChar
+  en_name          String?           @db.VarChar
+  fr_name          String?           @db.VarChar
+  slug             String?           @unique @db.VarChar
+  lang_id          String?           @db.Uuid  // Reference to LangTranslations table
   is_deleted       Boolean           @default(false)
   created_at       DateTime?         @default(now()) @db.Timestamp(6)
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
   created_by       String?           @db.Uuid
   updated_by       String?           @db.Uuid
   states           States            @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
-  districts        Districts[]
-  property_details PropertyDetails[]
+  lang             LangTranslations? @relation(fields: [lang_id], references: [id])  // New relation to LangTranslations
+  districts        Districts[]       // Associated districts
+  property_details PropertyDetails[] // Associated property details
 
   @@map("cities")
 }
@@ -91,6 +96,10 @@ model LangTranslations {
   updated_at DateTime? @default(now()) @db.Timestamp(6)
   created_by String?   @db.Uuid
   updated_by String?   @db.Uuid
+
+  states     States[]   // Added this line to define the reverse relation
+  cities     Cities[]  // Inverse relation to Cities
+
 
   @@map("lang_translations")
 }
@@ -207,6 +216,11 @@ model Settings {
 model States {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name             String            @unique @db.VarChar
+  en_name          String?           @db.VarChar
+  fr_name          String?           @db.VarChar
+  slug             String?           @unique @db.VarChar
+  lang_id          String?           @db.Uuid  // Change to String to match LangTranslations.id
+  lang             LangTranslations? @relation(fields: [lang_id], references: [id])
   is_deleted       Boolean           @default(false)
   created_at       DateTime?         @default(now()) @db.Timestamp(6)
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
@@ -217,7 +231,6 @@ model States {
 
   @@map("states")
 }
-
 /// This table contains check constraints and requires additional setup for migrations. Visit https://pris.ly/d/check-constraints for more info.
 model Users {
   id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

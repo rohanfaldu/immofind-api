@@ -8,6 +8,23 @@
         "loginSuccessfully": "Connectez-vous avec succès",
         "passwordDostMatch": "Le mot de passe ne correspond pas",
         "passwordUpdateSuccessfully": "Mot de passe mis à jour avec succès",
-        "internalServerError": "Erreur interne du serveur"
+        "internalServerError": "Erreur interne du serveur",
+        "fileNotProvided": "Veuillez fournir un fichier",
+        "singleUploadSuccess": "Fichier téléchargé avec succès",
+        "multipleUploadSuccess": "Plusieurs fichiers téléchargés avec succès",
+        "userAlreadyExists": "L'utilisateur existe déjà.",
+        "agencyCreatedSuccessfully": "Agence créée avec succès.",
+        "agencyUpdatedSuccessfully": "Agence mise à jour avec succès.",
+        "agencyDeletedSuccessfully": "Agence supprimée avec succès.",
+        "agencyNotFound": "Agence non trouvée.",
+        "passwordResetEmailSent": "E-mail de réinitialisation du mot de passe envoyé avec succès.",
+        "emailSendFailed": "L'envoi de l'e-mail a échoué.",
+        "statesFetchedSuccessfully": "États récupérés avec succès",
+        "stateCreatedSuccessfully": "État créé avec succès",
+        "cityCreatedSuccessfully": "Ville créée avec succès",
+        "stateIdRequired": "L'ID d'état est requis",
+        "citiesFetchedSuccessfully": "Villes récupérées avec succès",
+        "cityIdRequired": "L'ID de la ville est requis",
+        "districtsFetchedSuccessfully": "Districts récupérés avec succès"
     }
 }
