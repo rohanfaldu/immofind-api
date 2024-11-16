@@ -27,12 +27,14 @@
 		"cityIdRequired": "cityId Required",
 		"districtsFetchedSuccessfully": "Districts Fetched Successfully",
 		"noCitiesFoundForState": "No Cities Found ForState",
-        "listingNotFound": "Listing not found.",
+		"listingNotFound": "Listing not found.",
 		"listingFetchedSuccessfully": "Listing fetched successfully.",
 		"listFetchedSuccessfully": "List fetched successfully.",
 		"listingCreatedSuccessfully": "Listing created successfully.",
 		"listingUpdatedSuccessfully": "Listing updated successfully.",
 		"listingDeletedSuccessfully": "Listing deleted successfully.",
-		"requiredFieldsMissing": "Some required fields are missing."
+		"requiredFieldsMissing": "Some required fields are missing.",
+		"districtCreatedSuccessfully": "District Created Successfully",
+		"districtFetchedSuccessfully": "District Fetched Successfully"
 	}
 }

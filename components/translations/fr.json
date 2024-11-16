@@ -25,6 +25,16 @@
         "stateIdRequired": "L'ID d'état est requis",
         "citiesFetchedSuccessfully": "Villes récupérées avec succès",
         "cityIdRequired": "L'ID de la ville est requis",
-        "districtsFetchedSuccessfully": "Districts récupérés avec succès"
+        "districtsFetchedSuccessfully": "Districts récupérés avec succès",
+        "noCitiesFoundForState": "Aucune ville trouvée pour l'état.",
+        "listingNotFound": "Annonce introuvable.",
+        "listingFetchedSuccessfully": "Annonce récupérée avec succès.",
+        "listFetchedSuccessfully": "Liste récupérée avec succès.",
+        "listingCreatedSuccessfully": "Annonce créée avec succès.",
+        "listingUpdatedSuccessfully": "Annonce mise à jour avec succès.",
+        "listingDeletedSuccessfully": "Annonce supprimée avec succès.",
+        "requiredFieldsMissing": "Certains champs obligatoires sont manquants.",
+        "districtCreatedSuccessfully": "District créé avec succès.",
+        "districtFetchedSuccessfully": "District récupéré avec succès."
     }
 }

@@ -1,10 +1,20 @@
-// routes/districtRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const districtController = require('../controllers/districtController');
+const districtController = require("../controllers/districtController");
 
-// Routes
-router.post('/create', districtController.createDistrict); // Create District
-router.get('/', districtController.getDistrictsByCity); // Get Districts by City
+// Create a new district
+router.post("/create", districtController.createDistrict);
+
+// Get districts by city
+router.get("/", districtController.getDistrictsByCity);
+
+// Get district by ID
+router.get("/:id", districtController.getDistrictById);
+
+// Update a district
+router.put("/:id", districtController.updateDistrict);
+
+// Delete a district
+router.delete("/:id", districtController.deleteDistrict);
 
 module.exports = router;

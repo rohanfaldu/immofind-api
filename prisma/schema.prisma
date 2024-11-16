@@ -76,16 +76,24 @@ model Districts {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   city_id          String            @db.Uuid
   name             String            @unique @db.VarChar
+  en_name          String?           @db.VarChar
+  fr_name          String?           @db.VarChar
+  lang_id          String?           @db.Uuid
+  slug             String?              @db.VarChar
+  latitude         Float?
+  longitude        Float?
   is_deleted       Boolean           @default(false)
   created_at       DateTime?         @default(now()) @db.Timestamp(6)
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
   created_by       String?           @db.Uuid
   updated_by       String?           @db.Uuid
-  cities           Cities            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "citiy_foreign_key")
+  cities           Cities            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
+  langTranslation  LangTranslations? @relation(fields: [lang_id], references: [id], onDelete: SetNull, onUpdate: Cascade)
   property_details PropertyDetails[]
 
   @@map("districts")
 }
+
 
 model LangTranslations {
   id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -99,6 +107,7 @@ model LangTranslations {
 
   states     States[]   // Added this line to define the reverse relation
   cities     Cities[]  // Inverse relation to Cities
+  districts  Districts[]  // Inverse relation to Districts
 
 
   @@map("lang_translations")
