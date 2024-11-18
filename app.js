@@ -34,6 +34,9 @@ i18n.configure({
 });
 app.use(i18n.init);
 
+// Serve the 'uploads' folder as static files
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // Use auth routes
 

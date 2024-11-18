@@ -9,4 +9,8 @@ router.post('/upload/single', imageController.uploadSingleImage);
 // Route for multiple images upload
 router.post('/upload/multiple', imageController.uploadMultipleImages);
 
+// POST route to handle multiple image uploads from JSON data
+router.post('/upload/multiple-json', imageController.uploadMultipleImagesFromJson);
+
+
 module.exports = router;
