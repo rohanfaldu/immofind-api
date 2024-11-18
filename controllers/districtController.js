@@ -60,7 +60,7 @@ exports.createDistrict = async (req, res) => {
 // Get Districts by City
 exports.getDistrictsByCity = async (req, res) => {
   try {
-    const { city_id } = req.query;
+    const { city_id } = req.body; // Extract city_id from the request body
 
     // Validate city_id
     if (!city_id) {
@@ -75,16 +75,22 @@ exports.getDistrictsByCity = async (req, res) => {
       },
     });
 
+    if (!districts || districts.length === 0) {
+      return await response.error(res, res.__('messages.noDistrictsFoundForCity')); // No districts found
+    }
+
     return await response.success(res, res.__('messages.districtsFetchedSuccessfully'), districts); // Success message
   } catch (error) {
+    console.error('Error fetching districts:', error);
     return await response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
   }
 };
 
+
 // Get District by ID
 exports.getDistrictById = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id } = req.body; // Extract id from the request body
 
     // Validate ID
     if (!id) {
@@ -105,6 +111,7 @@ exports.getDistrictById = async (req, res) => {
 
     return await response.success(res, res.__('messages.districtFetchedSuccessfully'), district); // Success message
   } catch (error) {
+    console.error('Error fetching district:', error);
     return await response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
   }
 };

@@ -41,7 +41,20 @@ exports.createCity = async (req, res) => {
 // Get All Cities with States and LangTranslations
 exports.getCities = async (req, res) => {
   try {
+    const { state_id, lang } = req.body;  // Extract the state_id and lang from the request body
+
+    // Build the where clause for filtering by state_id and lang
+    const where = {};
+
+    if (state_id) {
+      where.state_id = state_id;  // Filter by state_id if provided
+    }
+
+
+
+    // Fetch cities based on the filters
     const cities = await prisma.cities.findMany({
+      where,  // Apply the filtering conditions
       include: {
         states: true,  // Include associated state
         lang: true,    // Include LangTranslations associated with each city
@@ -50,17 +63,19 @@ exports.getCities = async (req, res) => {
       },
     });
 
-    return await response.success(res, res.__('messages.citiesFetchedSuccessfully'), cities); // Success message for fetching cities
+    // Return success response with cities data
+    return await response.success(res, res.__('messages.citiesFetchedSuccessfully'), cities);
   } catch (error) {
     console.error(error);
-    return await response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
+    return await response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Handle server error
   }
 };
+
 
 // Get Cities by State Name
 exports.getCitiesByState = async (req, res) => {
   try {
-    const { stateName } = req.query; // Get state name from query parameter
+    const { stateName, lang } = req.body; // Get state name and lang from request body
 
     if (!stateName) {
       return await response.error(res, res.__('messages.stateNameRequired')); // Error when state name is missing

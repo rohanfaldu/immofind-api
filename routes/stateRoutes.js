@@ -5,6 +5,6 @@ const stateController = require('../controllers/stateController');
 
 // Routes
 router.post('/create', stateController.createState); // Create State
-router.get('/', stateController.getStates); // Get All States with Cities
+router.post('/', stateController.getStates); // Get All States with Cities
 
 module.exports = router;

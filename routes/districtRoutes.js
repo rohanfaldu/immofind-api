@@ -6,10 +6,10 @@ const districtController = require("../controllers/districtController");
 router.post("/create", districtController.createDistrict);
 
 // Get districts by city
-router.get("/", districtController.getDistrictsByCity);
+router.post("/", districtController.getDistrictsByCity);
 
 // Get district by ID
-router.get("/:id", districtController.getDistrictById);
+router.post("/:id", districtController.getDistrictById);
 
 // Update a district
 router.put("/:id", districtController.updateDistrict);

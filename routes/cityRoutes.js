@@ -5,7 +5,7 @@ const cityController = require('../controllers/cityController'); // Ensure this 
 
 // Define your routes here
 router.post('/create', cityController.createCity);
-router.get('/', cityController.getCities);
-router.get('/search', cityController.getCitiesByState);
+router.post('/', cityController.getCities);
+router.post('/search', cityController.getCitiesByState);
 
 module.exports = router;
