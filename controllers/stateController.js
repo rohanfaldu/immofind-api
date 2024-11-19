@@ -40,16 +40,58 @@ exports.createState = async (req, res) => {
 // Get All States with Cities and LangTranslations
 exports.getStates = async (req, res) => {
   try {
+    const { lang } = req.query; // Language parameter (e.g., `?lang=fr` or `?lang=en`)
+    const isFrench = lang === 'fr'; // Determine if the language is French
+
     const states = await prisma.states.findMany({
-      include: {
-        cities: true, // Include associated cities
-        lang: true,   // Include LangTranslations associated with each state
+      select: {
+        id: true, // Include the state ID
+        name: true, // State name
+        lang: {
+          select: {
+            // Select either `fr_string` or `en_string` for the state based on the language
+            fr_string: isFrench,
+            en_string: !isFrench,
+          },
+        },
+        cities: {
+          select: {
+            id: true, // Include city ID
+            name: true, // City name
+            lang: {
+              select: {
+                // Select either `fr_string` or `en_string` for the city based on the language
+                fr_string: isFrench,
+                en_string: !isFrench,
+              },
+            },
+          },
+        },
       },
     });
 
-    return await response.success(res, res.__('messages.statesFetchedSuccessfully'), states); // Success message for fetching states
+    // Transform results to include the selected language string for states and cities
+    const transformedStates = states.map((state) => ({
+      ...state,
+      lang_string: isFrench ? state.lang.fr_string : state.lang.en_string, // State language string
+      cities: state.cities.map((city) => ({
+        ...city,
+        lang_string: isFrench ? city.lang.fr_string : city.lang.en_string, // City language string
+      })),
+      lang: undefined, // Remove the `lang` object if not needed
+    }));
+
+    return await response.success(
+      res,
+      res.__('messages.statesFetchedSuccessfully'),
+      transformedStates
+    );
   } catch (error) {
     console.error(error);
-    return await response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
+    return await response.error(
+      res,
+      res.__('messages.internalServerError'),
+      { message: error.message }
+    );
   }
 };

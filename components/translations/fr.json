@@ -36,6 +36,7 @@
 		"requiredFieldsMissing": "Certains champs obligatoires sont manquants.",
 		"districtCreatedSuccessfully": "District créé avec succès.",
 		"districtFetchedSuccessfully": "District récupéré avec succès.",
-		"stateNameRequired": "messages.stateNameRequired"
+		"stateNameRequired": "messages.stateNameRequired",
+		"noDistrictsFoundForCity": "messages.noDistrictsFoundForCity"
 	}
 }

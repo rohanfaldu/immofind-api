@@ -60,61 +60,124 @@ exports.createDistrict = async (req, res) => {
 // Get Districts by City
 exports.getDistrictsByCity = async (req, res) => {
   try {
-    const { city_id } = req.body; // Extract city_id from the request body
+    const { city_id, lang } = req.body; // Extract city_id and lang from the request body
 
     // Validate city_id
     if (!city_id) {
-      return await response.error(res, res.__('messages.cityIdRequired')); // Error if city_id is missing
+      return response.error(res, res.__('messages.cityIdRequired')); // Error if city_id is missing
     }
 
-    // Fetch districts by city
+    const isFrench = lang === 'fr'; // Determine if the language is French
+
+    // Fetch districts by city_id with language-specific translations
     const districts = await prisma.districts.findMany({
       where: { city_id },
-      include: {
-        langTranslation: true, // Include related LangTranslations
+      select: {
+        id: true,
+        name: true,
+        langTranslation: {
+          select: {
+            fr_string: isFrench,
+            en_string: !isFrench,
+          },
+        },
+        latitude: true,
+        longitude: true,
+        slug: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 
+    // Check if districts are found
     if (!districts || districts.length === 0) {
-      return await response.error(res, res.__('messages.noDistrictsFoundForCity')); // No districts found
+      return response.error(res, res.__('messages.noDistrictsFoundForCity')); // No districts found
     }
 
-    return await response.success(res, res.__('messages.districtsFetchedSuccessfully'), districts); // Success message
+    // Transform the response to include only the relevant language string
+    const transformedDistricts = districts.map((district) => ({
+      id: district.id,
+      name: district.name,
+      lang_string: district.langTranslation?.fr_string || district.langTranslation?.en_string,
+      latitude: district.latitude,
+      longitude: district.longitude,
+      slug: district.slug,
+      created_at: district.created_at,
+      updated_at: district.updated_at,
+    }));
+
+    // Return success response with transformed data
+    return response.success(
+      res,
+      res.__('messages.districtsFetchedSuccessfully'),
+      transformedDistricts
+    );
   } catch (error) {
     console.error('Error fetching districts:', error);
-    return await response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
+    return response.error(res, res.__('messages.internalServerError'), {
+      message: error.message,
+      stack: error.stack,
+    }); // Return server error
   }
 };
+
 
 
 // Get District by ID
 exports.getDistrictById = async (req, res) => {
   try {
-    const { id } = req.body; // Extract id from the request body
+    const { id, lang } = req.body; // Extract id and lang from the request body
 
     // Validate ID
     if (!id) {
-      return await response.error(res, res.__('messages.districtIdRequired')); // Error if id is missing
+      return response.error(res, res.__('messages.districtIdRequired')); // Error if id is missing
     }
 
-    // Fetch district by ID
+    const isFrench = lang === 'fr'; // Determine if the language is French
+
+    // Fetch district by ID with language-specific translations
     const district = await prisma.districts.findUnique({
       where: { id },
-      include: {
-        langTranslation: true, // Include related LangTranslations
+      select: {
+        id: true,
+        name: true,
+        langTranslation: {
+          select: {
+            fr_string: isFrench,
+            en_string: !isFrench,
+          },
+        },
+        latitude: true,
+        longitude: true,
+        slug: true,
+        created_at: true,
+        updated_at: true,
       },
     });
 
     if (!district) {
-      return await response.error(res, res.__('messages.districtNotFound')); // Error if not found
+      return response.error(res, res.__('messages.districtNotFound')); // Error if not found
     }
 
-    return await response.success(res, res.__('messages.districtFetchedSuccessfully'), district); // Success message
+    // Transform response to include only the relevant language string
+    const transformedDistrict = {
+      id: district.id,
+      name: district.name,
+      lang_string: district.langTranslation?.fr_string || district.langTranslation?.en_string,
+      latitude: district.latitude,
+      longitude: district.longitude,
+      slug: district.slug,
+      created_at: district.created_at,
+      updated_at: district.updated_at,
+    };
+
+    return response.success(res, res.__('messages.districtFetchedSuccessfully'), transformedDistrict); // Success message
   } catch (error) {
     console.error('Error fetching district:', error);
-    return await response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
+    return response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
   }
 };
+
 
 // Update District
 exports.updateDistrict = async (req, res) => {
