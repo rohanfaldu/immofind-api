@@ -10,6 +10,7 @@ const imageRoutes = require('./routes/imageRoutes');
 const stateRoutes = require('./routes/stateRoutes');
 const cityRoutes = require('./routes/cityRoutes');
 const districtRoutes = require('./routes/districtRoutes');
+const otpRoutes = require("./routes/otpRoutes");
 const propertyTypeListingsRoutes = require('./routes/propertyTypeListingsRoutes');
 const cors = require('cors');
 const i18n = require('i18n');
@@ -67,7 +68,7 @@ app.use('/api/state', stateRoutes);
 app.use('/api/city', cityRoutes);
 app.use('/api/district', districtRoutes);
 app.use('/api/property-type-listings', propertyTypeListingsRoutes);
-
+app.use("/api", otpRoutes);
 
 // Home route
 app.get('/', (req, res) => {

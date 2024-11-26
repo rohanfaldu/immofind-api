@@ -35,6 +35,11 @@
 		"listingDeletedSuccessfully": "Listing deleted successfully.",
 		"requiredFieldsMissing": "Some required fields are missing.",
 		"districtCreatedSuccessfully": "District Created Successfully",
-		"districtFetchedSuccessfully": "District Fetched Successfully"
+		"districtFetchedSuccessfully": "District Fetched Successfully",
+        "phoneNumberRequired": "Phone number is required!",
+        "otpSendSuccess": "OTP sent successfully.",
+        "sessionOtpRequired": "Session and OTP are required!",
+        "otpVerifySuccess": "OTP verified successfully.",
+        "invalidOtpSession": "Invalid OTP or session!"
 	}
 }

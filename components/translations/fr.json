@@ -37,6 +37,11 @@
 		"districtCreatedSuccessfully": "District créé avec succès.",
 		"districtFetchedSuccessfully": "District récupéré avec succès.",
 		"stateNameRequired": "messages.stateNameRequired",
-		"noDistrictsFoundForCity": "messages.noDistrictsFoundForCity"
+		"noDistrictsFoundForCity": "messages.noDistrictsFoundForCity",
+        "phoneNumberRequired": "Le numéro de téléphone est obligatoire.",
+        "otpSendSuccess": "OTP envoyé avec succès.",
+        "sessionOtpRequired": "Un jeton ID est requis pour la vérification.",
+        "otpVerifySuccess": "OTP vérifié avec succès.",
+        "invalidOtpSession": "OTP ou session invalide."
 	}
 }
