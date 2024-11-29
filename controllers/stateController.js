@@ -1,9 +1,10 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+import response from '../components/utils/response.js';
+
 const prisma = new PrismaClient();
-const response = require("../components/utils/response");
 
 // Create State with LangTranslations
-exports.createState = async (req, res) => {
+export const createState = async (req, res) => {
   try {
     const { name, en_name, fr_name, slug } = req.body;
 
@@ -38,7 +39,7 @@ exports.createState = async (req, res) => {
 };
 
 // Get All States with Cities and LangTranslations
-exports.getStates = async (req, res) => {
+export const getStates = async (req, res) => {
   try {
     const { lang } = req.query; // Language parameter (e.g., `?lang=fr` or `?lang=en`)
     const isFrench = lang === 'fr'; // Determine if the language is French
@@ -49,7 +50,6 @@ exports.getStates = async (req, res) => {
         name: true, // State name
         lang: {
           select: {
-            // Select either `fr_string` or `en_string` for the state based on the language
             fr_string: isFrench,
             en_string: !isFrench,
           },

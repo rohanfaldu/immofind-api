@@ -1,17 +1,19 @@
-const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
-const Agency = require('../models/agencyModel');
-const User = require('../models/userModel'); // Assuming you have a User model defined
-const { use } = require('passport');
-const jwtGenerator = require("../components/utils/jwtGenerator");
-const bcrypt = require("bcrypt");
-const passwordGenerator = require("../components/utils/passwordGenerator");
-const sendmail = require("../components/utils/sendmail");
-const crypto = require('crypto');
-const response = require("../components/utils/response"); // Assuming response utility is in place
+import { PrismaClient } from '@prisma/client';
+import Agency from '../models/agencyModel.js';
+import User from '../models/userModel.js'; // Assuming you have a User model defined
+/*import { use } from 'passport';
+import jwtGenerator from "../components/utils/jwtGenerator.js";
+import bcrypt from "bcrypt";*/
+import passwordGenerator from "../components/utils/passwordGenerator.js";
+import sendmail from "../components/utils/sendmail.js";
+import crypto from 'crypto';
+import response from "../components/utils/response.js";
+
+// Initialize Prisma Client
+const prisma = new PrismaClient(); // Assuming response utility is in place
 
 // Create an agency
-exports.createAgency = async (req, res) => {
+export const createAgency = async (req, res) => {
     const { roles, user_name, full_name, email_address, user_login_type, image, address, mobile_number, password, user_type, credit, description,
         facebook_link, twitter_link, youtube_link, pinterest_link, linkedin_link, instagram_link, whatsup_number, service_area,
         tax_number, license_number, picture, cover } = req.body;
@@ -54,7 +56,7 @@ exports.createAgency = async (req, res) => {
 };
 
 // Get all agencies
-exports.getAllAgencies = async (req, res) => {
+export const getAllAgencies = async (req, res) => {
     try {
         const agencies = await Agency.findAll();
         return response.success(res, res.__('messages.agenciesRetrievedSuccessfully'), agencies);
@@ -64,8 +66,8 @@ exports.getAllAgencies = async (req, res) => {
 };
 
 // Send password reset email
-exports.sendMail = async (req, res) => {
-    const checkEmail = await User.getUser(req.body.email_address, req.body.email_address);
+export const sendMail = async (req, res) => {
+    const checkEmail = await User.getUser(req.body.email_address, '');
 
     if (checkEmail) {
         const code = crypto.randomInt(100000, 999999);
@@ -100,7 +102,7 @@ exports.sendMail = async (req, res) => {
 };
 
 // Get an agency by ID
-exports.getAgencyById = async (req, res) => {
+export const getAgencyById = async (req, res) => {
     try {
         const agency = await Agency.findByPk(req.params.id);
         if (agency) {
@@ -114,7 +116,7 @@ exports.getAgencyById = async (req, res) => {
 };
 
 // Update an agency
-exports.updateAgency = async (req, res) => {
+export const updateAgency = async (req, res) => {
     try {
         const [updated] = await Agency.update(req.body, { where: { id: req.params.id } });
         if (updated) {
@@ -129,7 +131,7 @@ exports.updateAgency = async (req, res) => {
 };
 
 // Delete an agency
-exports.deleteAgency = async (req, res) => {
+export const deleteAgency = async (req, res) => {
     try {
         const deleted = await Agency.destroy({ where: { id: req.params.id } });
         if (deleted) {

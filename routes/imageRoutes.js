@@ -1,16 +1,17 @@
 // routes/imageRoutes.js
-const express = require('express');
+import express from 'express';
+import { uploadSingleImage, uploadMultipleImages, uploadMultipleImagesFromJson} from '../controllers/imageController.js';
+import passport from 'passport';
 const router = express.Router();
-const imageController = require('../controllers/imageController');
 
 // Route for single image upload
-router.post('/upload/single', imageController.uploadSingleImage);
+router.post('/upload/single', uploadSingleImage);
 
 // Route for multiple images upload
-router.post('/upload/multiple', imageController.uploadMultipleImages);
+router.post('/upload/multiple', uploadMultipleImages);
 
 // POST route to handle multiple image uploads from JSON data
-router.post('/upload/multiple-json', imageController.uploadMultipleImagesFromJson);
+router.post('/upload/multiple-json', uploadMultipleImagesFromJson);
 
 
-module.exports = router;
+export default router;

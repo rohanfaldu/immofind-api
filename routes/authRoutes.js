@@ -1,17 +1,22 @@
-const express = require('express');
+import express from 'express';
+import {createNormalUser,createUser,getUser,loginUser,checkUserExists,sendOtp,updatePassword} from '../controllers/authController.js';
+import passport from 'passport';
 const router = express.Router();
-const authController = require('../controllers/authController');
-const passport = require('passport');
 
 // Google auth routes
-router.post('/create-normal/user', authController.createNormalUser);
+router.post('/create-normal/user', createNormalUser);
 
-router.post('/create/user', authController.createUser);
+router.post('/create/user', createUser);
 
-router.post('/get/user', authController.getUser);
+router.post('/get/user', getUser);
 
-router.post('/check/user', authController.checkUserExists);
+router.post('/login', loginUser);
 
-router.post('/updatepassword', authController.updatePassword);
+router.post('/check/user', checkUserExists);
 
-module.exports = router;
+router.post('/sendotp', sendOtp);
+
+router.post('/updatepassword', updatePassword);
+
+
+export default router;

@@ -1,9 +1,10 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+import response from "../components/utils/response.js";
+// Initialize Prisma Client
 const prisma = new PrismaClient();
-const response = require("../components/utils/response");
 
 // Create City with LangTranslations
-exports.createCity = async (req, res) => {
+export const createCity = async (req, res) => {
   try {
     const { name, en_name, fr_name, slug, state_id } = req.body;
 
@@ -39,7 +40,7 @@ exports.createCity = async (req, res) => {
 };
 
 // Get All Cities with States and LangTranslations
-exports.getCities = async (req, res) => {
+export const getCities = async (req, res) => {
   try {
     const { state_id, lang } = req.body; // Extract state_id and lang from the request body
 
@@ -123,7 +124,7 @@ exports.getCities = async (req, res) => {
 
 
 // Get Cities by State Name
-exports.getCitiesByState = async (req, res) => {
+export const getCitiesByState = async (req, res) => {
   try {
     const { stateName, lang } = req.body; // Extract stateName and lang from the request body
 

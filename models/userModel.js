@@ -1,7 +1,7 @@
-const { PrismaClient } = require('@prisma/client');
-const { get } = require('mongoose');
+import { PrismaClient } from '@prisma/client';
+import passwordGenerator from '../components/utils/passwordGenerator.js';
+//import { use } from 'passport';
 const prisma = new PrismaClient();
-const passwordGenerator = require('../components/utils/passwordGenerator');
 const UserModel = {
     createOrUpdateUser: async (data) => {
         try {
@@ -12,7 +12,7 @@ const UserModel = {
                     user_name: data.user_name,
                     mobile_number: data.mobile_number,
                     image: data.image,
-                    user_login_type: data.user_login_type,
+                    email_address: data.email_address,
                     fcm_token: data.fcm_token,
                     updated_at: new Date(),
                 },
@@ -42,18 +42,11 @@ const UserModel = {
         }
     },
     createUser: async (data) => {
-        return await prisma.users.create({
-        data,
+        const user = await prisma.users.create({
+            data,
         });
-    },
-    getUser: async (email_address, mobile_number) => {
-        return await prisma.users.findFirst({
-            where: {
-              OR: [
-                { email_address: email_address },
-                { mobile_number: mobile_number }
-              ]
-            },
+        const userInfo = await prisma.users.findFirst({
+            where: { id: user.id },
             include: {
                 roles: {
                     select: {
@@ -62,13 +55,87 @@ const UserModel = {
                 },
             },
         });
+        if (userInfo) {
+            userInfo.mobile_number = Number(userInfo.mobile_number);
+            return userInfo;
+        }
     },
+    getUser: async (email_address, mobile_number) => {
+        const userInfo = await prisma.users.findFirst({
+            where: {
+                OR: [
+                  email_address ? { email_address: email_address } : undefined,
+                  mobile_number ? { mobile_number: mobile_number } : undefined
+                ].filter(Boolean) // Remove undefined values from the array
+              },
+            include: {
+                roles: {
+                    select: {
+                      name: true, // Select only the role name
+                    },
+                },
+            },
+        });
+        if (userInfo) {
+            userInfo.mobile_number = Number(userInfo.mobile_number);
+            return userInfo;
+        }
+    },
+
+    getUserWithEmailOTP: async (email_address, otp) => {
+        const userInfo = await prisma.users.findFirst({
+            where: {email_address: email_address, email_password_code: parseInt(otp, 10)},
+            include: {
+                roles: {
+                    select: {
+                      name: true, // Select only the role name
+                    },
+                },
+            },
+        });
+        if (userInfo) {
+            userInfo.mobile_number = Number(userInfo.mobile_number);
+            return userInfo;
+        }
+    },
+    getUserWithPhoneOTP: async (mobile_number, otp) => {
+        const userInfo = await prisma.users.findFirst({
+            where: { mobile_number: BigInt(mobile_number), phone_password_code: parseInt(otp, 10)},
+            include: {
+                roles: {
+                    select: {
+                      name: true, // Select only the role name
+                    },
+                },
+            },
+        });
+        // If the response contains a BigInt, convert it to a string before returning
+        if (userInfo) {
+            userInfo.mobile_number = Number(userInfo.mobile_number);
+            return userInfo;
+        }  
+    },  
     
     updateUser: async (where, data) => {
-        return await prisma.users.update({
+        const user = await prisma.users.update({
             where,
             data,
         });
+        const userInfo = await prisma.users.findFirst({
+            where: { id: user.id },
+            include: {
+                roles: {
+                    select: {
+                      name: true, // Select only the role name
+                    },
+                },
+            },
+        });
+        if (userInfo) {
+            userInfo.mobile_number = Number(userInfo.mobile_number);
+            return userInfo;
+        }
     },
 };
-module.exports = UserModel;
+
+export default UserModel;

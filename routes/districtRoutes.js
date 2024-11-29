@@ -1,20 +1,21 @@
-const express = require("express");
+import express from 'express';
+import { createDistrict, getDistrictsByCity, getDistrictById, updateDistrict, deleteDistrict} from '../controllers/districtController.js';
+import passport from 'passport';
 const router = express.Router();
-const districtController = require("../controllers/districtController");
 
 // Create a new district
-router.post("/create", districtController.createDistrict);
+router.post("/create", createDistrict);
 
 // Get districts by city
-router.post("/", districtController.getDistrictsByCity);
+router.post("/", getDistrictsByCity);
 
 // Get district by ID
-router.post("/:id", districtController.getDistrictById);
+router.post("/:id", getDistrictById);
 
 // Update a district
-router.put("/:id", districtController.updateDistrict);
+router.put("/:id", updateDistrict);
 
 // Delete a district
-router.delete("/:id", districtController.deleteDistrict);
+router.delete("/:id", deleteDistrict);
 
-module.exports = router;
+export default router;

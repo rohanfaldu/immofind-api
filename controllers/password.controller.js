@@ -1,6 +1,6 @@
-const bcrypt = require("bcryptjs");
-const pool = require("../db");
-const jwtGenerator = require("../components/utils/jwtGenerator");
+import bcrypt from 'bcryptjs';
+import pool from '../db.js'; // Ensure the file path and extension are correct
+import jwtGenerator from '../components/utils/jwtGenerator.js';
 
 //FORGOT PASSWORD CONTROLLER
 module.exports.forgot_password = async (req, res) => {

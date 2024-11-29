@@ -1,9 +1,9 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+import response from "../components/utils/response.js";
+// Initialize Prisma Client
 const prisma = new PrismaClient();
-const response = require("../components/utils/response");
-
 // Create District
-exports.createDistrict = async (req, res) => {
+export const createDistrict = async (req, res) => {
   try {
     const {
       name,
@@ -58,7 +58,7 @@ exports.createDistrict = async (req, res) => {
 
 
 // Get Districts by City
-exports.getDistrictsByCity = async (req, res) => {
+export const getDistrictsByCity = async (req, res) => {
   try {
     const { city_id, lang } = req.body; // Extract city_id and lang from the request body
 
@@ -124,7 +124,7 @@ exports.getDistrictsByCity = async (req, res) => {
 
 
 // Get District by ID
-exports.getDistrictById = async (req, res) => {
+export const getDistrictById = async (req, res) => {
   try {
     const { id, lang } = req.body; // Extract id and lang from the request body
 
@@ -180,7 +180,7 @@ exports.getDistrictById = async (req, res) => {
 
 
 // Update District
-exports.updateDistrict = async (req, res) => {
+export const updateDistrict = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, en_name, fr_name, city_id, lang_id, slug, latitude, longitude } = req.body;
@@ -212,7 +212,7 @@ exports.updateDistrict = async (req, res) => {
 };
 
 // Delete District
-exports.deleteDistrict = async (req, res) => {
+export const deleteDistrict = async (req, res) => {
   try {
     const { id } = req.params;
 

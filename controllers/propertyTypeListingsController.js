@@ -1,9 +1,10 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+import response from '../components/utils/response.js';
+
 const prisma = new PrismaClient();
-const response = require("../components/utils/response");
 
 // Get all property type listings
-exports.getAllPropertyTypeListings = async (req, res) => {
+export const getAllPropertyTypeListings = async (req, res) => {
   try {
     const listings = await prisma.propertyTypeListings.findMany();
     response.success(res, res.__('messages.listFetchedSuccessfully'), listings);
@@ -13,7 +14,7 @@ exports.getAllPropertyTypeListings = async (req, res) => {
 };
 
 // Get a single property type listing by ID
-exports.getPropertyTypeListingById = async (req, res) => {
+export const getPropertyTypeListingById = async (req, res) => {
   try {
     const { id } = req.params;
     if (!id) {
@@ -35,7 +36,7 @@ exports.getPropertyTypeListingById = async (req, res) => {
 };
 
 // Create a new property type listing
-exports.createPropertyTypeListing = async (req, res) => {
+export const createPropertyTypeListing = async (req, res) => {
   try {
     const { name, property_option, property_cat, icon, created_by } = req.body;
 
@@ -54,7 +55,7 @@ exports.createPropertyTypeListing = async (req, res) => {
 };
 
 // Update an existing property type listing
-exports.updatePropertyTypeListing = async (req, res) => {
+export const updatePropertyTypeListing = async (req, res) => {
   try {
     const { id } = req.params;
     const { name, property_option, property_cat, icon, updated_by } = req.body;
@@ -75,7 +76,7 @@ exports.updatePropertyTypeListing = async (req, res) => {
 };
 
 // Delete a property type listing
-exports.deletePropertyTypeListing = async (req, res) => {
+export const deletePropertyTypeListing = async (req, res) => {
   try {
     const { id } = req.params;
     if (!id) {

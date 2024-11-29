@@ -1,7 +1,13 @@
-const multer = require('multer');
-const path = require('path');
-const response = require('../components/utils/response'); // Assuming response utility is in place
-const fs = require('fs');
+import multer from 'multer';
+import path from 'path';
+import response from '../components/utils/response.js'; // Ensure the file path and extension are correct
+import fs from 'fs';
+import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
+dotenv.config();
+// Initialize Prisma Client
+const prisma = new PrismaClient();
+
 
 // Configure multer storage
 const storage = multer.diskStorage({
@@ -16,23 +22,34 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Single image upload handler
-exports.uploadSingleImage = (req, res) => {
-    upload.single('image')(req, res, (err) => {
+export const uploadSingleImage = (req, res) => {
+    upload.array('image', 5)(req, res, (err) => {
         if (err) {
+            console.error('Multer Error:', err);
             return response.serverError(res, res.__('messages.internalServerError'), err.message);
         }
-        if (!req.file) {
+    
+        if (!req.files || req.files.length === 0) {
             return response.error(res, res.__('messages.fileNotProvided'));
         }
+        
+        const fileDetailsWithUrls = req.files.map((file) => ({
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+            path: file.path,
+            url: `${process.env.BASE_URL}/uploads/${file.filename}` // Constructed URL
+        }));
 
         return response.success(res, res.__('messages.singleUploadSuccess'), {
-            file: req.file,
+            files: fileDetailsWithUrls,
         });
+
     });
 };
 
 // Multiple images upload handler
-exports.uploadMultipleImages = (req, res) => {
+export const uploadMultipleImages = (req, res) => {
     upload.array('images', 5)(req, res, (err) => {  // Limit to 5 images
         if (err) {
             return response.serverError(res, res.__('messages.internalServerError'), err.message);
@@ -48,7 +65,7 @@ exports.uploadMultipleImages = (req, res) => {
 };
 
 
-exports.uploadMultipleImagesFromJson = (req, res) => {
+export const uploadMultipleImagesFromJson = (req, res) => {
     try {
         const { images, uploadPath } = req.body;
 

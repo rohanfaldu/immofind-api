@@ -1,5 +1,8 @@
-const bcrypt = require("bcrypt");
-require("dotenv").config();
+import bcrypt from 'bcrypt';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const passwordGenerator = {
     encrypted: async (password) => {
@@ -10,4 +13,4 @@ const passwordGenerator = {
         return await bcrypt.compare(password, storedHash);
     },
 };
-module.exports = passwordGenerator;
+export default passwordGenerator;

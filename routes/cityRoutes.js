@@ -1,11 +1,12 @@
 // cityRoutes.js
-const express = require('express');
+import express from 'express';
+import { createCity, getCities, getCitiesByState} from '../controllers/cityController.js';
+//import passport from 'passport';
 const router = express.Router();
-const cityController = require('../controllers/cityController'); // Ensure this path is correct
 
 // Define your routes here
-router.post('/create', cityController.createCity);
-router.post('/', cityController.getCities);
-router.post('/search', cityController.getCitiesByState);
+router.post('/create', createCity);
+router.post('/', getCities);
+router.post('/search', getCitiesByState);
 
-module.exports = router;
+export default router;

@@ -1,22 +1,27 @@
-require('dotenv').config();
-const express = require('express');
-const session = require('express-session');
-const passport = require('passport');
-const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const FacebookStrategy = require('passport-facebook').Strategy;
-const authRoutes = require('./routes/authRoutes');
-const agencyRoutes = require('./routes/agencyRoutes');
-const imageRoutes = require('./routes/imageRoutes');
-const stateRoutes = require('./routes/stateRoutes');
-const cityRoutes = require('./routes/cityRoutes');
-const districtRoutes = require('./routes/districtRoutes');
-const propertyTypeListingsRoutes = require('./routes/propertyTypeListingsRoutes');
-const cors = require('cors');
-const i18n = require('i18n');
-const path = require('path');
+import dotenv from 'dotenv';
+import express from 'express';
+import session from 'express-session';
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
+import { Strategy as FacebookStrategy } from 'passport-facebook';
+import authRoutes from './routes/authRoutes.js';
+import agencyRoutes from './routes/agencyRoutes.js';
+import imageRoutes from './routes/imageRoutes.js';
+import stateRoutes from './routes/stateRoutes.js';
+import cityRoutes from './routes/cityRoutes.js';
+import propertyRoutes from './routes/propertyRoutes.js';
+import districtRoutes from './routes/districtRoutes.js';
+import propertyTypeListingsRoutes from './routes/propertyTypeListingsRoutes.js';
+import cors from 'cors';
+import i18n from 'i18n';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 7000;
+
 
 // Session setup
 app.use(session({ secret: 'we-api', resave: false, saveUninitialized: true }));
@@ -25,23 +30,25 @@ app.use(session({ secret: 'we-api', resave: false, saveUninitialized: true }));
 // app.use(passport.session());
 app.use(express.json());
 
+const getLangFileName = fileURLToPath(import.meta.url);
+const getLangDirName = path.dirname(getLangFileName);
 // Language
 i18n.configure({
     locales: ['en', 'fr'],  // Add other languages as needed
-    directory: path.join(__dirname,  'components','translations'),
+    directory: path.join(getLangDirName,  'components','translations'),
     defaultLocale: 'en',
     objectNotation: true,
 });
 app.use(i18n.init);
 
 // Serve the 'uploads' folder as static files
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static(path.join(getLangDirName, 'uploads')));
 
 
 // Use auth routes
 
 app.use(cors({
-    origin: ['http://localhost:3000','http://localhost:5000'], // Adjust this to match your frontend URL
+    origin: [ process.env.FRONT_END_URL,process.env.BACKEND_END_URL], // Adjust this to match your frontend URL
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
     allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Methods'], // Add necessary headers
 }));
@@ -66,6 +73,7 @@ app.use('/api/images', imageRoutes); // Add image routes
 app.use('/api/state', stateRoutes);
 app.use('/api/city', cityRoutes);
 app.use('/api/district', districtRoutes);
+app.use('/api/property', propertyRoutes);
 app.use('/api/property-type-listings', propertyTypeListingsRoutes);
 
 

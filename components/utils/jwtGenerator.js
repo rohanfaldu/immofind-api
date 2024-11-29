@@ -1,5 +1,8 @@
-const jwt = require("jsonwebtoken");
-require("dotenv").config();
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+
+// Load environment variables
+dotenv.config();
 
 const JwtModel = {
   generateToken: async (id, email_address) => {
@@ -10,4 +13,4 @@ const JwtModel = {
     );
   },
 };
-module.exports = JwtModel;
+export default JwtModel;

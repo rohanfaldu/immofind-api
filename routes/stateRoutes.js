@@ -1,10 +1,11 @@
-// routes/stateRoutes.js
-const express = require('express');
+import express from 'express';
+import { createState, getStates} from '../controllers/stateController.js';
+import passport from 'passport';
 const router = express.Router();
-const stateController = require('../controllers/stateController');
+
 
 // Routes
-router.post('/create', stateController.createState); // Create State
-router.post('/', stateController.getStates); // Get All States with Cities
+router.post('/create', createState); // Create State
+router.post('/', getStates); // Get All States with Cities
 
-module.exports = router;
+export default router;

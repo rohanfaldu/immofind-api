@@ -1,9 +1,17 @@
 {
 	"messages": {
 		"fieldError": "Veuillez vérifier les champs",
+		"userCheckEmailCode": "Veuillez vérifier l'adresse e-mail, le numéro de téléphone ou le code.",
+		"userCheckEmail": "Veuillez vérifier l'adresse e-mail ou le numéro de téléphone.",
 		"userExists": "L'utilisateur existe déjà",
+		"validPhoneNumber": "Veuillez entrer un numéro de téléphone valide.",
 		"userNotFound": "Utilisateur introuvable",
+		"createNewUser": "Veuillez créer le nouvel utilisateur",
 		"userDataNotUpdated": "Les données utilisateur n'ont pas été mises à jour",
+		"userCreatedSuccessfully": "L'utilisateur crée avec succès",
+		"userUpdateSuccessfully": "Mise à jour réussie des informations utilisateur",
+		"userSendEmail": "Envoyer OTP à l'adresse e-mail",
+		"userSendMobile": "Envoyer OTP au numéro de mobile",
 		"userCreated": "Utilisateur créé avec succès",
 		"loginSuccessfully": "Connectez-vous avec succès",
 		"passwordDostMatch": "Le mot de passe ne correspond pas",
@@ -37,6 +45,7 @@
 		"districtCreatedSuccessfully": "District créé avec succès.",
 		"districtFetchedSuccessfully": "District récupéré avec succès.",
 		"stateNameRequired": "messages.stateNameRequired",
-		"noDistrictsFoundForCity": "messages.noDistrictsFoundForCity"
+		"noDistrictsFoundForCity": "messages.noDistrictsFoundForCity",
+		"propertyType": "POUR"
 	}
 }

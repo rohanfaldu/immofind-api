@@ -1,6 +1,8 @@
-const nodemailer = require('nodemailer');
+import nodemailer from 'nodemailer';
+import dotenv from 'dotenv';
 
-require("dotenv").config();
+// Load environment variables
+dotenv.config();
 
 const transporter = nodemailer.createTransport({
     service: 'gmail',
@@ -37,4 +39,4 @@ const sendmail = {
         return await bcrypt.compare(password, storedHash);
     },
 };
-module.exports = sendmail;
+export default sendmail;

@@ -1,27 +1,24 @@
-const express = require('express');
+import express from 'express';
+import { createAgency, sendMail, getAllAgencies, getAgencyById, updateAgency, deleteAgency } from '../controllers/agencyController.js';
 const router = express.Router();
-const agencyController = require('../controllers/agencyController'); // Import agency controller
-
-
-
 
 // --- Start adding agency routes ---
 // Create an agency
-router.post('/agencies', agencyController.createAgency);
+router.post('/agencies', createAgency);
 
-router.post('/sendmail', agencyController.sendMail);
+router.post('/sendmail', sendMail);
 
 // Get all agencies
-router.get('/agencies', agencyController.getAllAgencies);
+router.get('/agencies', getAllAgencies);
 
 // Get an agency by ID
-router.get('/agencies/:id', agencyController.getAgencyById);
+router.get('/agencies/:id', getAgencyById);
 
 // Update an agency
-router.put('/agencies/:id', agencyController.updateAgency);
+router.put('/agencies/:id', updateAgency);
 
 // Delete an agency
-router.delete('/agencies/:id', agencyController.deleteAgency);
+router.delete('/agencies/:id', deleteAgency);
 
 
-module.exports = router;
+export default router;

@@ -1,11 +1,12 @@
-const express = require('express');
+import express from 'express';
+import { getAllPropertyTypeListings, getPropertyTypeListingById, createPropertyTypeListing, updatePropertyTypeListing, deletePropertyTypeListing} from '../controllers/propertyTypeListingsController.js';
+import passport from 'passport';
 const router = express.Router();
-const propertyTypeListingsController = require('../controllers/propertyTypeListingsController');
 
-router.post('/', propertyTypeListingsController.getAllPropertyTypeListings);
-router.post('/:id', propertyTypeListingsController.getPropertyTypeListingById);
-router.post('/', propertyTypeListingsController.createPropertyTypeListing);
-router.put('/:id', propertyTypeListingsController.updatePropertyTypeListing);
-router.delete('/:id', propertyTypeListingsController.deletePropertyTypeListing);
+router.post('/', getAllPropertyTypeListings);
+router.post('/:id', getPropertyTypeListingById);
+router.post('/', createPropertyTypeListing);
+router.put('/:id', updatePropertyTypeListing);
+router.delete('/:id', deletePropertyTypeListing);
 
-module.exports = router;
+export default router;

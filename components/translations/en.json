@@ -1,8 +1,15 @@
 {
 	"messages": {
-		"fieldError": "Please check the fields",
+		"fieldError": "Please check the fields.",
+		"userCheckEmailCode": "Please check Email address, Phone number or code.",
+		"userCheckEmail": "Please check the Email address or Phone number.",
+		"validPhoneNumber": "Please enter a valid phone number.",
 		"userExists": "User already exists",
 		"userNotFound": "User not Found",
+		"userCreatedSuccessfully": "User Create Successfully",
+		"userUpdateSuccessfully": "User Information Update Successfully",
+		"userSendEmail": "Send otp to email address",
+		"userSendMobile": "Send otp to mobile number",
 		"userCreated": "User created successfully",
 		"userDataNotUpdated": "User data was not updated",
 		"loginSuccessfully": "Login successfully",
@@ -11,6 +18,7 @@
 		"internalServerError": "Internal server error",
 		"fileNotProvided": "Please provide a file",
 		"singleUploadSuccess": "Single file uploaded successfully",
+		"createNewUser": "Please create the new user",
 		"multipleUploadSuccess": "Multiple files uploaded successfully",
 		"userAlreadyExists": "User already exists.",
 		"agencyCreatedSuccessfully": "Agency created successfully.",
@@ -35,6 +43,6 @@
 		"listingDeletedSuccessfully": "Listing deleted successfully.",
 		"requiredFieldsMissing": "Some required fields are missing.",
 		"districtCreatedSuccessfully": "District Created Successfully",
-		"districtFetchedSuccessfully": "District Fetched Successfully"
+		"propertyType": "FOR"
 	}
 }

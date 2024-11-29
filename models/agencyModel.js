@@ -1,6 +1,6 @@
-const { PrismaClient } = require('@prisma/client');
+import { PrismaClient } from '@prisma/client';
+import passwordGenerator from '../components/utils/passwordGenerator.js';
 const prisma = new PrismaClient();
-
 
 const AgencyModel = {
   createAgency: async (data) => {
@@ -10,4 +10,4 @@ const AgencyModel = {
   },
 };
 
-module.exports = AgencyModel;
+export default AgencyModel;
