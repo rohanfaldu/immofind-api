@@ -1,5 +1,5 @@
 import express from 'express';
-import {createNormalUser,createUser,getUser,loginUser,checkUserExists,sendOtp,updatePassword} from '../controllers/authController.js';
+import {createNormalUser,createUser, getallUser, getUser, loginUser,checkUserExists,sendOtp,updatePassword} from '../controllers/authController.js';
 import passport from 'passport';
 const router = express.Router();
 
@@ -9,6 +9,8 @@ router.post('/create-normal/user', createNormalUser);
 router.post('/create/user', createUser);
 
 router.post('/get/user', getUser);
+
+router.post('/getall', getallUser);
 
 router.post('/login', loginUser);
 

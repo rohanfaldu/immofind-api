@@ -151,6 +151,15 @@ export const createNormalUser = async (req, res) => {
     }
 };
 
+export const getallUser = async (req, res) => {
+    const { type } = req.body;
+    const userData = await UserModel.getAllUserd(type);
+        if (userData) {
+            return await response.success(res, res.__('messages.listFetchedSuccessfully'), userData);
+        } else {
+            return await response.error(res, res.__('messages.listingNotFound'));
+            }
+}
 export const getUser = async (req, res) => {
     
     const { email_address,password } = req.body;

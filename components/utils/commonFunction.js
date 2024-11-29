@@ -18,6 +18,13 @@ const commonFunction = {
         } else {
             return false;
         }
+    },
+    bigIntiger: async (userInfo) => {
+        return JSON.parse(
+            JSON.stringify(userInfo, (key, value) =>
+              typeof value === 'bigint' ? value.toString() : value
+            )
+          );    
     }
 };
 export default commonFunction;
