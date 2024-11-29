@@ -18,7 +18,7 @@ dotenv.config();
 const prisma = new PrismaClient();
 
 export const createUser = async (req, res) => {
-    //try {
+    try {
         const { user_id, user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, phone_number, password } = req.body;
         
         if (!user_name ||!full_name || !type ) {
@@ -35,7 +35,7 @@ export const createUser = async (req, res) => {
         }
 
         const checkUser = await UserModel.getUser(email_address,phone_number);
-        console.log(    checkUser);
+
         let user_inforation = false;
         if(checkUser){
             if(!user_id){
@@ -92,9 +92,9 @@ export const createUser = async (req, res) => {
             return await response.success(res, res.__('messages.userCreatedSuccessfully'), responseData);
         }
         // Respond with success message and user information
-    // } catch (error) {
-    //     return await response.serverError(res, res.__('messages.internalServerError'));
-    // }
+    } catch (error) {
+        return await response.serverError(res, res.__('messages.internalServerError'));
+    }
 };
 
 export const createNormalUser = async (req, res) => {
@@ -209,7 +209,7 @@ export const loginUser = async (req, res) => {
             
             const checkUser = await UserModel.getUser(email_address,'');
             let user_inforation = true;
-            if(checkUser.mobile_number === null) {
+            if(checkUser.mobile_number === 0) {
                 user_inforation = false;
             }
             if ( !code) {
