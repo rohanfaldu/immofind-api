@@ -43,6 +43,11 @@
 		"listingDeletedSuccessfully": "Listing deleted successfully.",
 		"requiredFieldsMissing": "Some required fields are missing.",
 		"districtCreatedSuccessfully": "District Created Successfully",
-		"propertyType": "FOR"
+		"propertyType": "FOR",
+		"districtFetchedSuccessfully": "District Fetched Successfully",
+		"errorCreatingProperty": "Error Creating Property",
+		"propertyFetchSuccessfully": "Property Fetch Successfully",
+		"districtNotFound": "District Not Found",
+		"propertyCreatedSuccessfully": "Property Created Successfully"
 	}
 }

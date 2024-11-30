@@ -44,8 +44,12 @@
 		"requiredFieldsMissing": "Certains champs obligatoires sont manquants.",
 		"districtCreatedSuccessfully": "District créé avec succès.",
 		"districtFetchedSuccessfully": "District récupéré avec succès.",
-		"stateNameRequired": "messages.stateNameRequired",
-		"noDistrictsFoundForCity": "messages.noDistrictsFoundForCity",
-		"propertyType": "POUR"
+		"propertyType": "POUR",
+        "stateNameRequired": "Nom de l'état requis",
+        "noDistrictsFoundForCity": "Aucun district trouvé pour la ville",
+        "errorCreatingProperty": "Erreur lors de la création de la propriété",
+        "propertyFetchSuccessfully": "Propriété récupérée avec succès",
+        "districtNotFound": "District non trouvé",
+        "propertyCreatedSuccessfully": "Propriété créée avec succès"
 	}
 }
