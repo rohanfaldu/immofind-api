@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import passwordGenerator from '../components/utils/passwordGenerator.js';
+import commonFunction from '../components/utils/commonFunction.js';
 //import { use } from 'passport';
 const prisma = new PrismaClient();
 const UserModel = {
@@ -97,6 +98,26 @@ const UserModel = {
             userInfo.mobile_number = Number(userInfo.mobile_number);
             return userInfo;
         }
+    },
+    getAllUserd: async (type) => {
+        const userInfo = await prisma.users.findMany({
+            where: {
+                roles: {
+                    name: type,  // Ensure the variable `type` has a correct role name
+                },
+            },
+            include: {
+                roles: {
+                    select: {
+                      name: true, // Select only the role name
+                    },
+                },
+            },
+            orderBy: {
+                created_at: 'desc', // Order by creation date in descending order (newest first)
+              },
+        });
+        return  await commonFunction.bigIntiger(userInfo);
     },
     getUserWithPhoneOTP: async (mobile_number, otp) => {
         const userInfo = await prisma.users.findFirst({
