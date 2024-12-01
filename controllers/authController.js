@@ -65,7 +65,9 @@ export const createUser = async (req, res) => {
                 userProfile: userUpdate,
                 token: CreateToken
             };
-            return await response.success(res, res.__('messages.userUpdateSuccessfully'), responseData);
+            
+            const roleName = await commonFunction.getRole(userUpdate.roles.name);
+            return await response.success(res, res.__(`messages.${roleName}CreatedSuccessfully`), responseData);
         } else{
             const users = await UserModel.createUser({
                 full_name: full_name,
@@ -89,13 +91,80 @@ export const createUser = async (req, res) => {
                 userProfile: users,
                 token: CreateToken
             };
-            return await response.success(res, res.__('messages.userCreatedSuccessfully'), responseData);
+            const roleName = await commonFunction.getRole(users.roles.name);
+            return await response.success(res, res.__(`messages.${roleName}CreatedSuccessfully`), responseData);
         }
         // Respond with success message and user information
     } catch (error) {
         return await response.serverError(res, res.__('messages.internalServerError'));
     }
 };
+
+export const updateUser = async (req, res) => {
+    try {
+        const { user_id, user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, phone_number, password, is_deleted } = req.body;
+        
+        if (!user_name ||!full_name || !type || !user_id ) {
+            return await response.error(res, res.__('messages.fieldError'));
+        }
+
+        if(email_address === '' && phone_number === '') {
+            return await response.error(res, res.__('messages.fieldError'));
+        }
+
+        const checkPhonember = await commonFunction.checkPhonember(phone_number);
+        if(!checkPhonember){
+            return await response.error(res,res.__('messages.validPhoneNumber'));
+        }
+
+        const data = {  
+            full_name: full_name,
+            user_name: user_name,
+            fcm_token: fcm_token,
+            image: image_url,
+            password: (password)? await passwordGenerator.encrypted(password):'',
+            email_address: email_address,
+            mobile_number: BigInt(phone_number),
+            is_deleted: is_deleted
+        };
+        const where = {
+            id: user_id
+        };
+        const userUpdate = await UserModel.updateUser(where, data);
+        const CreateToken = await jwtGenerator.generateToken(userUpdate.id, userUpdate.email_address);
+        const responseData = {
+            user_inforation: true,
+            userProfile: userUpdate,
+            token: CreateToken
+        };
+        const roleName = await commonFunction.getRole(userUpdate.roles.name);
+        return (is_deleted)? await response.success(res, res.__(`messages.${roleName}DeleteSuccessfully`), responseData)
+        : await response.success(res, res.__(`messages.${roleName}CreatedSuccessfully`), responseData);
+        // Respond with success message and user information
+    } catch (error) {
+        return await response.serverError(res, res.__('messages.internalServerError'));
+    }
+};
+
+export const deleteUser = async (req, res) => {
+    const { id, type } = req.body;
+
+    if(!id || !type) {
+        return await response.error(res, res.__('messages.fieldError'));
+    }
+
+     try {
+        const userData = await UserModel.deleteUser(id);
+        if (userData) {
+            const roleName = await commonFunction.getRole(userData.roles.name);
+            return await response.success(res, res.__(`messages.${roleName}DeletedSuccessfully`), null);
+        } else {
+            return await response.error(res, res.__(`messages.${type}NotFound`));
+        }
+    } catch (error) {
+         return await response.serverError(res, res.__('messages.internalServerError'));
+    }
+}
 
 export const createNormalUser = async (req, res) => {
     try {
@@ -154,8 +223,13 @@ export const createNormalUser = async (req, res) => {
 export const getallUser = async (req, res) => {
     const { type } = req.body;
     const userData = await UserModel.getAllUserd(type);
+    console.log(userData.length);
+        const userList = {
+            count : userData.length,
+            user_data : userData
+        }
         if (userData) {
-            return await response.success(res, res.__('messages.listFetchedSuccessfully'), userData);
+            return await response.success(res, res.__('messages.listFetchedSuccessfully'), userList);
         } else {
             return await response.error(res, res.__('messages.listingNotFound'));
             }
@@ -200,7 +274,8 @@ export const checkUserExists = async (req, res) => {
     const user = await UserModel.getUser(email_address,phone_number);
     
     if (user) {
-        return await response.success(res, res.__('messages.userExists'), null);
+        const roleName = await commonFunction.getRole(user.roles.name);
+        return await response.success(res, res.__(`messages.${roleName}Exists`), null);
     } else {
         return await response.error(res, res.__('messages.userNotFound'));
     }
@@ -277,9 +352,19 @@ export const sendOtp = async (req, res) => {
         
             const code = crypto.randomInt(100000, 999999); // Generate a random 6-digit code
             const to = email_address;
-            const subject = "Login Password";
-            const text = `Your login password code is: ${code}`;
-            
+            const subject = "Verify Account";
+            const text =`
+                <div style="font-family: Arial, sans-serif; color: #333;">
+                    <h2 style="color: #007BFF;">Account Verification</h2>
+                    <p>Dear User,</p>
+                    <p>Your verification code is: <strong>${code}</strong>.</p>
+                    <p>Please enter this code to verify your account.</p>
+                    <p>If you didn’t request this, please ignore this message or contact our support team immediately.</p>
+                    <br>
+                    <p>Thank you,</p>
+                    <p>The Immofind Team</p>
+                </div>`;
+   
             try {
                 // Send email and wait for completion
                 const emailData = await sendmail.gmail(to, subject, text);
