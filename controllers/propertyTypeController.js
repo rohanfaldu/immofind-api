@@ -4,44 +4,64 @@ import response from '../components/utils/response.js';
 const prisma = new PrismaClient();
 
 export const getPropertyTypes = async (req, res) => {
-  const { lang } = req.body; // Language preference passed in the request (e.g., "en" or "fr")
+  const { lang, page = 1, limit = 10 } = req.body; // Default values for page and limit
 
- try {
- const propertyTypes = await prisma.propertyTypes.findMany({
-  include: {
-    lang_translations: true,  // Include the related LangTranslations data
-  },
-});
+  try {
+    // Fetch total count for pagination metadata
+    const totalCount = await prisma.propertyTypes.count();
 
-const simplifiedProperties = await Promise.all(propertyTypes.map(async (property) => {
-  // Fetch the user name using the created_by UUID
-  const user = property.created_by
-    ? await prisma.users.findUnique({
-        where: { id: property.created_by },
-        select: { user_name: true },
+    // Calculate skip value
+    const skip = (page - 1) * limit;
+
+    // Fetch paginated property types
+    const propertyTypes = await prisma.propertyTypes.findMany({
+      skip,
+      take: limit,
+      include: {
+        lang_translations: true, // Include the related LangTranslations data
+      },
+    });
+
+    // Process property types for the response
+    const simplifiedProperties = await Promise.all(
+      propertyTypes.map(async (property) => {
+        const user = property.created_by
+          ? await prisma.users.findUnique({
+              where: { id: property.created_by },
+              select: { user_name: true },
+            })
+          : null;
+
+        return {
+          id: property.id,
+          title:
+            property.lang_translations
+              ? lang === 'fr'
+                ? property.lang_translations.fr_string
+                : property.lang_translations.en_string
+              : 'No title available',
+          created_by: user ? user.user_name : 'Unknown User', // Use the user name or fallback
+          createdAt: property.created_at,
+        };
       })
-    : null;
+    );
 
-  return {
-    id: property.id,
-    title:
-      property.lang_translations
-        ? lang === 'fr'
-          ? property.lang_translations.fr_string
-          : property.lang_translations.en_string
-        : 'No title available',
-    created_by: user ? user.user_name : 'Unknown User', // Use the user name or fallback
-    createdAt: property.created_at,
-  };
-}));
+    // Construct response with pagination metadata
+    const responsePayload = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: page,
+      itemsPerPage: limit,
+      data: simplifiedProperties,
+    };
 
-return response.success(
-  res,
-  res.__('messages.propertyTypesFetchedSuccessfully'),
-  simplifiedProperties
-);
-} catch (error) {
-   console.error("Error fetching property types:", error);
+    return response.success(
+      res,
+      res.__('messages.propertyTypesFetchedSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error('Error fetching property types:', error);
 
     return response.error(
       res,
@@ -51,6 +71,7 @@ return response.success(
     );
   }
 };
+
 export const createPropertyType = async (req, res) => {
   const { en_string, fr_string, created_by } = req.body;
 

@@ -19,13 +19,25 @@ const serializeBigInt = (data) => {
   return data;  // Return the data as is if it's not BigInt
 };
 export const getAllPropertyTypeListings = async (req, res) => {
-  const { lang } = req.body; // Language preference passed in the request (e.g., "en" or "fr")
+  const { lang, page = 1, limit = 10 } = req.body; // Extract language, page, and limit from the request body
 
   try {
-    // Fetch all PropertyTypeListings with related LangTranslations
+    // Ensure valid page and limit
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
+
+    // Calculate offset (skip) for pagination
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch total count of listings
+    const totalCount = await prisma.propertyTypeListings.count();
+
+    // Fetch paginated PropertyTypeListings with related LangTranslations
     const listings = await prisma.propertyTypeListings.findMany({
+      skip,
+      take: validLimit,
       include: {
-        lang_translations: true,  // Include the related LangTranslations based on `name`
+        lang_translations: true, // Include the related LangTranslations based on `name`
       },
     });
 
@@ -36,30 +48,36 @@ export const getAllPropertyTypeListings = async (req, res) => {
       name:
         listing.lang_translations
           ? lang === 'fr'
-            ? listing.lang_translations.fr_string  // Fetch French translation
-            : listing.lang_translations.en_string  // Fetch English translation
-          : 'No name available',  // Fallback if no translation exists
+            ? listing.lang_translations.fr_string // Fetch French translation
+            : listing.lang_translations.en_string // Fetch English translation
+          : 'No name available', // Fallback if no translation exists
       type: listing.type,
       key: listing.key,
-      category: listing.category,  // Category may be a BigInt
+      category: listing.category?.toString() || null, // Serialize BigInt to string
       created_at: listing.created_at,
       updated_at: listing.updated_at,
     }));
 
-    // Serialize BigInt values to strings
-    const serializedListings = serializeBigInt(simplifiedListings);
+    // Return response with pagination metadata
+    const responsePayload = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      data: simplifiedListings,
+    };
 
-    // Return success response with serialized listings
     return response.success(
       res,
       res.__('messages.listFetchedSuccessfully'),
-      serializedListings
+      responsePayload
     );
   } catch (error) {
     console.error('Error fetching property type listings:', error);
     return response.serverError(res, error);
   }
 };
+
 
 // Get a single property type listing by ID
 export const getPropertyTypeListingById = async (req, res) => {
