@@ -48,8 +48,18 @@
 		"errorCreatingProperty": "Error Creating Property",
 		"propertyFetchSuccessfully": "Property Fetch Successfully",
 		"districtNotFound": "District Not Found",
-		"propertyCreatedSuccessfully": "Property Created Successfully"
-
-
+		"propertyCreatedSuccessfully": "Property Created Successfully",
+		"propertyTypeCreatedSuccessfully": "Property Type Created Successfully",
+		"missingRequiredFields": "Missing Required Fields",
+		"errorCreatingPropertyType": "Error Creating PropertyType",
+		"errorFetchingPropertyTypes": "messages.errorFetchingPropertyTypes",
+		"propertyTypesFetchedSuccessfully": "messages.propertyTypesFetchedSuccessfully",
+		"propertyTypeListingCreatedSuccessfully": "messages.propertyTypeListingCreatedSuccessfully",
+		"errorUpdatingProperty": "messages.errorUpdatingProperty",
+		"propertyIdRequired": "messages.propertyIdRequired",
+		"propertyUpdatedSuccessfully": "messages.propertyUpdatedSuccessfully",
+		"errorDeletingProperty": "messages.errorDeletingProperty",
+		"propertyDeletedSuccessfully": "messages.propertyDeletedSuccessfully",
+		"propertyNotFound": "messages.propertyNotFound"
 	}
 }

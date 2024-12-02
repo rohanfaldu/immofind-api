@@ -45,11 +45,16 @@
 		"districtCreatedSuccessfully": "District créé avec succès.",
 		"districtFetchedSuccessfully": "District récupéré avec succès.",
 		"propertyType": "POUR",
-        "stateNameRequired": "Nom de l'état requis",
-        "noDistrictsFoundForCity": "Aucun district trouvé pour la ville",
-        "errorCreatingProperty": "Erreur lors de la création de la propriété",
-        "propertyFetchSuccessfully": "Propriété récupérée avec succès",
-        "districtNotFound": "District non trouvé",
-        "propertyCreatedSuccessfully": "Propriété créée avec succès"
+		"stateNameRequired": "Nom de l'état requis",
+		"noDistrictsFoundForCity": "Aucun district trouvé pour la ville",
+		"errorCreatingProperty": "Erreur lors de la création de la propriété",
+		"propertyFetchSuccessfully": "Propriété récupérée avec succès",
+		"districtNotFound": "District non trouvé",
+		"propertyCreatedSuccessfully": "Propriété créée avec succès",
+		"propertyTypeCreatedSuccessfully": "Type de propriété créé avec succès",
+		"missingRequiredFields": "Champs obligatoires manquants",
+		"errorCreatingPropertyType": "Erreur lors de la création du type de propriété",
+		"errorFetchingPropertyTypes": "messages.errorFetchingPropertyTypes",
+		"propertyTypesFetchedSuccessfully": "messages.propertyTypesFetchedSuccessfully"
 	}
 }
