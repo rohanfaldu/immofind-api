@@ -7,8 +7,8 @@ dotenv.config();
 const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
-      user: 'rohan.xhtmlchop@gmail.com',
-      pass: 'hpmrdjqltwrgzqzu',
+      user: 'immofindmaroc@gmail.com',
+      pass: 'ucvaphywafmiusgy',
     },
 });
 const sendmail = {
@@ -17,7 +17,7 @@ const sendmail = {
             from: 'testing@gmail.com',
             to: to,
             subject: subject,
-            text: text,
+            html: text,
         };
 
         try {

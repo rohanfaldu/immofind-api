@@ -66,8 +66,9 @@ const UserModel = {
             where: {
                 OR: [
                   email_address ? { email_address: email_address } : undefined,
-                  mobile_number ? { mobile_number: mobile_number } : undefined
-                ].filter(Boolean) // Remove undefined values from the array
+                  mobile_number ? { mobile_number: mobile_number } : undefined,
+                ].filter(Boolean),
+                AND: [{ is_deleted: false }],
               },
             include: {
                 roles: {
@@ -102,6 +103,7 @@ const UserModel = {
     getAllUserd: async (type) => {
         const userInfo = await prisma.users.findMany({
             where: {
+                is_deleted: false,
                 roles: {
                     name: type,  // Ensure the variable `type` has a correct role name
                 },
@@ -156,6 +158,23 @@ const UserModel = {
             userInfo.mobile_number = Number(userInfo.mobile_number);
             return userInfo;
         }
+    },
+    deleteUser: async (id) => {
+        const existingUser = await prisma.users.findUnique({
+            where: { id },
+        });
+        if (!existingUser) {
+            return false;
+        }
+        
+        // Proceed with the delete (if it's a hard delete)
+        const user = await prisma.users.update({
+            where: { id : id },
+            data: {
+                is_deleted: true
+            }
+        });
+        return user;
     },
 };
 

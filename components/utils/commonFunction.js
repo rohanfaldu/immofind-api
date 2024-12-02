@@ -25,6 +25,18 @@ const commonFunction = {
               typeof value === 'bigint' ? value.toString() : value
             )
           );    
+    },
+    getRole: async (role) => {
+        switch (role) {
+            case 'developer':
+                return 'developer';
+            case 'agency':
+                return 'agency';
+            default:
+                return 'user';
+        }
+        const msg = message.replace(/'/g, "\\'");
+        return msg;
     }
 };
 export default commonFunction;

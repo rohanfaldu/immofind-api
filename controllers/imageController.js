@@ -12,10 +12,23 @@ const prisma = new PrismaClient();
 // Configure multer storage
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/');
+        const uploadPath = 'uploads/';
+        if (!fs.existsSync(uploadPath)) {
+            fs.mkdirSync(uploadPath, { recursive: true }); // Ensure upload directory exists
+        }
+        cb(null, uploadPath);
     },
     filename: (req, file, cb) => {
-        cb(null, `${Date.now()}-${file.originalname}`);
+        const originalName = file.originalname;
+        const uploadPath = 'uploads/';
+        const fullPath = path.join(uploadPath, originalName);
+
+        // Check if the file already exists
+        if (fs.existsSync(fullPath)) {
+            return cb(new Error(`File with name "${originalName}" already exists.`));
+        } else {
+            cb(null, originalName); // Use the original filename
+        }
     },
 });
 
@@ -26,19 +39,25 @@ export const uploadSingleImage = (req, res) => {
     upload.array('image', 5)(req, res, (err) => {
         if (err) {
             console.error('Multer Error:', err);
+
+            // Properly handle multer errors and send as response
+            if (err.message.includes('File with name')) {
+                return response.error(res, err.message);
+            }
+
             return response.serverError(res, res.__('messages.internalServerError'), err.message);
         }
-    
+
         if (!req.files || req.files.length === 0) {
             return response.error(res, res.__('messages.fileNotProvided'));
         }
-        
+
         const fileDetailsWithUrls = req.files.map((file) => ({
             originalName: file.originalname,
             mimeType: file.mimetype,
             size: file.size,
             path: file.path,
-            url: `${process.env.BASE_URL}/uploads/${file.filename}` // Constructed URL
+            url: `${process.env.BASE_URL}/uploads/${file.filename}`,
         }));
 
         return response.success(res, res.__('messages.singleUploadSuccess'), {
