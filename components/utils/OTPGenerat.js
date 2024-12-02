@@ -4,6 +4,7 @@ dotenv.config();
 
 const accountSid = process.env.TWILIO_ACCOUNT_SID; 
 const authToken = process.env.TWILIO_AUTH_TOKEN; 
+const phoneNumber = process.env.TWILID_PHONE_NUMBER; 
 const client = new twilio(accountSid, authToken);
 
 
@@ -13,10 +14,10 @@ const OTPGenerat = {
       const message = `Your OTP is ${otp}`;
       try {
         const response = await client.messages.create({
-          body: message,
-          from: '+16812244211',
-          to: mobileNumber
-      })
+            body: message,
+            from: phoneNumber,
+            to: mobileNumber
+        });
         return { success: true, otp };
       } catch (error) {
         return { success: false, error };
