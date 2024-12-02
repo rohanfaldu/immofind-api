@@ -56,6 +56,13 @@
 		"developerDeletedSuccessfully": "Développeur supprimé avec succès.",
 		"userDeletedSuccessfully": "Utilisateur supprimé avec succès",
 		"districtFetchedSuccessfully": "District récupéré avec succès.",
+		"errorCreatingProperty": "Erreur lors de la création de la propriété",
+		"propertyFetchSuccessfully": "Propriété récupérée avec succès",
+		"districtNotFound": "District non trouvé",
+		"propertyCreatedSuccessfully": "Propriété créée avec succès",
+		"propertyTypeCreatedSuccessfully": "Type de propriété créé avec succès",
+		"missingRequiredFields": "Champs obligatoires manquants",
+		"errorCreatingPropertyType": "Erreur lors de la création du type de propriété",
 		"stateNameRequired": "Le nom de l'État est requis",
 		"noDistrictsFoundForCity": "Le quartier n'a pas été trouvé"
 	}

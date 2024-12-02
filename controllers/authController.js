@@ -278,8 +278,6 @@ export const checkUserExists = async (req, res) => {
         return await response.error(res, res.__('messages.fieldError'));
     }
     const user = await UserModel.getUser(email_address,phone_number);
-    console.log('user');
-    console.log(user);
     if (user) {
         const roleName = await commonFunction.getRole(user.roles.name);
         return await response.success(res, res.__(`messages.${roleName}Exists`), user);

@@ -10,6 +10,7 @@ import imageRoutes from './routes/imageRoutes.js';
 import stateRoutes from './routes/stateRoutes.js';
 import cityRoutes from './routes/cityRoutes.js';
 import propertyRoutes from './routes/propertyRoutes.js';
+import propertyTypeRoutes from './routes/propertyTypeRoutes.js';
 import districtRoutes from './routes/districtRoutes.js';
 import propertyTypeListingsRoutes from './routes/propertyTypeListingsRoutes.js';
 import cors from 'cors';
@@ -74,6 +75,7 @@ app.use('/api/state', stateRoutes);
 app.use('/api/city', cityRoutes);
 app.use('/api/district', districtRoutes);
 app.use('/api/property', propertyRoutes);
+app.use('/api/property-type', propertyTypeRoutes);
 app.use('/api/property-type-listings', propertyTypeListingsRoutes);
 
 

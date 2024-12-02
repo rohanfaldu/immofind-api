@@ -52,12 +52,18 @@
 		"requiredFieldsMissing": "Some required fields are missing.",
 		"districtCreatedSuccessfully": "District Created Successfully",
 		"propertyType": "FOR",
+		"errorCreatingProperty": "Error Creating Property",
+		"propertyFetchSuccessfully": "Property Fetch Successfully",
+		"districtNotFound": "District Not Found",
+		"propertyCreatedSuccessfully": "Property Created Successfully",
+		"propertyTypeCreatedSuccessfully": "Property Type Created Successfully",
+		"missingRequiredFields": "Missing Required Fields",
+		"errorCreatingPropertyType": "Error Creating PropertyType",
 		"serverError": "Internal server error",
 		"developerDeletedSuccessfully": "Developer deleted successfully.",
 		"userDeletedSuccessfully": "User deleted successfully.",
 		"districtFetchedSuccessfully": "District successfully recovered.",
 		"stateNameRequired": "State name is required",
-		"noDistrictsFoundForCity": "District was not found",
-		"developerCreatedSuccessfully": "messages.developerCreatedSuccessfully"
+		"noDistrictsFoundForCity": "District was not found"
 	}
 }
