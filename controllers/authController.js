@@ -18,22 +18,28 @@ dotenv.config();
 const prisma = new PrismaClient();
 
 export const createUser = async (req, res) => {
-    try {
+    //try {
         const { user_id, user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, phone_number, password } = req.body;
         
         if (!user_name ||!full_name || !type ) {
             return await response.error(res, res.__('messages.fieldError'));
         }
 
-        if(email_address === '' && phone_number === '') {
-            return await response.error(res, res.__('messages.fieldError'));
+        
+        if(user_login_type === 'NONE'){
+            if(email_address === '' ) {
+                return await response.error(res, res.__('messages.fieldError'));
+            }
+            const checkPhonember = await commonFunction.checkPhonember(phone_number);
+            if(!checkPhonember){
+                return await response.error(res,res.__('messages.validPhoneNumber'));
+            }
+        } else{
+            if(email_address === '' && phone_number === '') {
+                return await response.error(res, res.__('messages.fieldError'));
+            }
         }
-
-        const checkPhonember = await commonFunction.checkPhonember(phone_number);
-        if(!checkPhonember){
-            return await response.error(res,res.__('messages.validPhoneNumber'));
-        }
-
+        
         const checkUser = await UserModel.getUser(email_address,phone_number);
 
         let user_inforation = false;
@@ -95,9 +101,9 @@ export const createUser = async (req, res) => {
             return await response.success(res, res.__(`messages.${roleName}CreatedSuccessfully`), responseData);
         }
         // Respond with success message and user information
-    } catch (error) {
-        return await response.serverError(res, res.__('messages.internalServerError'));
-    }
+    // } catch (error) {
+    //     return await response.serverError(res, res.__('messages.internalServerError'));
+    // }
 };
 
 export const updateUser = async (req, res) => {
@@ -268,14 +274,15 @@ export const checkUserExists = async (req, res) => {
     
     const { email_address, phone_number } = req.body;
 
-    if (!email_address || !phone_number) {
+    if (!email_address) {
         return await response.error(res, res.__('messages.fieldError'));
     }
     const user = await UserModel.getUser(email_address,phone_number);
-    
+    console.log('user');
+    console.log(user);
     if (user) {
         const roleName = await commonFunction.getRole(user.roles.name);
-        return await response.success(res, res.__(`messages.${roleName}Exists`), null);
+        return await response.success(res, res.__(`messages.${roleName}Exists`), user);
     } else {
         return await response.error(res, res.__('messages.userNotFound'));
     }
