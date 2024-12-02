@@ -78,7 +78,6 @@ app.use('/api/property', propertyRoutes);
 app.use('/api/property-type', propertyTypeRoutes);
 app.use('/api/property-type-listings', propertyTypeListingsRoutes);
 
-
 // Home route
 app.get('/', (req, res) => {
     res.send('Welcome to the Immofind API!');
