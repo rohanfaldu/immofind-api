@@ -494,6 +494,7 @@ export const updatePassword = async (req, res) => {
         }else{
             return await response.error(res, res.__('messages.userNotFound'));
         }
+        
     } catch (error) {
         return await response.serverError(res, res.__('messages.internalServerError'));
     }
