@@ -34,7 +34,7 @@
 		"agencyUpdatedSuccessfully": "Agency updated successfully.",
 		"agencyDeletedSuccessfully": "Agency deleted successfully.",
 		"passwordResetEmailSent": "Password reset email sent successfully.",
-		"emailSendFailed": "Email could not be sent.",
+		"emailSendFailed": "Email could not be sent or the user was not found.",
 		"statesFetchedSuccessfully": "States Fetched Successfully",
 		"stateCreatedSuccessfully": "State Created Successfully",
 		"cityCreatedSuccessfully": "City created successfully",

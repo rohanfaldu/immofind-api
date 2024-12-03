@@ -72,8 +72,8 @@
 		"developerDeletedSuccessfully": "Développeur supprimé avec succès.",
 		"userDeletedSuccessfully": "Utilisateur supprimé avec succès.",
 		"districtFetchedSuccessfully": "District récupéré avec succès.",
-		"stateNameRequired": "Nom de l'état requis",
-		"noDistrictsFoundForCity": "Aucun district trouvé pour la ville",
-		"developerCreatedSuccessfully": "Développeur créé avec succès"
+		"developerCreatedSuccessfully": "Développeur créé avec succès",
+		"stateNameRequired": "Le nom de l'État est requis",
+		"noDistrictsFoundForCity": "Le quartier n'a pas été trouvé"
 	}
 }
