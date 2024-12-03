@@ -424,6 +424,7 @@ export const sendOtp = async (req, res) => {
             if(!checkPhonember){
                 return response.error(res, "Please enter a valid phone number.", null);
             }
+            
             const checkMobileNumber = await UserModel.getUser('', phone_number);
             const sendOTP = await OTPGenerat.send(process.env.COUNTRY_CODE+phone_number);
             if (sendOTP) {
