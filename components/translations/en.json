@@ -59,11 +59,21 @@
 		"propertyTypeCreatedSuccessfully": "Property Type Created Successfully",
 		"missingRequiredFields": "Missing Required Fields",
 		"errorCreatingPropertyType": "Error Creating PropertyType",
+		"errorFetchingPropertyTypes": "Error Fetching PropertyTypes",
+		"propertyTypesFetchedSuccessfully": "PropertyTypes Fetched Successfully",
+		"propertyTypeListingCreatedSuccessfully": "PropertyTypeListing CreatedSuccessfully",
+		"errorUpdatingProperty": "Error Updating Property",
+		"propertyIdRequired": "PropertyId Required",
+		"propertyUpdatedSuccessfully": "Property Updated Successfully",
+		"errorDeletingProperty": "Deleting Property",
+		"propertyDeletedSuccessfully": "messages.propertyDeletedSuccessfully",
+		"propertyNotFound": "messages.propertyNotFound",
 		"serverError": "Internal server error",
 		"developerDeletedSuccessfully": "Developer deleted successfully.",
 		"userDeletedSuccessfully": "User deleted successfully.",
 		"districtFetchedSuccessfully": "District successfully recovered.",
 		"stateNameRequired": "State name is required",
-		"noDistrictsFoundForCity": "District was not found"
+		"noDistrictsFoundForCity": "District was not found",
+		"developerCreatedSuccessfully": "Developer Created Successfully"
 	}
 }
