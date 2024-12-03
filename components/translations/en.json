@@ -59,13 +59,13 @@
 		"propertyTypeCreatedSuccessfully": "Property Type Created Successfully",
 		"missingRequiredFields": "Missing Required Fields",
 		"errorCreatingPropertyType": "Error Creating PropertyType",
-		"errorFetchingPropertyTypes": "messages.errorFetchingPropertyTypes",
-		"propertyTypesFetchedSuccessfully": "messages.propertyTypesFetchedSuccessfully",
-		"propertyTypeListingCreatedSuccessfully": "messages.propertyTypeListingCreatedSuccessfully",
-		"errorUpdatingProperty": "messages.errorUpdatingProperty",
-		"propertyIdRequired": "messages.propertyIdRequired",
-		"propertyUpdatedSuccessfully": "messages.propertyUpdatedSuccessfully",
-		"errorDeletingProperty": "messages.errorDeletingProperty",
+		"errorFetchingPropertyTypes": "Error Fetching PropertyTypes",
+		"propertyTypesFetchedSuccessfully": "PropertyTypes Fetched Successfully",
+		"propertyTypeListingCreatedSuccessfully": "PropertyTypeListing CreatedSuccessfully",
+		"errorUpdatingProperty": "Error Updating Property",
+		"propertyIdRequired": "PropertyId Required",
+		"propertyUpdatedSuccessfully": "Property Updated Successfully",
+		"errorDeletingProperty": "Deleting Property",
 		"propertyDeletedSuccessfully": "messages.propertyDeletedSuccessfully",
 		"propertyNotFound": "messages.propertyNotFound",
 		"serverError": "Internal server error",
@@ -74,6 +74,6 @@
 		"districtFetchedSuccessfully": "District successfully recovered.",
 		"stateNameRequired": "State name is required",
 		"noDistrictsFoundForCity": "District was not found",
-		"developerCreatedSuccessfully": "messages.developerCreatedSuccessfully"
+		"developerCreatedSuccessfully": "Developer Created Successfully"
 	}
 }
