@@ -13,6 +13,8 @@ import propertyRoutes from './routes/propertyRoutes.js';
 import propertyTypeRoutes from './routes/propertyTypeRoutes.js';
 import districtRoutes from './routes/districtRoutes.js';
 import propertyTypeListingsRoutes from './routes/propertyTypeListingsRoutes.js';
+import agencyPackagesRoutes from './routes/agencyPackagesRoutes.js';
+import developersRoutes from './routes/developersRoutes.js';
 import cors from 'cors';
 import i18n from 'i18n';
 import path from 'path';
@@ -77,6 +79,8 @@ app.use('/api/district', districtRoutes);
 app.use('/api/property', propertyRoutes);
 app.use('/api/property-type', propertyTypeRoutes);
 app.use('/api/property-type-listings', propertyTypeListingsRoutes);
+app.use('/api/agency-packages', agencyPackagesRoutes);
+app.use('/api/developer', developersRoutes);
 
 // Home route
 app.get('/', (req, res) => {

@@ -64,6 +64,14 @@
 		"missingRequiredFields": "Champs obligatoires manquants",
 		"errorCreatingPropertyType": "Erreur lors de la création du type de propriété",
 		"stateNameRequired": "Le nom de l'État est requis",
-		"noDistrictsFoundForCity": "Le quartier n'a pas été trouvé"
+		"noDistrictsFoundForCity": "Le quartier n'a pas été trouvé",
+	    "agencyTypeCreatedSuccessfully": "Type d'agence créé avec succès",
+        "packageNotFound": "Package introuvable",
+        "invalidUUIDFormat": "Format UUID invalide",
+        "agencyPackageUpdatedSuccessfully": "Package de l'agence mis à jour avec succès",
+        "developersRetrievedSuccessfully": "Développeurs récupérés avec succès",
+        "developerUpdatedSuccessfully": "Développeur mis à jour avec succès",
+        "developerAndUserDeletedSuccessfully": "Développeur et utilisateur supprimés avec succès"
+
 	}
 }

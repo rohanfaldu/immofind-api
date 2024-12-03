@@ -64,6 +64,15 @@
 		"userDeletedSuccessfully": "User deleted successfully.",
 		"districtFetchedSuccessfully": "District successfully recovered.",
 		"stateNameRequired": "State name is required",
-		"noDistrictsFoundForCity": "District was not found"
+		"noDistrictsFoundForCity": "District was not found",
+		"developerCreatedSuccessfully": "Developer Created Successfully",
+		"errorCreatingagencyPackage": "Error Creating AgencyPackage",
+		"agencyPackageCreatedSuccessfully": "AgencyPackage Created Successfully",
+		"packageNotFound": "Package Not Found",
+		"invalidUUIDFormat": "Invalid UUID Format",
+		"agencyPackageUpdatedSuccessfully": "AgencyPackage Updated Successfully",
+		"developersRetrievedSuccessfully": "Developers Retrieved Successfully",
+		"developerUpdatedSuccessfully": "Developer Updated Successfully",
+		"developerAndUserDeletedSuccessfully": "Developer And User DeletedSuccessfully"
 	}
 }
