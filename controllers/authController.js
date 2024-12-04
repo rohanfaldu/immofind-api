@@ -20,12 +20,12 @@ const prisma = new PrismaClient();
 export const createUser = async (req, res) => {
     //try {
         const { user_id, user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, phone_number, password } = req.body;
-        
+
         if (!user_name ||!full_name || !type ) {
             return await response.error(res, res.__('messages.fieldError'));
         }
 
-        
+
         if(user_login_type === 'NONE'){
             if(email_address === '' ) {
                 return await response.error(res, res.__('messages.fieldError'));
@@ -39,7 +39,7 @@ export const createUser = async (req, res) => {
                 return await response.error(res, res.__('messages.fieldError'));
             }
         }
-        
+
         const checkUser = await UserModel.getUser(email_address,phone_number);
 
         let user_inforation = false;
@@ -52,7 +52,7 @@ export const createUser = async (req, res) => {
                 return await response.error(res,res.__('messages.userCheckEmail'));
             }
 
-            const data = {  
+            const data = {
                 full_name: full_name,
                 user_name: user_name,
                 fcm_token: fcm_token,
@@ -71,7 +71,7 @@ export const createUser = async (req, res) => {
                 userProfile: userUpdate,
                 token: CreateToken
             };
-            
+
             const roleName = await commonFunction.getRole(userUpdate.roles.name);
             return await response.success(res, res.__(`messages.${roleName}CreatedSuccessfully`), responseData);
         } else{
@@ -84,7 +84,7 @@ export const createUser = async (req, res) => {
                 roles: {
                     connect: {
                       name: type,
-                      status: true, 
+                      status: true,
                     },
                 },
                 user_login_type: user_login_type,
@@ -109,7 +109,7 @@ export const createUser = async (req, res) => {
 export const updateUser = async (req, res) => {
     try {
         const { user_id, user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, phone_number, password, is_deleted } = req.body;
-        
+
         if (!user_name ||!full_name || !type || !user_id ) {
             return await response.error(res, res.__('messages.fieldError'));
         }
@@ -123,7 +123,7 @@ export const updateUser = async (req, res) => {
             return await response.error(res,res.__('messages.validPhoneNumber'));
         }
 
-        const data = {  
+        const data = {
             full_name: full_name,
             user_name: user_name,
             fcm_token: fcm_token,
@@ -175,7 +175,7 @@ export const deleteUser = async (req, res) => {
 export const createNormalUser = async (req, res) => {
     try {
         const { user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, mobile_number, password } = req.body;
-        
+
         if (!user_name ||!full_name || !email_address || !type || !password) {
             return res.status(400).json({ error: "Please check the Fields." });
         }
@@ -199,7 +199,7 @@ export const createNormalUser = async (req, res) => {
                 roles: {
                     connect: {
                       name: type,
-                      status: true, 
+                      status: true,
                     },
                 },
                 user_login_type: user_login_type,
@@ -241,9 +241,9 @@ export const getallUser = async (req, res) => {
             }
 }
 export const getUser = async (req, res) => {
-    
+
     const { email_address,password } = req.body;
-    
+
     if (!email_address || !password) {
         return await response.error(res, res.__('messages.fieldError'));
     }
@@ -271,7 +271,7 @@ export const getUser = async (req, res) => {
 }
 
 export const checkUserExists = async (req, res) => {
-    
+
     const { email_address, phone_number } = req.body;
 
     if (!email_address) {
@@ -289,13 +289,13 @@ export const checkUserExists = async (req, res) => {
 export const loginUser = async (req, res) => {
     try {
         const { email_address, phone_number, code } = req.body;
-        
+
         if(email_address === '' && phone_number === '') {
             return await response.error(res, res.__('messages.fieldError'));
         }
 
         if( email_address !== '' && phone_number === '') {
-            
+
             const checkUser = await UserModel.getUser(email_address,'');
             let user_inforation = true;
             if(checkUser.mobile_number === 0) {
@@ -323,7 +323,7 @@ export const loginUser = async (req, res) => {
             if(!checkPhonember){
                 return response.error(res, "Please enter a valid phone number.", null);
             }
-            
+
             const checkUser = await UserModel.getUser('',phone_number);
             let user_inforation = true;
             if(checkUser.email_address === null) {
@@ -346,15 +346,15 @@ export const loginUser = async (req, res) => {
         }
     } catch (error) {
         return await response.serverError(res, res.__('messages.internalServerError'));
-    } 
+    }
 }
 
 export const sendOtp = async (req, res) => {
     try {
         const { email_address, phone_number, type, user_login_type } = req.body;
-        
+
         if(email_address !== ''){
-        
+
             const code = crypto.randomInt(100000, 999999); // Generate a random 6-digit code
             const to = email_address;
             const subject = "Verify Account";
@@ -369,7 +369,7 @@ export const sendOtp = async (req, res) => {
                     <p>Thank you,</p>
                     <p>The Immofind Team</p>
                 </div>`;
-   
+
             try {
                 // Send email and wait for completion
                 const emailData = await sendmail.gmail(to, subject, text);
@@ -401,7 +401,7 @@ export const sendOtp = async (req, res) => {
                     roles: {
                         connect: {
                             name: type,
-                            status: true, 
+                            status: true,
                         },
                     },
                     user_login_type: user_login_type
@@ -424,18 +424,18 @@ export const sendOtp = async (req, res) => {
             if(!checkPhonember){
                 return response.error(res, "Please enter a valid phone number.", null);
             }
-            
+
             const checkMobileNumber = await UserModel.getUser('', phone_number);
             const sendOTP = await OTPGenerat.send(process.env.COUNTRY_CODE+phone_number);
             if (sendOTP) {
                 const data = {
                     phone_password_code: parseInt(sendOTP.otp, 10),
                 };
-                
+
                 if (checkMobileNumber) {
                     // Update the existing user if checkMobileNumber is found
                     const userUpdate = await UserModel.updateUser({ id: checkMobileNumber.id }, data);
-                
+
                     return userUpdate
                     ? response.success(res, res.__('messages.userSendMobile'), { code: parseInt(sendOTP.otp, 10) })
                     : response.error(res, res.__('messages.userDataNotUpdated'), null);
@@ -445,23 +445,23 @@ export const sendOtp = async (req, res) => {
                         roles: {
                             connect: {
                                 name: "user",
-                                status: true, 
+                                status: true,
                             },
                         },
                         user_login_type: "NONE",
                         mobile_number: BigInt(phone_number),
                     ...data, // Reuse the data object to avoid redundancy
                     };
-                
+
                     const userUpdate = await UserModel.createUser(userDetail);
-                
+
                     return userUpdate
                     ? response.success(res, res.__('messages.userSendMobile'), { code: parseInt(sendOTP.otp, 10) })
                     : response.error(res, res.__('messages.userDataNotUpdated'), null);
-                }              
+                }
             }
-        
-        }   
+
+        }
     }
     catch (error) {
         return await response.serverError(res, res.__('messages.internalServerError'));
@@ -471,7 +471,7 @@ export const sendOtp = async (req, res) => {
 export const updatePassword = async (req, res) => {
     try {
         const { email_address, code, password } = req.body;
-        
+
         if (!password ||!code || !email_address) {
             return await response.error(res, res.__('messages.fieldError'));
         }
