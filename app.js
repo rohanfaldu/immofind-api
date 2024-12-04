@@ -73,7 +73,7 @@ app.use((req, res, next) => {
     next();
 });
 app.use('/auth', authRoutes);
-app.use('/api', agencyRoutes);
+app.use('/api/agencies', agencyRoutes);
 app.use('/api/images', imageRoutes); // Add image routes
 app.use('/api/state', stateRoutes);
 app.use('/api/city', cityRoutes);

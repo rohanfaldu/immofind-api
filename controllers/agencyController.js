@@ -14,55 +14,147 @@ const prisma = new PrismaClient(); // Assuming response utility is in place
 
 // Create an agency
 export const createAgency = async (req, res) => {
-    const { roles, user_name, full_name, email_address, user_login_type, image, address, mobile_number, password, user_type, credit, description,
-        facebook_link, twitter_link, youtube_link, pinterest_link, linkedin_link, instagram_link, whatsup_number, service_area,
-        tax_number, license_number, picture, cover } = req.body;
+  const { usertable, agency } = req.body;
 
-    // Extract user data from usertable
+  // Destructure usertable data
+  const {
+    roles,
+    full_name,
+    user_name,
+    mobile_number,
+    email_address,
+    password,
+    address,
+    image,
+    userType,
+  } = usertable;
+
+  // Destructure agency data
+  const {
+    credit,
+    description,
+    facebook_link,
+    twitter_link,
+    youtube_link,
+    pinterest_link,
+    linkedin_link,
+    instagram_link,
+    whatsup_number,
+    service_area,
+    tax_number,
+    license_number,
+    picture,
+    cover,
+  } = agency;
+
+  try {
+    // Validate required fields
+    if (!password || !email_address || !mobile_number) {
+      return response.error(
+        res,
+        res.__('messages.requiredFieldsMissing'),
+        null,
+        400
+      );
+    }
+
+    // Check if the user already exists
+    const existingUser = await User.getUser(email_address, mobile_number);
+
+    if (existingUser) {
+      return response.error(res, res.__('messages.userAlreadyExists'), null);
+    }
+
+    // Encrypt the password
+    const encryptedPassword = await passwordGenerator.encrypted(password);
+
+    // Prepare user data for user table
     const userData = {
-        full_name: full_name,
-        user_name: user_name,
-        email_address: email_address,
-        mobile_number: mobile_number,
-        fcm_token: '',
-        image: image,
-        roles: {
-            connect: {
-                name: 'agency',
-                status: true,
-            },
+      full_name,
+      user_name,
+      email_address,
+      mobile_number,
+      fcm_token: '',
+      image,
+      address,
+      roles: {
+        connect: {
+          name: roles || 'agency', // Default role to 'agency' if not provided
+          status: true,
         },
-        password: await passwordGenerator.encrypted(password),
-        user_login_type: "NONE"
+      },
+      password: encryptedPassword,
+      user_login_type: 'NONE',
     };
 
-    try {
-        const existingUser = await User.getUser(email_address, mobile_number);
+    // Save user to user table
+    const user = await User.createUser(userData);
 
-        if (existingUser) {
-            return response.error(res, res.__('messages.userAlreadyExists'), null);
-        }
-
-        const user = await User.createUser(userData);
-
-        if (user) {
-            return response.success(res, res.__('messages.agencyCreatedSuccessfully'), user);
-        } else {
-            return response.error(res, res.__('messages.userNotCreated'), null);
-        }
-    } catch (err) {
-        return response.serverError(res, res.__('messages.internalServerError'), err.message);
+    if (!user) {
+      return response.error(res, res.__('messages.userNotCreated'), null);
     }
+
+    // Prepare agency data for agency table
+    const agencyData = {
+      user_id: user.id, // Link to the newly created user
+      credit,
+      description,
+      facebook_link,
+      twitter_link,
+      youtube_link,
+      pinterest_link,
+      linkedin_link,
+      instagram_link,
+      whatsup_number,
+      service_area,
+      tax_number,
+      license_number,
+      picture,
+      cover,
+    };
+
+    // Save agency details to the agency table
+    const newAgency = await prisma.agencies.create({
+      data: agencyData,
+    });
+    if (newAgency) {
+      return response.success(
+        res,
+        res.__('messages.agencyCreatedSuccessfully'),
+        { user, agency: newAgency }
+      );
+    } else {
+      return response.error(res, res.__('messages.userNotCreated'), null);
+    }
+  } catch (err) {
+    console.error('Error creating agency:', err.message);
+    return response.serverError(res, res.__('messages.internalServerError'), err.message);
+  }
 };
+
+
 
 // Get all agencies
 export const getAllAgencies = async (req, res) => {
-    try {
-        const agencies = await Agency.findAll();
-        return response.success(res, res.__('messages.agenciesRetrievedSuccessfully'), agencies);
-    } catch (err) {
-        return response.serverError(res, res.__('messages.internalServerError'), err.message);
-    }
+  try {
+    // Fetch all agencies from the database using Prisma
+    const agencies = await prisma.agencies.findMany();
+
+    // Return success response with the agencies data
+    return res.status(200).json({
+      success: true,
+      message: res.__('messages.agenciesRetrievedSuccessfully'),
+      data: agencies,
+    });
+  } catch (err) {
+    // Handle any errors that occur during the query
+    console.error('Error fetching agencies:', err);
+    return res.status(500).json({
+      success: false,
+      message: res.__('messages.internalServerError'),
+      error: err.message,
+    });
+  }
 };
 
 // Send password reset email
@@ -103,38 +195,95 @@ export const sendMail = async (req, res) => {
 
 // Get an agency by ID
 export const getAgencyById = async (req, res) => {
-    try {
-        const agency = await Agency.findByPk(req.params.id);
-        if (agency) {
-            return response.success(res, res.__('messages.agencyRetrievedSuccessfully'), agency);
-        } else {
-            return response.error(res, res.__('messages.agencyNotFound'), null);
-        }
-    } catch (err) {
-        return response.serverError(res, res.__('messages.internalServerError'), err.message);
+  try {
+    // Fetch the agency by its ID using Prisma
+    const agency = await prisma.agencies.findUnique({
+      where: {
+        id: req.params.id, // Fetch by the agency ID from the request parameters
+      },
+    });
+
+    if (agency) {
+      // Return success response if agency is found
+      return res.status(200).json({
+        success: true,
+        message: res.__('messages.agencyRetrievedSuccessfully'),
+        data: agency,
+      });
+    } else {
+      // Return error if agency is not found
+      return res.status(404).json({
+        success: false,
+        message: res.__('messages.agencyNotFound'),
+        data: null,
+      });
     }
+  } catch (err) {
+    // Handle any errors that occur during the query
+    console.error('Error fetching agency:', err);
+    return res.status(500).json({
+      success: false,
+      message: res.__('messages.internalServerError'),
+      error: err.message,
+    });
+  }
 };
 
 // Update an agency
 export const updateAgency = async (req, res) => {
-    try {
-        const [updated] = await Agency.update(req.body, { where: { id: req.params.id } });
-        if (updated) {
-            const updatedAgency = await Agency.findByPk(req.params.id);
-            return response.success(res, res.__('messages.agencyUpdatedSuccessfully'), updatedAgency);
-        } else {
-            return response.error(res, res.__('messages.agencyNotFound'), null);
-        }
-    } catch (err) {
-        return response.serverError(res, res.__('messages.internalServerError'), err.message);
+  try {
+    // Fetch the agency by ID
+    const agency = await prisma.agencies.findUnique({
+      where: {
+        id: req.params.id, // Use ID from request params to find the agency
+      },
+    });
+
+    if (agency) {
+      // Update the agency with the data from the request body
+      const updatedAgency = await prisma.agencies.update({
+        where: {
+          id: req.params.id,
+        },
+        data: req.body, // The new data for the agency
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: res.__('messages.agencyUpdatedSuccessfully'),
+        data: updatedAgency,
+      });
+    } else {
+      // If no agency is found, return an error response
+      return res.status(404).json({
+        success: false,
+        message: res.__('messages.agencyNotFound'),
+        data: null,
+      });
     }
+  } catch (err) {
+    // Handle any errors during the update process
+    console.error('Error updating agency:', err);
+    return res.status(500).json({
+      success: false,
+      message: res.__('messages.internalServerError'),
+      error: err.message,
+    });
+  }
 };
 
 // Delete an agency
 export const deleteAgency = async (req, res) => {
     try {
-        const deleted = await Agency.destroy({ where: { id: req.params.id } });
-        if (deleted) {
+        // Use Prisma's delete method to remove the agency by its ID
+        const deletedAgency = await prisma.agency.delete({
+            where: {
+                id: req.params.id
+            }
+        });
+
+        // Check if agency was deleted successfully
+        if (deletedAgency) {
             return response.success(res, res.__('messages.agencyDeletedSuccessfully'), null);
         } else {
             return response.error(res, res.__('messages.agencyNotFound'), null);

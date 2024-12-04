@@ -102,6 +102,8 @@
 		"projectUpdatedSuccessfully": "Project Updated Successfully",
 		"errorDeletingProject": "Error Deleting Project",
 		"projectDeletedSuccessfully": "Project Deleted Successfully",
-		"projectNotFound": "Project Not Found"
+		"projectNotFound": "Project Not Found",
+		"agenciesRetrievedSuccessfully": "messages.agenciesRetrievedSuccessfully",
+		"agencyRetrievedSuccessfully": "messages.agencyRetrievedSuccessfully"
 	}
 }

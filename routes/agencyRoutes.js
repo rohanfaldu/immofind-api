@@ -4,21 +4,21 @@ const router = express.Router();
 
 // --- Start adding agency routes ---
 // Create an agency
-router.post('/agencies', createAgency);
+router.post('/create', createAgency);
 
 router.post('/sendmail', sendMail);
 
 // Get all agencies
-router.get('/agencies', getAllAgencies);
+router.post('/', getAllAgencies);
 
 // Get an agency by ID
-router.get('/agencies/:id', getAgencyById);
+router.get('/:id', getAgencyById);
 
 // Update an agency
-router.put('/agencies/:id', updateAgency);
+router.put('/:id', updateAgency);
 
 // Delete an agency
-router.delete('/agencies/:id', deleteAgency);
+router.delete('/:id', deleteAgency);
 
 
 export default router;
