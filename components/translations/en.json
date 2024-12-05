@@ -103,7 +103,24 @@
 		"errorDeletingProject": "Error Deleting Project",
 		"projectDeletedSuccessfully": "Project Deleted Successfully",
 		"projectNotFound": "Project Not Found",
-		"agenciesRetrievedSuccessfully": "messages.agenciesRetrievedSuccessfully",
-		"agencyRetrievedSuccessfully": "messages.agencyRetrievedSuccessfully"
+		"agenciesRetrievedSuccessfully": "Agencies Retrieved Successfully",
+		"agencyRetrievedSuccessfully": "Agency Retrieved Successfully",
+        "userNotCreated": "User Not Created",
+        "agencyPackageNotFound": "Agency package not found.",
+        "invalidNameFormatInPackage": "Invalid name format in package.",
+        "translationNotFound": "Translation not found.",
+        "agencyPackageDeletedSuccessfully": "Agency package deleted successfully.",
+        "invalidPhoneNumber": "Please enter a valid phone number.",
+        "districtIdRequired": "District Id Required",
+        "districtUpdatedSuccessfully": "District Updated Successfully",
+        "districtDeletedSuccessfully": "District Deleted Successfully",
+        "accountNotFound": "Sorry! An account with that email address doesn't exist.",
+        "emailRetrieved": "Email retrieved successfully.",
+        "passwordEncryptionError": "An error occurred while resetting your password. Please try again!",
+        "passwordUpdated": "Password updated successfully!",
+        "projectIdRequired": "Project Id Required",
+        "errorFetchingProperties": "errorFetchingProperties",
+        "errorFetchingPropertyTypes": "errorFetchingPropertyTypes",
+
 	}
 }

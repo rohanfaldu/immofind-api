@@ -109,10 +109,8 @@ export const createPropertyTypeListing = async (req, res) => {
 
   // Ensure the required fields are provided
   if (!en_string || !fr_string || !icon || !type || !category || !created_by || !lang || !key) {
-    return res.status(400).json({
-      success: false,
-      message: 'All fields are required.',
-    });
+        return response.error(res, res.__('messages.allFieldsRequired'), null, 400);
+
   }
 
   try {

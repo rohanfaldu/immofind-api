@@ -141,7 +141,7 @@ export const updateDeveloper = async (req, res) => {
         const isValidUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
 
         if (!isValidUUID) {
-            return response.error(res, 'Invalid UUID format', null);
+                return response.error(res, res.__('messages.invalidUUIDFormat'), null);
         }
 
         // Update developer details

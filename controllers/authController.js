@@ -321,7 +321,7 @@ export const loginUser = async (req, res) => {
         else if( email_address === '' && phone_number !== '') {
             const checkPhonember = await commonFunction.checkPhonember(phone_number);
             if(!checkPhonember){
-                return response.error(res, "Please enter a valid phone number.", null);
+                    return response.error(res, res.__('messages.invalidPhoneNumber'), null);
             }
 
             const checkUser = await UserModel.getUser('',phone_number);

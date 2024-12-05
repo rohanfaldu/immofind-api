@@ -102,6 +102,24 @@
     "projectUpdatedSuccessfully": "Projet mis à jour avec succès.",
     "errorDeletingProject": "Erreur lors de la suppression du projet.",
     "projectDeletedSuccessfully": "Projet supprimé avec succès.",
-    "projectNotFound": "Projet non trouvé."
+    "projectNotFound": "Projet non trouvé.",
+    "agenciesRetrievedSuccessfully": "Agences récupérées avec succès",
+    "agencyRetrievedSuccessfully": "Agence récupérée avec succès",
+    "userNotCreated": "Utilisateur non créé",
+    "agencyPackageNotFound": "Forfait d'agence introuvable.",
+    "invalidNameFormatInPackage": "Format de nom invalide dans le forfait.",
+    "translationNotFound": "Traduction introuvable.",
+    "agencyPackageDeletedSuccessfully": "Forfait d'agence supprimé avec succès.",
+    "invalidPhoneNumber": "Veuillez entrer un numéro de téléphone valide.",
+    "districtIdRequired": "Identifiant du district requis",
+    "districtUpdatedSuccessfully": "District mis à jour avec succès",
+    "districtDeletedSuccessfully": "District supprimé avec succès",
+    "accountNotFound": "Désolé ! Aucun compte avec cette adresse e-mail n'existe.",
+    "emailRetrieved": "E-mail récupéré avec succès.",
+    "passwordEncryptionError": "Une erreur s'est produite lors de la réinitialisation de votre mot de passe. Veuillez réessayer !",
+    "passwordUpdated": "Mot de passe mis à jour avec succès !",
+    "projectIdRequired": "Identifiant de projet requis",
+    "errorFetchingProperties": "Erreur lors de la récupération des propriétés",
+    "errorFetchingPropertyTypes": "Erreur lors de la récupération des types de propriétés"
   }
 }

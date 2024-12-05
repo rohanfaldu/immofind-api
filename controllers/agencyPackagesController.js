@@ -72,10 +72,9 @@ export const updateAgencyPackage = async (req, res) => {
         const rawId = req.params.id.trim();
         const id = rawId.startsWith(':') ? rawId.slice(1) : rawId;
 
-
         // Validate UUID format
         if (!isValidUUID(id)) {
-            return res.status(400).json({ error: 'Invalid UUID format' });
+            return response.error(res, res.__('messages.invalidUUIDFormat'));
         }
         console.log('Received ID:', id);
 
@@ -87,14 +86,14 @@ export const updateAgencyPackage = async (req, res) => {
         });
 
         if (!existingPackage) {
-            return res.status(404).json({ error: 'Agency package not found' });
+            return response.error(res, res.__('messages.agencyPackageNotFound'), 404);
         }
 
         console.log('Existing package name:', existingPackage.name);
 
         // Validate the `name` field as UUID if required
         if (!isValidUUID(existingPackage.name)) {
-            return res.status(400).json({ error: 'Invalid name format in package' });
+            return response.error(res, res.__('messages.invalidNameFormatInPackage'));
         }
 
         // Find the existing translation
@@ -103,7 +102,7 @@ export const updateAgencyPackage = async (req, res) => {
         });
 
         if (!existingTranslation) {
-            return res.status(404).json({ error: 'Translation not found' });
+            return response.error(res, res.__('messages.translationNotFound'), 404);
         }
 
         // Update the translation record
@@ -127,15 +126,17 @@ export const updateAgencyPackage = async (req, res) => {
             },
         });
 
-        return res.status(200).json({
-            message: 'Agency package updated successfully',
-            data: updatedPackage,
-        });
+        return response.success(
+            res,
+            res.__('messages.agencyPackageUpdatedSuccessfully'),
+            updatedPackage
+        );
     } catch (error) {
         console.error('Error updating agency package:', error);
-        return res.status(500).json({ error: 'Internal server error' });
+        return response.error(res, res.__('messages.internalServerError'), 500);
     }
 };
+
 
 
 
@@ -146,9 +147,8 @@ export const updateAgencyPackage = async (req, res) => {
  */
 export const deleteAgencyPackage = async (req, res) => {
     try {
-    const rawId = req.params.id.trim();
-    const id = rawId.startsWith(':') ? rawId.slice(1) : rawId;
-
+        const rawId = req.params.id.trim();
+        const id = rawId.startsWith(':') ? rawId.slice(1) : rawId;
 
         // Find the agency package
         const existingPackage = await prisma.agencyPackages.findUnique({
@@ -156,7 +156,7 @@ export const deleteAgencyPackage = async (req, res) => {
         });
 
         if (!existingPackage) {
-            return res.status(404).json({ error: "Agency package not found" });
+            return response.error(res, res.__('messages.agencyPackageNotFound'), 404);
         }
 
         // Delete the agency package
@@ -164,9 +164,12 @@ export const deleteAgencyPackage = async (req, res) => {
             where: { id: id },
         });
 
-        return res.status(200).json({ message: "Agency package deleted successfully" });
+        return response.success(
+            res,
+            res.__('messages.agencyPackageDeletedSuccessfully')
+        );
     } catch (error) {
         console.error("Error deleting agency package:", error);
-        return res.status(500).json({ error: "Internal server error" });
+        return response.error(res, res.__('messages.internalServerError'), 500);
     }
 };

@@ -45,7 +45,7 @@ export const getCities = async (req, res) => {
     const { state_id, lang } = req.body; // Extract state_id and lang from the request body
 
     if (!state_id) {
-      return response.error(res, 'State ID is required', null);
+        return response.error(res, res.__('messages.stateIdRequired'), null);
     }
 
     const isFrench = lang === 'fr'; // Determine if the language is French
@@ -114,10 +114,11 @@ export const getCities = async (req, res) => {
     );
   } catch (error) {
     console.error('Error fetching cities:', error);
-    return response.error(res, 'Internal server error', {
-      message: error.message,
-      stack: error.stack,
+    return response.error(res, res.__('messages.internalServerError'), {
+        message: error.message,
+        stack: error.stack,
     });
+
   }
 };
 
