@@ -120,6 +120,21 @@
     "passwordUpdated": "Mot de passe mis à jour avec succès !",
     "projectIdRequired": "Identifiant de projet requis",
     "errorFetchingProperties": "Erreur lors de la récupération des propriétés",
-    "errorFetchingPropertyTypes": "Erreur lors de la récupération des types de propriétés"
+    "errorFetchingPropertyTypes": "Erreur lors de la récupération des types de propriétés",
+    "propertyTypeNotFound": "Type de propriété introuvable",
+    "propertyTypeUpdatedSuccessfully": "Type de propriété mis à jour avec succès",
+    "errorDeletingPropertyType": "Erreur lors de la suppression du type de propriété",
+    "propertyTypeDeletedSuccessfully": "Type de propriété supprimé avec succès",
+    "propertyTypeListingUpdatedSuccessfully": "Liste des types de propriété mise à jour avec succès",
+    "cannotDeletePropertyTypeListingDueToDependencies": "Impossible de supprimer la liste des types de propriété en raison de dépendances",
+    "propertyTypeListingDeletedSuccessfully": "Liste des types de propriété supprimée avec succès",
+    "propertyTypeListingNotFound": "Liste des types de propriété introuvable",
+    "idRequired": "Identifiant requis",
+    "errorUpdatingPropertyType": "Erreur lors de la mise à jour du type de propriété",
+    "projectTypeListingUpdateError": "Erreur de mise à jour de l'annonce du type de projet",
+    "projectTypeListingNotFound": "Annonce du type de projet introuvable",
+    "projectTypeListingUpdatedSuccessfully": "Annonce du type de projet mise à jour avec succès",
+    "projectTypeListingDeletedSuccessfully": "Annonce du type de projet supprimée avec succès",
+    "cannotDeleteProjectTypeListingDueToDependencies": "Impossible de supprimer l'annonce du type de projet en raison des dépendances"
   }
 }
