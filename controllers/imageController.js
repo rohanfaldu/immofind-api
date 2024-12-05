@@ -25,9 +25,17 @@ const storage = multer.diskStorage({
 
         // Check if the file already exists
         if (fs.existsSync(fullPath)) {
-            return cb(new Error(`File with name "${originalName}" already exists.`));
+            // If file exists, attach its details to the request object
+            req.existingFile = {
+                originalName: file.originalname,
+                mimeType: file.mimetype,
+                size: fs.statSync(fullPath).size,
+                path: fullPath,
+                url: `${process.env.BASE_URL}/uploads/${originalName}`,
+            };
+            return cb(null, originalName); // Continue without saving a new file
         } else {
-            cb(null, originalName); // Use the original filename
+            cb(null, originalName); // Use the original filename if the file doesn't exist
         }
     },
 });
@@ -39,31 +47,33 @@ export const uploadSingleImage = (req, res) => {
     upload.array('image', 5)(req, res, (err) => {
         if (err) {
             console.error('Multer Error:', err);
-
-            // Properly handle multer errors and send as response
-            if (err.message.includes('File with name')) {
-                return response.error(res, err.message);
-            }
-
-            return response.serverError(res, res.__('messages.internalServerError'), err.message);
+            return response.success(res, res.__('messages.internalServerError'), err.message);
         }
 
-        if (!req.files || req.files.length === 0) {
+        if (req.existingFile) {
+            // Return the existing file details if the file already exists
+            return response.success(res, res.__('messages.singleUploadSuccess'), {
+                files: [req.existingFile],
+            });
+        }
+
+        if (!req.file) {
             return response.error(res, res.__('messages.fileNotProvided'));
         }
 
-        const fileDetailsWithUrls = req.files.map((file) => ({
-            originalName: file.originalname,
-            mimeType: file.mimetype,
-            size: file.size,
-            path: file.path,
-            url: `${process.env.BASE_URL}/uploads/${file.filename}`,
-        }));
+        // Return details of the newly uploaded file
+        const fileDetails = {
+            originalName: req.file.originalname,
+            mimeType: req.file.mimetype,
+            size: req.file.size,
+            path: req.file.path,
+            url: `${process.env.BASE_URL}/uploads/${req.file.filename}`,
+        };
 
         return response.success(res, res.__('messages.singleUploadSuccess'), {
-            files: fileDetailsWithUrls,
+            files: [fileDetails],
         });
-
+        
     });
 };
 

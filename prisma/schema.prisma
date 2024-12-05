@@ -107,16 +107,14 @@ model LangTranslations {
   updated_by                                                       String?                @db.Uuid
   cities                                                           Cities[]
   districts                                                        Districts[]
+  project_details_description_translation                          ProjectDetails[]       @relation("project_description_translation")
+  project_details                                                  ProjectDetails[]       @relation("project_title_translation")
+  project_type_listings                                            ProjectTypeListings[]
   property_details_property_details_descriptionTolang_translations PropertyDetails[]      @relation("property_details_descriptionTolang_translations")
   property_details                                                 PropertyDetails[]
   property_type_listings                                           PropertyTypeListings[]
   property_types                                                   PropertyTypes[]
   states                                                           States[]
-
-  project_details                                                  ProjectDetails[] @relation("project_title_translation")
-  project_details_description_translation                          ProjectDetails[] @relation("project_description_translation")
-  project_type_listings                                           ProjectTypeListings[]
-
 
   @@map("lang_translations")
 }
@@ -169,76 +167,70 @@ model PropertyDetails {
 }
 
 model ProjectDetails {
-  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title       String    @db.Uuid
-  link_uuid   String    @db.VarChar
-  description String    @db.Uuid
-  price       Int
-  state_id    String    @db.Uuid
-  city_id     String    @db.Uuid
-  district_id String    @db.Uuid
-  latitude    String    @db.VarChar
-  longitude   String    @db.VarChar
-  vr_link     String?   @db.VarChar
-  picture     String?   @db.VarChar
-  video       String?   @db.VarChar
-  status      Boolean   @default(false)
-  user_id     String    @db.Uuid
-  is_deleted  Boolean   @default(false)
-  created_at  DateTime? @default(now()) @db.Timestamp(6)
-  updated_at  DateTime? @default(now()) @db.Timestamp(6)
-  created_by  String?   @db.Uuid
-  updated_by  String?   @db.Uuid
-  cities      Cities    @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_project_foreign_key")
-  districts   Districts @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_project_foreign_key")
-  states      States    @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_project_foreign_key")
-  users       Users     @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_user_foreign_key")
-
-  // New relations to LangTranslations
-  lang_translations_title       LangTranslations @relation("project_title_translation", fields: [title], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  lang_translations_description LangTranslations @relation("project_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
-
-  project_meta_details      ProjectMetaDetails[]  // One-to-many relationship with ProjectMetaDetails
+  id                            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  link_uuid                     String               @db.VarChar
+  price                         Int
+  state_id                      String               @db.Uuid
+  city_id                       String               @db.Uuid
+  district_id                   String               @db.Uuid
+  latitude                      String               @db.VarChar
+  longitude                     String               @db.VarChar
+  vr_link                       String?              @db.VarChar
+  picture                       String?              @db.VarChar
+  video                         String?              @db.VarChar
+  status                        Boolean              @default(false)
+  user_id                       String               @db.Uuid
+  is_deleted                    Boolean              @default(false)
+  created_at                    DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at                    DateTime?            @default(now()) @db.Timestamp(6)
+  created_by                    String?              @db.Uuid
+  updated_by                    String?              @db.Uuid
+  title                         String               @db.Uuid
+  description                   String               @db.Uuid
+  cities                        Cities               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_project_foreign_key")
+  districts                     Districts            @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_project_foreign_key")
+  lang_translations_description LangTranslations     @relation("project_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lang_translations_title       LangTranslations     @relation("project_title_translation", fields: [title], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                         Users                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_user_foreign_key")
+  states                        States               @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_project_foreign_key")
+  project_meta_details          ProjectMetaDetails[]
 
   @@map("project_details")
 }
 
 model ProjectMetaDetails {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  project_detail_id String    @db.Uuid
-  value             String    @db.VarChar
-  is_deleted        Boolean   @default(false)
-  created_at        DateTime? @default(now()) @db.Timestamp(6)
-  updated_at        DateTime? @default(now()) @db.Timestamp(6)
-  created_by        String?   @db.Uuid
-  updated_by        String?   @db.Uuid
-  project_type_listing_id String            @db.Uuid
-  project_type_listing ProjectTypeListings  @relation(fields: [project_type_listing_id], references: [id])
-
-  project_details           ProjectDetails      @relation(fields: [project_detail_id], references: [id]) // New relationship
-
+  id                      String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  project_detail_id       String              @db.Uuid
+  value                   String              @db.VarChar
+  is_deleted              Boolean             @default(false)
+  created_at              DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?           @default(now()) @db.Timestamp(6)
+  created_by              String?             @db.Uuid
+  updated_by              String?             @db.Uuid
+  project_type_listing_id String              @db.Uuid
+  project_details         ProjectDetails      @relation(fields: [project_detail_id], references: [id])
+  project_type_listing    ProjectTypeListings @relation(fields: [project_type_listing_id], references: [id])
 
   @@map("project_meta_details")
 }
 
 model ProjectTypeListings {
-  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  icon                  String?               @db.VarChar
-  is_deleted            Boolean               @default(false)
-  created_at            DateTime?             @default(now()) @db.Timestamp(6)
-  updated_at            DateTime?             @default(now()) @db.Timestamp(6)
-  created_by            String?               @db.Uuid
-  updated_by            String?               @db.Uuid
-  name                  String                @db.Uuid
-  type                  String?               @db.VarChar
-  key                   String?               @db.VarChar
-  category              BigInt
-  project_meta_details  ProjectMetaDetails[]
-  lang_translations     LangTranslations      @relation(fields: [name], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_listing_name_foreign_key")
+  id                   String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  icon                 String?              @db.VarChar
+  is_deleted           Boolean              @default(false)
+  created_at           DateTime?            @default(now()) @db.Timestamp(6)
+  updated_at           DateTime?            @default(now()) @db.Timestamp(6)
+  created_by           String?              @db.Uuid
+  updated_by           String?              @db.Uuid
+  name                 String               @db.Uuid
+  type                 String?              @db.VarChar
+  key                  String?              @db.VarChar
+  category             BigInt
+  project_meta_details ProjectMetaDetails[]
+  lang_translations    LangTranslations     @relation(fields: [name], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_listing_name_foreign_key")
 
   @@map("project_type_listings")
 }
-
 
 model PropertyMetaDetails {
   id                     String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -250,7 +242,7 @@ model PropertyMetaDetails {
   created_by             String?              @db.Uuid
   updated_by             String?              @db.Uuid
   property_type_id       String               @db.Uuid
-  property_meta_details   PropertyDetails      @relation(fields: [property_detail_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_detail_foreign_key")
+  property_meta_details  PropertyDetails      @relation(fields: [property_detail_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_detail_foreign_key")
   property_type_listings PropertyTypeListings @relation(fields: [property_type_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_type_foreign_key")
 
   @@map("property_meta_details")
@@ -332,7 +324,6 @@ model States {
   @@map("states")
 }
 
-
 model Users {
   id                   String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   full_name            String?           @db.VarChar
@@ -352,8 +343,9 @@ model Users {
   role_id              String            @db.Uuid
   status               Boolean?          @default(true)
   mobile_number        BigInt?
-  property_details     PropertyDetails[]
+  social_id            String?           @db.VarChar
   project_details      ProjectDetails[]
+  property_details     PropertyDetails[]
   roles                Roles             @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_foreign_key")
 
   @@map("users")

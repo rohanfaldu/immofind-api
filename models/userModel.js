@@ -15,6 +15,7 @@ const UserModel = {
                     image: data.image,
                     email_address: data.email_address,
                     fcm_token: data.fcm_token,
+                    social_id: social_id,
                     updated_at: new Date(),
                 },
                 create: {
@@ -29,6 +30,7 @@ const UserModel = {
                     mobile_number: data.mobile_number,
                     fcm_token: data.fcm_token,
                     image: data.image,
+                    social_id: social_id,
                     user_login_type: data.user_login_type,
                     email_address: data.email_address,
                     password: await passwordGenerator.encrypted(data.password),  // Hash your password before storing
@@ -83,7 +85,24 @@ const UserModel = {
             return userInfo;
         }
     },
-
+    getSocialUser: async (social_id) => {
+        const userInfo = await prisma.users.findFirst({
+            where: {
+                social_id: social_id
+              },
+            include: {
+                roles: {
+                    select: {
+                      name: true, // Select only the role name
+                    },
+                },
+            },
+        });
+        if (userInfo) {
+            userInfo.mobile_number = Number(userInfo.mobile_number);
+            return userInfo;
+        }
+    },
     getUserWithEmailOTP: async (email_address, otp) => {
         const userInfo = await prisma.users.findFirst({
             where: {email_address: email_address, email_password_code: parseInt(otp, 10)},
@@ -168,13 +187,16 @@ const UserModel = {
         }
         
         // Proceed with the delete (if it's a hard delete)
-        const user = await prisma.users.update({
-            where: { id : id },
-            data: {
-                is_deleted: true
-            }
-        });
-        return user;
+        const deletedUser = await prisma.users.delete({
+            where: { id },
+          });
+        // const user = await prisma.users.update({
+        //     where: { id : id },
+        //     data: {
+        //         is_deleted: true
+        //     }
+        // });
+        return deletedUser;
     },
 };
 
