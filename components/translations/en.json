@@ -120,7 +120,7 @@
         "passwordUpdated": "Password updated successfully!",
         "projectIdRequired": "Project Id Required",
         "errorFetchingProperties": "errorFetchingProperties",
-        "errorFetchingPropertyTypes": "errorFetchingPropertyTypes",
+        "errorFetchingPropertyTypes": "errorFetchingPropertyTypes"
 
 	}
 }
