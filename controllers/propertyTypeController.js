@@ -119,3 +119,126 @@ export const createPropertyType = async (req, res) => {
     );
   }
 };
+
+export const updatePropertyType = async (req, res) => {
+  const { id, en_string, fr_string, updated_by } = req.body;
+
+  // Validate required fields
+  if (!id || !updated_by) {
+    return response.error(
+      res,
+      res.__('messages.missingRequiredFields'),
+      400
+    );
+  }
+
+  try {
+    // Fetch the existing PropertyType to validate the ID
+    const existingPropertyType = await prisma.propertyTypes.findUnique({
+      where: { id },
+    });
+
+    if (!existingPropertyType) {
+      return response.error(
+        res,
+        res.__('messages.propertyTypeNotFound'),
+        404
+      );
+    }
+
+    // Update the translations in LangTranslations
+    await prisma.langTranslations.update({
+      where: { id: existingPropertyType.title }, // Assuming `title` is the foreign key for LangTranslations
+      data: {
+        ...(en_string && { en_string }), // Update only if provided
+        ...(fr_string && { fr_string }), // Update only if provided
+      },
+    });
+
+    // Update the PropertyType record
+    const updatedPropertyType = await prisma.propertyTypes.update({
+      where: { id },
+      data: {
+        updated_by,
+        updated_at: new Date(),
+      },
+    });
+
+    // Return success response
+    return response.success(
+      res,
+      res.__('messages.propertyTypeUpdatedSuccessfully'),
+      updatedPropertyType
+    );
+  } catch (error) {
+    console.error(error);
+    // Return error response
+    return response.error(
+      res,
+      res.__('messages.errorUpdatingPropertyType'),
+      500,
+      error.message
+    );
+  }
+};
+
+export const deletePropertyType = async (req, res) => {
+  const { id } = req.body;
+
+  // Validate required fields
+  if (!id) {
+    return response.error(
+      res,
+      res.__('messages.missingRequiredFields'),
+      400
+    );
+  }
+
+  try {
+    // Fetch the existing PropertyType to validate the ID
+    const existingPropertyType = await prisma.propertyTypes.findUnique({
+      where: { id },
+    });
+
+    if (!existingPropertyType) {
+      return response.error(
+        res,
+        res.__('messages.propertyTypeNotFound'),
+        404
+      );
+    }
+
+    // Print the query before deleting (Ensure UUID is in quotes)
+    // console.log(`Query to delete LangTranslation:
+    //   DELETE FROM LangTranslations WHERE id = '${existingPropertyType.title}'`);
+
+    // Start a transaction to delete both the PropertyType and its LangTranslations
+    const result = await prisma.$transaction(async (prisma) => {
+      // Delete the PropertyType record
+      await prisma.propertyTypes.delete({
+        where: { id },
+      });
+
+      // After PropertyType is deleted, now delete the corresponding LangTranslations
+      return prisma.langTranslations.delete({
+        where: { id: existingPropertyType.title }, // Assuming title is the foreign key to LangTranslations
+      });
+    });
+
+    // Return success response
+    return response.success(
+      res,
+      res.__('messages.propertyTypeDeletedSuccessfully'),
+      result
+    );
+  } catch (error) {
+    console.error('Error deleting property type:', error); // More detailed logging
+    // Return error response
+    return response.error(
+      res,
+      res.__('messages.errorDeletingPropertyType'),
+      500,
+      error.message
+    );
+  }
+};

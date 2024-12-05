@@ -155,3 +155,138 @@ export const createPropertyTypeListing = async (req, res) => {
     return response.serverError(res, error);
   }
 };
+
+export const updatePropertyTypeListing = async (req, res) => {
+  const { id, en_string, fr_string, icon, type, category, updated_by, lang, key } = req.body;
+
+  // Ensure the required fields are provided
+  if (!id || !updated_by || !lang || !key) {
+    return response.error(res, res.__('messages.allFieldsRequired'), null, 400);
+  }
+
+  try {
+    // Step 1: Check if the PropertyTypeListing exists
+    const existingPropertyTypeListing = await prisma.propertyTypeListings.findUnique({
+      where: { id },
+      include: {
+        lang_translations: true, // Include the linked LangTranslations to check if update is needed
+      },
+    });
+
+    if (!existingPropertyTypeListing) {
+      return response.error(res, res.__('messages.propertyTypeListingNotFound'), null, 404);
+    }
+
+    // Step 2: If translations need to be updated, update the LangTranslations
+    let updatedLangTranslation = existingPropertyTypeListing.lang_translations;
+
+    if (en_string || fr_string) {
+      updatedLangTranslation = await prisma.langTranslations.update({
+        where: { id: existingPropertyTypeListing.lang_translations.id },
+        data: {
+          en_string: en_string || existingPropertyTypeListing.lang_translations.en_string,
+          fr_string: fr_string || existingPropertyTypeListing.lang_translations.fr_string,
+          updated_by: updated_by,  // Assuming you track the updater
+        },
+      });
+    }
+
+    // Step 3: Update the PropertyTypeListing with the provided details
+    const updatedPropertyTypeListing = await prisma.propertyTypeListings.update({
+      where: { id },
+      data: {
+        icon: icon || existingPropertyTypeListing.icon,
+        type: type || existingPropertyTypeListing.type,
+        category: category || existingPropertyTypeListing.category,
+        updated_by: updated_by,
+        lang_translations: {
+          connect: {
+            id: updatedLangTranslation.id,  // Link to the possibly updated LangTranslation
+          },
+        },
+        key: key || existingPropertyTypeListing.key,
+      },
+    });
+
+    // Step 4: Return success response (convert BigInt to string if present)
+    const responseData = {
+      ...updatedPropertyTypeListing,
+      category: updatedPropertyTypeListing.category.toString(), // Convert BigInt to string
+    };
+
+    return response.success(
+      res,
+      res.__('messages.propertyTypeListingUpdatedSuccessfully'),
+      responseData
+    );
+  } catch (error) {
+    console.error('Error updating property type listing:', error);
+    return response.serverError(res, error);
+  }
+};
+
+export const deletePropertyTypeListing = async (req, res) => {
+  const { id } = req.body;
+
+  if (!id) {
+    return response.error(res, res.__('messages.idRequired'), null, 400);
+  }
+
+  try {
+    // Step 1: Fetch the PropertyTypeListing and its linked LangTranslations
+    const existingPropertyTypeListing = await prisma.propertyTypeListings.findUnique({
+      where: { id },
+      include: {
+        lang_translations: true,
+      },
+    });
+
+    if (!existingPropertyTypeListing) {
+      return response.error(res, res.__('messages.propertyTypeListingNotFound'), null, 404);
+    }
+
+    // Step 2: Delete records in a transaction
+    await prisma.$transaction(async (prisma) => {
+      // Check if propertyListings is properly defined in schema
+      if (prisma.propertyListings) {
+        // Delete dependent records in propertyListings
+        await prisma.propertyListings.deleteMany({
+          where: {
+            name: existingPropertyTypeListing.lang_translations.id,
+          },
+        });
+      }
+
+      // Delete the PropertyTypeListing
+      await prisma.propertyTypeListings.delete({
+        where: { id },
+      });
+
+      // Delete the linked LangTranslations
+      if (existingPropertyTypeListing.lang_translations?.id) {
+        await prisma.langTranslations.delete({
+          where: { id: existingPropertyTypeListing.lang_translations.id },
+        });
+      }
+    });
+
+    return response.success(
+      res,
+      res.__('messages.propertyTypeListingDeletedSuccessfully'),
+      null
+    );
+  } catch (error) {
+    console.error('Error deleting property type listing:', error);
+
+    if (error.code === 'P2003') {
+      return response.error(
+        res,
+        res.__('messages.cannotDeletePropertyTypeListingDueToDependencies'),
+        null,
+        400
+      );
+    }
+
+    return response.serverError(res, error);
+  }
+};
