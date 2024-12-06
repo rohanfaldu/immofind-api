@@ -136,6 +136,7 @@
 		"projectTypeListingUpdatedSuccessfully": "Project Type Listing Updated Successfully",
 		"projectTypeListingDeletedSuccessfully": "Project Type Listing Deleted Successfully",
 		"cannotDeleteProjectTypeListingDueToDependencies": "Can not Delete Project Type Listing Due To Dependencies",
-		"agencyAlreadyExists": "Agency Already Exists"
+		"agencyAlreadyExists": "Agency Already Exists",
+		"userNotRightsTocreateAgency": "User Not Rights To create Agency"
 	}
 }

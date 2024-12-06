@@ -136,7 +136,9 @@
     "projectTypeListingUpdatedSuccessfully": "Annonce du type de projet mise à jour avec succès",
     "projectTypeListingDeletedSuccessfully": "Annonce du type de projet supprimée avec succès",
     "cannotDeleteProjectTypeListingDueToDependencies": "Impossible de supprimer l'annonce du type de projet en raison des dépendances",
-	"agencyAlreadyExists": "L'agence existe déjà"
+	"agencyAlreadyExists": "L'agence existe déjà",
+	"userNotRightsTocreateAgency": "L'utilisateur n'a pas les droits pour créer une agence"
+
 
   }
 }

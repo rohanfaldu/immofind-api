@@ -10,6 +10,7 @@ datasource db {
 model Agencies {
   id                                                        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id                                                   String          @unique @db.Uuid
+  sub_user_id                                               String?         @db.Uuid // Nullable
   credit                                                    String?         @db.VarChar
   description                                               String?
   facebook_link                                             String?         @db.VarChar
@@ -36,6 +37,7 @@ model Agencies {
 
   @@map("agencies")
 }
+
 
 model AgencyPackages {
   id                                                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

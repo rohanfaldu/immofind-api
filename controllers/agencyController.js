@@ -14,11 +14,15 @@ const prisma = new PrismaClient(); // Assuming response utility is in place
 
 // Create an agency
 export const createAgency = async (req, res) => {
-  const { agency } = req.body;
+  // Extract user_id directly from the authenticated user
+  const user_id = req.user.id;
 
-  // Destructure agency data
+  if (!user_id) {
+    return response.error(res, "User ID is missing", null); // Handle the case where the user_id is missing.
+  }
+
+  // Destructure agency data from the request body
   const {
-    user_id,
     credit,
     description,
     facebook_link,
@@ -34,12 +38,31 @@ export const createAgency = async (req, res) => {
     picture,
     cover,
     agency_packages,
-  } = agency;
+  } = req.body;
 
   try {
+    // Fetch user details along with their role
+    const existingUser = await prisma.users.findUnique({
+      where: {
+        id: user_id,  // Use the correct userId to fetch the user
+      },
+      include: {
+        roles: true,  // Include the related role (note: it's 'roles', not 'role')
+      },
+    });
+
+    // Ensure the user has a role and the role is 'agency'
+    if (!existingUser || !existingUser.roles || existingUser.roles.name !== "agency") {
+      return response.error(
+        res,
+        res.__('messages.userNotRightsTocreateAgency'),
+        null
+      );
+    }
+
     // Check if an agency already exists for the given user_id
     const existingAgency = await prisma.agencies.findUnique({
-      where: { user_id },
+      where: { user_id: user_id },
     });
 
     if (existingAgency) {
@@ -50,9 +73,9 @@ export const createAgency = async (req, res) => {
       );
     }
 
-    // Prepare agency data for agency table
+    // Prepare agency data for the agency table
     const agencyData = {
-      user_id, // Link to the newly created user
+      user_id: user_id, // Link to the newly created user
       credit,
       description,
       facebook_link,
@@ -93,6 +116,8 @@ export const createAgency = async (req, res) => {
     );
   }
 };
+
+
 
 
 
