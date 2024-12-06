@@ -1,5 +1,5 @@
 import express from 'express';
-import {createNormalUser,createUser, getallUser, deleteUser, updateUser, getUser, loginUser,checkUserExists,sendOtp,updatePassword} from '../controllers/authController.js';
+import {createNormalUser,createUser, getallUser, loginWithPassword, deleteUser, updateUser, getUser, loginUser,checkUserExists,sendOtp,updatePassword} from '../controllers/authController.js';
 import passport from 'passport';
 const router = express.Router();
 
@@ -24,5 +24,6 @@ router.post('/sendotp', sendOtp);
 
 router.post('/updatepassword', updatePassword);
 
+router.post('/login/password', loginWithPassword);
 
 export default router;
