@@ -14,23 +14,11 @@ const prisma = new PrismaClient(); // Assuming response utility is in place
 
 // Create an agency
 export const createAgency = async (req, res) => {
-  const { usertable, agency } = req.body;
-
-  // Destructure usertable data
-  const {
-    roles,
-    full_name,
-    user_name,
-    mobile_number,
-    email_address,
-    password,
-    address,
-    image,
-    userType,
-  } = usertable;
+  const { agency } = req.body;
 
   // Destructure agency data
   const {
+    user_id,
     credit,
     description,
     facebook_link,
@@ -45,58 +33,26 @@ export const createAgency = async (req, res) => {
     license_number,
     picture,
     cover,
+    agency_packages,
   } = agency;
 
   try {
-    // Validate required fields
-    if (!password || !email_address || !mobile_number) {
+    // Check if an agency already exists for the given user_id
+    const existingAgency = await prisma.agencies.findUnique({
+      where: { user_id },
+    });
+
+    if (existingAgency) {
       return response.error(
         res,
-        res.__('messages.requiredFieldsMissing'),
-        null,
-        400
+        res.__('messages.agencyAlreadyExists'),
+        null
       );
-    }
-
-    // Check if the user already exists
-    const existingUser = await User.getUser(email_address, mobile_number);
-
-    if (existingUser) {
-      return response.error(res, res.__('messages.userAlreadyExists'), null);
-    }
-
-    // Encrypt the password
-    const encryptedPassword = await passwordGenerator.encrypted(password);
-
-    // Prepare user data for user table
-    const userData = {
-      full_name,
-      user_name,
-      email_address,
-      mobile_number,
-      fcm_token: '',
-      image,
-      address,
-      roles: {
-        connect: {
-          name: roles || 'agency', // Default role to 'agency' if not provided
-          status: true,
-        },
-      },
-      password: encryptedPassword,
-      user_login_type: 'NONE',
-    };
-
-    // Save user to user table
-    const user = await User.createUser(userData);
-
-    if (!user) {
-      return response.error(res, res.__('messages.userNotCreated'), null);
     }
 
     // Prepare agency data for agency table
     const agencyData = {
-      user_id: user.id, // Link to the newly created user
+      user_id, // Link to the newly created user
       credit,
       description,
       facebook_link,
@@ -111,24 +67,30 @@ export const createAgency = async (req, res) => {
       license_number,
       picture,
       cover,
+      agency_packages,
     };
 
     // Save agency details to the agency table
     const newAgency = await prisma.agencies.create({
       data: agencyData,
     });
+
     if (newAgency) {
       return response.success(
         res,
         res.__('messages.agencyCreatedSuccessfully'),
-        { user, agency: newAgency }
+        { agency: newAgency }
       );
     } else {
-      return response.error(res, res.__('messages.userNotCreated'), null);
+      return response.error(res, res.__('messages.agencyNotCreated'), null);
     }
   } catch (err) {
     console.error('Error creating agency:', err.message);
-    return response.serverError(res, res.__('messages.internalServerError'), err.message);
+    return response.serverError(
+      res,
+      res.__('messages.internalServerError'),
+      err.message
+    );
   }
 };
 

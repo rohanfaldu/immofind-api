@@ -1,32 +1,26 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 
-// Load environment variables
 dotenv.config();
 
-module.exports = async (req, res, next) => {
+export const authorize = async (req, res, next) => {
   try {
-    //   Get token from the header
-    const token = req.header("token");
+    // Get token from the header
+    const token = req.header("Authorization")?.split(" ")[1]; // Expected: "Bearer <token>"
 
     if (!token) {
-      return res.status(403).json({ error: "Unauthorized" });
-    } else {
-      //verify the token if it exists and assign the user to a variable
-      const payload = jwt.verify(token, process.env.secret);
-
-      if (payload) {
-        //set the req.user to have the value of the payload.user i.e. the user_id
-        req.user = payload.user;
-      } else {
-        res.status(403).json({ error: "Unauthorized" });
-      }
+      return res.status(403).json({ error: "Unauthorized: No token provided" });
     }
-  } catch (err) {
-    //   err.message = invalid signature
-    // console.log(err.message);
-    res.status(403).json({ error: "Unauthorized" });
-  }
 
-  next();
+    // Verify the token
+    const payload = jwt.verify(token, process.env.JWT_SECRET);
+
+    // Attach user to the request
+    req.user = payload;
+
+    next(); // Proceed to the next middleware or route handler
+  } catch (err) {
+    console.error('Authorization error:', err.message);
+    res.status(403).json({ error: "Unauthorized: Invalid token" });
+  }
 };

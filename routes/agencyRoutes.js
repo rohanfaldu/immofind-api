@@ -1,24 +1,27 @@
 import express from 'express';
-import { createAgency, sendMail, getAllAgencies, getAgencyById, updateAgency, deleteAgency } from '../controllers/agencyController.js';
+import { createAgency, sendMail, getAllAgencies, getAgencyById, updateAgency, deleteAgency }
+ from '../controllers/agencyController.js';
+import { authorize } from '../middleware/authorization.js'; // Adjust the path as needed
+
 const router = express.Router();
 
 // --- Start adding agency routes ---
-// Create an agency
-router.post('/create', createAgency);
+// Create an agency (protected)
+router.post('/create', authorize, createAgency);
 
-router.post('/sendmail', sendMail);
+// Send mail (protected)
+router.post('/sendmail', authorize, sendMail);
 
-// Get all agencies
-router.post('/', getAllAgencies);
+// Get all agencies (protected)
+router.post('/', authorize, getAllAgencies);
 
-// Get an agency by ID
-router.get('/:id', getAgencyById);
+// Get an agency by ID (protected)
+router.get('/:id', authorize, getAgencyById);
 
-// Update an agency
-router.put('/:id', updateAgency);
+// Update an agency (protected)
+router.put('/:id', authorize, updateAgency);
 
-// Delete an agency
-router.delete('/:id', deleteAgency);
-
+// Delete an agency (protected)
+router.delete('/:id', authorize, deleteAgency);
 
 export default router;

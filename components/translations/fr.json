@@ -135,6 +135,8 @@
     "projectTypeListingNotFound": "Annonce du type de projet introuvable",
     "projectTypeListingUpdatedSuccessfully": "Annonce du type de projet mise à jour avec succès",
     "projectTypeListingDeletedSuccessfully": "Annonce du type de projet supprimée avec succès",
-    "cannotDeleteProjectTypeListingDueToDependencies": "Impossible de supprimer l'annonce du type de projet en raison des dépendances"
+    "cannotDeleteProjectTypeListingDueToDependencies": "Impossible de supprimer l'annonce du type de projet en raison des dépendances",
+	"agencyAlreadyExists": "L'agence existe déjà"
+
   }
 }
