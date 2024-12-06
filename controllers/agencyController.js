@@ -124,8 +124,28 @@ export const createAgency = async (req, res) => {
 // Get all agencies
 export const getAllAgencies = async (req, res) => {
   try {
-    // Fetch all agencies from the database using Prisma
-    const agencies = await prisma.agencies.findMany();
+    // Extract user_id from the authenticated user
+    const user_id = req.user.id;
+
+    if (!user_id) {
+      return res.status(400).json({
+        success: false,
+        message: res.__('messages.userIdMissing'),
+      });
+    }
+
+    // Fetch agencies associated with the specific user_id
+    const agencies = await prisma.agencies.findMany({
+      where: { user_id: user_id },
+    });
+
+    // If no agencies found
+    if (!agencies || agencies.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: res.__('messages.noAgenciesFound'),
+      });
+    }
 
     // Return success response with the agencies data
     return res.status(200).json({
@@ -143,6 +163,7 @@ export const getAllAgencies = async (req, res) => {
     });
   }
 };
+
 
 // Send password reset email
 export const sendMail = async (req, res) => {
@@ -262,6 +283,7 @@ export const updateAgency = async (req, res) => {
 // Delete an agency
 export const deleteAgency = async (req, res) => {
     try {
+
         // Use Prisma's delete method to remove the agency by its ID
         const deletedAgency = await prisma.agency.delete({
             where: {
