@@ -1,21 +1,21 @@
 import express from 'express';
 import { createDistrict, getDistrictsByCity, getDistrictById, updateDistrict, deleteDistrict} from '../controllers/districtController.js';
-import passport from 'passport';
+import { authorize } from '../middleware/authorization.js'; // Import the authorization middleware
 const router = express.Router();
 
 // Create a new district
-router.post("/create", createDistrict);
+router.post("/create", authorize, createDistrict);
 
 // Get districts by city
-router.post("/", getDistrictsByCity);
+router.post("/", authorize, getDistrictsByCity);
 
 // Get district by ID
-router.post("/:id", getDistrictById);
+router.post("/getId", authorize, getDistrictById);
 
 // Update a district
-router.put("/:id", updateDistrict);
+router.put("/:id", authorize, updateDistrict);
 
 // Delete a district
-router.delete("/:id", deleteDistrict);
+router.delete("/:id", authorize, deleteDistrict);
 
 export default router;

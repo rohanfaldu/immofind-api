@@ -6,37 +6,68 @@ const prisma = new PrismaClient();
 // Create State with LangTranslations
 export const createState = async (req, res) => {
   try {
-    const { name, en_name, fr_name, slug } = req.body;
+    const { en_name, fr_name} = req.body;
 
-    if (!name || !en_name || !fr_name || !slug) {
+    if (!en_name || !fr_name) {
       return await response.error(res, res.__('messages.fieldError')); // Error when required fields are missing
     }
 
-    // Create LangTranslation entry for the state
-    const langTranslation = await prisma.langTranslations.create({
-      data: {
-        en_string: en_name,
-        fr_string: fr_name,
+    // Find if a LangTranslation exists with the given names
+    const langTranslation = await prisma.langTranslations.findFirst({
+      where: {
+        OR: [
+          { en_string: en_name },
+          { fr_string: fr_name },
+        ],
       },
     });
+
+    if (langTranslation) {
+      // Check if the LangTranslation ID is already used in the states table
+      const existingState = await prisma.states.findFirst({
+        where: {
+          lang_id: langTranslation.id, // Check for an existing state with the same lang_id
+          is_deleted: false,
+        },
+      });
+
+      if (existingState) {
+        return await response.error(
+          res,
+          res.__('messages.stateAlreadyExists'),
+          { existingState }
+        );
+      }
+    }
+
+    // Create a new LangTranslation entry if no matching translation exists
+    const newLangTranslation = langTranslation
+      ? langTranslation
+      : await prisma.langTranslations.create({
+          data: {
+            en_string: en_name,
+            fr_string: fr_name,
+          },
+        });
 
     // Create the state with the langTranslation reference
     const state = await prisma.states.create({
       data: {
-        name: name,
-        en_name: en_name,
-        fr_name: fr_name,
-        slug: slug,
-        lang_id: langTranslation.id,  // Link to LangTranslations ID
+        lang_id: newLangTranslation.id, // Link to LangTranslations ID
       },
     });
 
-    return await response.success(res, res.__('messages.stateCreatedSuccessfully'), state); // Success message
+    return await response.success(
+      res,
+      res.__('messages.stateCreatedSuccessfully'),
+      state
+    ); // Success message
   } catch (error) {
     console.error(error);
     return await response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
   }
 };
+
 
 // Get All States with Cities and LangTranslations
 export const getStates = async (req, res) => {
@@ -47,7 +78,6 @@ export const getStates = async (req, res) => {
     const states = await prisma.states.findMany({
       select: {
         id: true, // Include the state ID
-        name: true, // State name
         lang: {
           select: {
             fr_string: isFrench,
@@ -57,7 +87,6 @@ export const getStates = async (req, res) => {
         cities: {
           select: {
             id: true, // Include city ID
-            name: true, // City name
             lang: {
               select: {
                 // Select either `fr_string` or `en_string` for the city based on the language

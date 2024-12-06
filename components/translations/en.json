@@ -140,6 +140,12 @@
 		"userNotRightsTocreateAgency": "User Not Rights To create Agency",
 		"userIdMissing": "User Id Missing",
 		"userNotAuthorizedToCreateDeveloper": "User is not authorized to create a developer profile",
-		"developerAlreadyExists": "Developer profile already exists for this user"
+		"developerAlreadyExists": "Developer profile already exists for this user",
+		"stateAlreadyExists": "State Already Exists",
+		"cityAlreadyExists": "City Already Exists",
+		"stateNotFound": "State Not Found",
+		"stateLanguageNotFound": "State Language Not Found",
+		"invalidCityId": "Invalid City Id",
+		"districtAlreadyExists": "District Already Exists"
 	}
 }

@@ -136,11 +136,16 @@
     "projectTypeListingUpdatedSuccessfully": "Annonce du type de projet mise à jour avec succès",
     "projectTypeListingDeletedSuccessfully": "Annonce du type de projet supprimée avec succès",
     "cannotDeleteProjectTypeListingDueToDependencies": "Impossible de supprimer l'annonce du type de projet en raison des dépendances",
-	"agencyAlreadyExists": "L'agence existe déjà",
-	"userNotRightsTocreateAgency": "L'utilisateur n'a pas les droits pour créer une agence",
+	  "agencyAlreadyExists": "L'agence existe déjà",
+	  "userNotRightsTocreateAgency": "L'utilisateur n'a pas les droits pour créer une agence",
     "userIdMissing": "Identifiant utilisateur manquant",
     "userNotAuthorizedToCreateDeveloper": "L'utilisateur n'est pas autorisé à créer un profil de développeur",
-    "developerAlreadyExists": "Un profil de développeur existe déjà pour cet utilisateur"
-
+    "developerAlreadyExists": "Un profil de développeur existe déjà pour cet utilisateur",
+    "stateAlreadyExists": "L'État existe déjà",
+    "cityAlreadyExists": "La ville existe déjà",
+    "stateNotFound": "État introuvable",
+    "stateLanguageNotFound": "Langue de l'État introuvable",
+    "invalidCityId": "ID de la ville invalide",
+    "districtAlreadyExists": "Le district existe déjà"
   }
 }

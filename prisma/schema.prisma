@@ -57,10 +57,6 @@ model AgencyPackages {
 model Cities {
   id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   state_id       String            @db.Uuid
-  name           String            @unique @db.VarChar
-  en_name        String?           @db.VarChar
-  fr_name        String?           @db.VarChar
-  slug           String?           @unique @db.VarChar
   lang_id        String?           @db.Uuid
   is_deleted     Boolean           @default(false)
   created_at     DateTime?         @default(now()) @db.Timestamp(6)
@@ -78,11 +74,7 @@ model Cities {
 model Districts {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   city_id          String            @db.Uuid
-  name             String            @unique @db.VarChar
-  en_name          String?           @db.VarChar
-  fr_name          String?           @db.VarChar
   lang_id          String?           @db.Uuid
-  slug             String?           @db.VarChar
   latitude         Float?
   longitude        Float?
   is_deleted       Boolean           @default(false)
@@ -309,11 +301,7 @@ model Settings {
 
 model States {
   id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name           String            @unique @db.VarChar
-  en_name        String?           @db.VarChar
-  fr_name        String?           @db.VarChar
-  slug           String?           @unique @db.VarChar
-  lang_id        String?           @db.Uuid
+  lang_id        String?           @unique@db.Uuid
   is_deleted     Boolean           @default(false)
   created_at     DateTime?         @default(now()) @db.Timestamp(6)
   updated_at     DateTime?         @default(now()) @db.Timestamp(6)

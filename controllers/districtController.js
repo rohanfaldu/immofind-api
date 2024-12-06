@@ -6,37 +6,73 @@ const prisma = new PrismaClient();
 export const createDistrict = async (req, res) => {
   try {
     const {
-      name,
+      city_id,
       en_name,
       fr_name,
-      city_id,
-      slug,
       latitude,
-      longitude
+      longitude,
     } = req.body;
 
     // Validate required fields
-    if (!name || !city_id || !en_name || !fr_name) {
-      return await response.error(res, res.__('messages.fieldError')); // Error for missing fields
+    if (!city_id || (!en_name && !fr_name)) {
+      return await response.error(
+        res,
+        res.__('messages.fieldError', { field: 'city_id, en_name, or fr_name' })
+      );
     }
 
-    // Step 1: Insert into LangTranslations
-    const langTranslation = await prisma.langTranslations.create({
-      data: {
-        en_string: en_name, // Adjusted to match request body field name
-        fr_string: fr_name, // Adjusted to match request body field name
+    // Step 1: Verify city_id exists in Cities table
+    const cityExists = await prisma.cities.findUnique({
+      where: { id: city_id },
+    });
+
+    if (!cityExists) {
+      return await response.error(
+        res,
+        res.__('messages.invalidCityId')
+      );
+    }
+
+    // Step 2: Check if a language translation exists for the given names
+    let langTranslation = await prisma.langTranslations.findFirst({
+      where: {
+        OR: [
+          { en_string: en_name },
+          { fr_string: fr_name },
+        ],
       },
     });
 
-    // Step 2: Use the generated lang_id to insert into Districts
+    // Step 3: If no existing translation, create a new one
+    if (!langTranslation) {
+      langTranslation = await prisma.langTranslations.create({
+        data: {
+          en_string: en_name,
+          fr_string: fr_name,
+        },
+      });
+    }
+
+    // Step 4: Check if a district with the same city_id and lang_id already exists
+    const existingDistrict = await prisma.districts.findFirst({
+      where: {
+        city_id,
+        lang_id: langTranslation.id,
+      },
+    });
+
+    if (existingDistrict) {
+      return await response.error(
+        res,
+        res.__('messages.districtAlreadyExists')
+      );
+    }
+
+    // Step 5: Create the district if it doesn't exist
     const district = await prisma.districts.create({
       data: {
-        name,
-        en_name, // Store the English name in the district
-        fr_name, // Store the French name in the district
         city_id,
-        lang_id: langTranslation.id, // Use the generated lang_id
-        slug,
+        lang_id: langTranslation.id, // Use the generated or existing lang_id
         latitude,
         longitude,
       },
@@ -46,13 +82,14 @@ export const createDistrict = async (req, res) => {
       res,
       res.__('messages.districtCreatedSuccessfully'),
       district
-    ); // Success message
+    );
   } catch (error) {
+    console.error('Error creating district:', error);
     return await response.error(
       res,
       res.__('messages.internalServerError'),
       { message: error.message }
-    ); // Server error
+    );
   }
 };
 
@@ -74,7 +111,6 @@ export const getDistrictsByCity = async (req, res) => {
       where: { city_id },
       select: {
         id: true,
-        name: true,
         langTranslation: {
           select: {
             fr_string: isFrench,
@@ -83,7 +119,6 @@ export const getDistrictsByCity = async (req, res) => {
         },
         latitude: true,
         longitude: true,
-        slug: true,
         created_at: true,
         updated_at: true,
       },
@@ -140,7 +175,6 @@ export const getDistrictById = async (req, res) => {
       where: { id },
       select: {
         id: true,
-        name: true,
         langTranslation: {
           select: {
             fr_string: isFrench,
@@ -149,7 +183,6 @@ export const getDistrictById = async (req, res) => {
         },
         latitude: true,
         longitude: true,
-        slug: true,
         created_at: true,
         updated_at: true,
       },
@@ -162,11 +195,9 @@ export const getDistrictById = async (req, res) => {
     // Transform response to include only the relevant language string
     const transformedDistrict = {
       id: district.id,
-      name: district.name,
       lang_string: district.langTranslation?.fr_string || district.langTranslation?.en_string,
       latitude: district.latitude,
       longitude: district.longitude,
-      slug: district.slug,
       created_at: district.created_at,
       updated_at: district.updated_at,
     };

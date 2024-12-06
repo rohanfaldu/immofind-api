@@ -6,148 +6,112 @@ const prisma = new PrismaClient();
 // Create City with LangTranslations
 export const createCity = async (req, res) => {
   try {
-    const { name, en_name, fr_name, slug, state_id } = req.body;
+    const { en_name, fr_name, state_id } = req.body;
 
-    if (!name || !en_name || !fr_name || !slug || !state_id) {
+    if (!en_name || !fr_name || !state_id) {
       return await response.error(res, res.__('messages.fieldError')); // Error when required fields are missing
     }
 
-    // Create LangTranslation entry for the city
-    const langTranslation = await prisma.langTranslations.create({
-      data: {
-        en_string: en_name,
-        fr_string: fr_name,
+    // Check if a city with the same name already exists in the same state
+    const existingLangTranslation = await prisma.langTranslations.findFirst({
+      where: {
+        OR: [
+          { en_string: en_name },
+          { fr_string: fr_name },
+        ],
       },
     });
+
+    if (existingLangTranslation) {
+      const existingCity = await prisma.cities.findFirst({
+        where: {
+          state_id, // Ensure it's within the same state
+          lang_id: existingLangTranslation.id, // Match the LangTranslation ID
+          is_deleted: false, // Exclude soft-deleted entries
+        },
+      });
+
+      if (existingCity) {
+        return await response.error(
+          res,
+          res.__('messages.cityAlreadyExists'), // Use a custom error message
+          { existingCity }
+        );
+      }
+    }
+
+    // Create a new LangTranslation entry if no matching translation exists
+    const langTranslation = existingLangTranslation
+      ? existingLangTranslation
+      : await prisma.langTranslations.create({
+          data: {
+            en_string: en_name,
+            fr_string: fr_name,
+          },
+        });
 
     // Create the city with the langTranslation reference
     const city = await prisma.cities.create({
       data: {
-        name: name,
-        en_name: en_name,
-        fr_name: fr_name,
-        slug: slug,
-        state_id: state_id,        // Link to the state
-        lang_id: langTranslation.id,  // Link to LangTranslations ID
+        state_id, // Link to the state
+        lang_id: langTranslation.id, // Link to LangTranslations ID
       },
     });
 
-    return await response.success(res, res.__('messages.cityCreatedSuccessfully'), city); // Success message
+    return await response.success(
+      res,
+      res.__('messages.cityCreatedSuccessfully'),
+      city
+    ); // Success message
   } catch (error) {
     console.error(error);
-    return await response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
+    return await response.error(
+      res,
+      res.__('messages.internalServerError'),
+      { message: error.message }
+    ); // Server error
   }
 };
 
 // Get All Cities with States and LangTranslations
-export const getCities = async (req, res) => {
+export const getCitiesByStateId = async (req, res) => {
   try {
     const { state_id, lang } = req.body; // Extract state_id and lang from the request body
 
     if (!state_id) {
-        return response.error(res, res.__('messages.stateIdRequired'), null);
+      return response.error(res, res.__('messages.stateIdRequired')); // Error if state_id is missing
     }
 
     const isFrench = lang === 'fr'; // Determine if the language is French
 
-    // Fetch cities, states, and districts with the selected language
-    const cities = await prisma.cities.findMany({
-      where: { state_id }, // Filter by state_id
-      select: {
-        id: true, // City ID
-        name: true, // Default City Name
-        lang: {
-          select: {
-            fr_string: isFrench, // Include only fr_string if lang = 'fr'
-            en_string: !isFrench, // Include only en_string otherwise
-          },
-        },
-        districts: {
-          select: {
-            id: true, // District ID
-            name: true, // Default District Name
-            langTranslation: {
-              select: {
-                fr_string: isFrench, // Include only fr_string if lang = 'fr'
-                en_string: !isFrench, // Include only en_string otherwise
-              },
-            },
-          },
-        },
-        states: {
-          select: {
-            id: true, // State ID
-            name: true, // Default State Name
-            lang: {
-              select: {
-                fr_string: isFrench, // Include only fr_string if lang = 'fr'
-                en_string: !isFrench, // Include only en_string otherwise
-              },
-            },
-          },
-        },
-      },
-    });
-
-    // Transform data to simplify language selection
-    const transformedCities = cities.map((city) => ({
-      id: city.id,
-      name: city.name,
-      lang_string: city.lang?.fr_string || city.lang?.en_string,
-      districts: city.districts.map((district) => ({
-        id: district.id,
-        name: district.name,
-        lang_string: district.langTranslation?.fr_string || district.langTranslation?.en_string,
-      })),
-      states: {
-        id: city.states.id,
-        name: city.states.name,
-        lang_string: city.states.lang?.fr_string || city.states.lang?.en_string,
-      },
-    }));
-
-    // Return the transformed data
-    return response.success(
-      res,
-      res.__('messages.citiesFetchedSuccessfully'),
-      transformedCities
-    );
-  } catch (error) {
-    console.error('Error fetching cities:', error);
-    return response.error(res, res.__('messages.internalServerError'), {
-        message: error.message,
-        stack: error.stack,
-    });
-
-  }
-};
-
-
-
-// Get Cities by State Name
-export const getCitiesByState = async (req, res) => {
-  try {
-    const { stateName, lang } = req.body; // Extract stateName and lang from the request body
-
-    if (!stateName) {
-      return response.error(res, res.__('messages.stateNameRequired')); // Return error if stateName is missing
-    }
-
-    const isFrench = lang === 'fr'; // Determine if the requested language is French
-
-    // Fetch cities and related data by state name
-    const cities = await prisma.cities.findMany({
+    // Fetch state by state_id
+    const state = await prisma.states.findUnique({
       where: {
-        states: {
-          name: {
-            contains: stateName, // Perform partial match on state name
-            mode: 'insensitive', // Case-insensitive search
-          },
-        },
+        id: state_id, // Use state_id to directly fetch state
       },
       select: {
         id: true,
-        name: true,
+        lang: {
+          select: {
+            fr_string: isFrench,
+            en_string: !isFrench,
+          },
+        },
+      },
+    });
+
+    if (!state) {
+      return response.error(res, res.__('messages.stateNotFound')); // Error if state is not found
+    }
+
+    // Fetch cities for the state
+    const cities = await prisma.cities.findMany({
+      where: {
+        state_id: state.id, // Match cities by state_id
+        is_deleted: false,
+      },
+      select: {
+        id: true,
         lang: {
           select: {
             fr_string: isFrench,
@@ -157,20 +121,7 @@ export const getCitiesByState = async (req, res) => {
         districts: {
           select: {
             id: true,
-            name: true,
             langTranslation: {
-              select: {
-                fr_string: isFrench,
-                en_string: !isFrench,
-              },
-            },
-          },
-        },
-        states: {
-          select: {
-            id: true,
-            name: true,
-            lang: {
               select: {
                 fr_string: isFrench,
                 en_string: !isFrench,
@@ -182,36 +133,191 @@ export const getCitiesByState = async (req, res) => {
     });
 
     if (!cities.length) {
-      return response.error(res, res.__('messages.noCitiesFoundForState')); // Return error if no cities are found
+      return response.error(res, res.__('messages.noCitiesFoundForState')); // Error if no cities are found
     }
 
-    // Transform data to include dynamic language strings
+    // Transform the results to include only the necessary language strings
     const transformedCities = cities.map((city) => ({
       id: city.id,
-      name: city.name,
-      lang_string: city.lang?.fr_string || city.lang?.en_string,
-      state: {
-        id: city.states.id,
-        name: city.states.name,
-        lang_string: city.states.lang?.fr_string || city.states.lang?.en_string,
-      },
+      lang_string: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
       districts: city.districts.map((district) => ({
         id: district.id,
-        name: district.name,
-        lang_string:
-          district.langTranslation?.fr_string || district.langTranslation?.en_string,
+        lang_string: district.langTranslation
+          ? (isFrench
+              ? district.langTranslation.fr_string
+              : district.langTranslation.en_string)
+          : null, // Handle missing translations
       })),
     }));
 
+    // Include state details in the response
+    const result = {
+      state: {
+        id: state.id,
+        lang_string: isFrench && state.lang ? state.lang.fr_string : state.lang?.en_string, // State name in the requested language
+      },
+      cities: transformedCities,
+    };
+
+    return response.success(res, res.__('messages.citiesFetchedSuccessfully'), result); // Success response
+  } catch (error) {
+    console.error('Error fetching cities:', error);
+    return response.error(res, res.__('messages.internalServerError'), {
+      message: error.message,
+      stack: error.stack,
+    }); // Server error
+  }
+};
+
+
+
+
+// Get Cities by State Name
+export const getCitiesByState = async (req, res) => {
+  try {
+    const { stateName, lang } = req.body; // Extract stateName and lang from the request body
+
+    if (!stateName) {
+      return response.error(res, res.__('messages.stateNameRequired')); // Error if stateName is missing
+    }
+
+    const isFrench = lang === 'fr'; // Determine the requested language
+
+    // Fetch state by name (match on lang table)
+    const state = await prisma.states.findFirst({
+      where: {
+        is_deleted: false, // Ensure the state is not soft-deleted
+        lang: {
+          OR: [
+            { fr_string: isFrench ? stateName : null }, // Match French name if lang is 'fr'
+            { en_string: !isFrench ? stateName : null }, // Match English name otherwise
+          ],
+        },
+      },
+    });
+
+    if (!state) {
+      return response.error(res, res.__('messages.stateNotFound')); // Error if no state matches the name
+    }
+
+    // Check if the state has a valid language translation
+    if (!state.lang_id) {
+      return response.error(res, res.__('messages.stateLanguageNotFound')); // Error if state doesn't have language translations
+    }
+
+    // Fetch cities for the state
+    const cities = await prisma.cities.findMany({
+      where: {
+        state_id: state.id, // Match cities by state ID
+        is_deleted: false,
+      },
+      select: {
+        id: true,
+        lang: {
+          select: {
+            fr_string: isFrench,
+            en_string: !isFrench,
+          },
+        },
+        districts: {
+          select: {
+            id: true,
+            langTranslation: { // Correct relation field for language translations
+              select: {
+                fr_string: isFrench,
+                en_string: !isFrench,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!cities.length) {
+      return response.error(res, res.__('messages.noCitiesFoundForState')); // Error if no cities are found
+    }
+
+    // Transform the results to include only the necessary language strings
+    const transformedCities = cities.map((city) => ({
+      id: city.id,
+      lang_string: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
+      districts: city.districts.map((district) => ({
+        id: district.id,
+        // Safely check if langTranslation exists before accessing strings
+        lang_string: district.langTranslation
+          ? (isFrench
+              ? district.langTranslation.fr_string // District name in the requested language
+              : district.langTranslation.en_string)
+          : null, // Return null if langTranslation is missing
+      })),
+    }));
+
+    // Include state details in the response
+    const result = {
+      state: {
+        id: state.id,
+        lang_string: isFrench && state.lang ? state.lang.fr_string : state.lang?.en_string, // State name in requested language
+      },
+      cities: transformedCities,
+    };
+
+    return response.success(res, res.__('messages.citiesFetchedSuccessfully'), result); // Success response
+  } catch (error) {
+    console.error(error);
+    return response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
+  }
+};
+
+export const getCities = async (req, res) => {
+  try {
+    const { state_id, lang } = req.body; // Extract state_id and lang from the request body
+
+    if (!state_id) {
+      return response.error(res, res.__('messages.stateIdRequired'), null); // Error if state_id is missing
+    }
+
+    const isFrench = lang === 'fr'; // Determine if the language is French
+
+    // Fetch cities related to the provided state_id
+    const cities = await prisma.cities.findMany({
+      where: { state_id }, // Filter by state_id
+      select: {
+        id: true, // City ID
+        lang: {
+          select: {
+            fr_string: isFrench, // Include fr_string if lang is 'fr'
+            en_string: !isFrench, // Include en_string otherwise
+          },
+        },
+      },
+    });
+
+    if (!cities.length) {
+      return response.error(res, res.__('messages.noCitiesFoundForState')); // Error if no cities are found
+    }
+
+    // Transform data to simplify language selection
+    const transformedCities = cities.map((city) => ({
+      id: city.id,
+      lang_string: city.lang?.fr_string || city.lang?.en_string, // City name in the requested language
+    }));
+
+    // Return the transformed data
     return response.success(
       res,
       res.__('messages.citiesFetchedSuccessfully'),
       transformedCities
-    ); // Return success response
+    );
   } catch (error) {
-    console.error('Error fetching cities by state:', error);
+    console.error('Error fetching cities:', error);
     return response.error(res, res.__('messages.internalServerError'), {
       message: error.message,
-    }); // Handle server error
+      stack: error.stack,
+    }); // Server error
   }
 };
+
+
+
+
+
