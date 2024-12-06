@@ -137,6 +137,9 @@
 		"projectTypeListingDeletedSuccessfully": "Project Type Listing Deleted Successfully",
 		"cannotDeleteProjectTypeListingDueToDependencies": "Can not Delete Project Type Listing Due To Dependencies",
 		"agencyAlreadyExists": "Agency Already Exists",
-		"userNotRightsTocreateAgency": "User Not Rights To create Agency"
+		"userNotRightsTocreateAgency": "User Not Rights To create Agency",
+		"userIdMissing": "User Id Missing",
+		"userNotAuthorizedToCreateDeveloper": "User is not authorized to create a developer profile",
+		"developerAlreadyExists": "Developer profile already exists for this user"
 	}
 }

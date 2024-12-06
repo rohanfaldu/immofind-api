@@ -3,21 +3,23 @@ import {
   getAllDevelopers,
   createDeveloper,
   updateDeveloper,
-  deleteDeveloper
+  deleteDeveloper,
 } from '../controllers/developersController.js';
+import { authorize } from '../middleware/authorization.js'; // Adjust the path as needed
 
 const router = express.Router();
 
-// Fetch all agency packages
-router.post('/', getAllDevelopers);
+// --- Developer Routes ---
+// Get all developers (protected)
+router.post('/', authorize, getAllDevelopers);
 
-// Create a new agency package
-router.post('/create', createDeveloper);
+// Create a developer (protected)
+router.post('/create', authorize, createDeveloper);
 
-// Update an agency package
-router.put('/:id', updateDeveloper);
+// Update a developer (protected)
+router.put('/:id', authorize, updateDeveloper);
 
-// Soft delete an agency package
-router.delete('/:id', deleteDeveloper);
+// Delete a developer (protected)
+router.delete('/:id', authorize, deleteDeveloper);
 
 export default router;

@@ -9,127 +9,160 @@ const prisma = new PrismaClient();
 
 // Create a developer
 export const createDeveloper = async (req, res) => {
-    const {
-        roles,
-        user_name,
-        full_name,
-        email_address,
-        user_login_type,
-        image,
-        address,
-        mobile_number,
-        password,
-        credits,
-        description,
-        facebook_link,
-        twitter_link,
-        youtube_link,
-        pinterest_link,
-        linkedin_link,
-        instagram_link,
-        whatsappPhone,
-        service_area,
-        tax_number,
-        license_number,
-    } = req.body;
+  const user_id = req.user.id;
 
-    // User data for creation
-    const userData = {
-        full_name,
-        user_name,
-        email_address,
-        mobile_number,
-        fcm_token: '',
-        image,
-        roles: {
-            connect: {
-                name: 'developer', // Ensure this role exists in your DB
-                status: true,
-            },
-        },
-        password: await passwordGenerator.encrypted(password),
-        user_login_type: "NONE"
+  // Destructure request body
+  const {
+    full_name,
+    email_address,
+    mobile_number,
+    address,
+    password,
+    credits,
+    description,
+    facebook_link,
+    twitter_link,
+    youtube_link,
+    pinterest_link,
+    linkedin_link,
+    instagram_link,
+    whatsappPhone,
+    service_area,
+    tax_number,
+    license_number,
+  } = req.body;
+
+  try {
+    // Check if the user exists
+    const existingUser = await prisma.users.findUnique({
+      where: {
+        id: user_id,
+      },
+      include: {
+        roles: true, // Include role information
+      },
+    });
+
+    if (!existingUser) {
+      return response.error(res, res.__('messages.userNotFound'), null);
+    }
+
+    // Check if the user's role is "developer"
+    if (existingUser.roles.name !== "developer") {
+      return response.error(
+        res,
+        res.__('messages.userNotAuthorizedToCreateDeveloper'),
+        null
+      );
+    }
+
+    // Check if a developer profile already exists for this user
+    const existingDeveloper = await prisma.developers.findUnique({
+      where: { user_id },
+    });
+
+    if (existingDeveloper) {
+      return response.error(
+        res,
+        res.__('messages.developerAlreadyExists'),
+        null
+      );
+    }
+
+    // Prepare developer data for creation
+    const developerData = {
+      user_id: existingUser.id, // Use the ID from the authenticated user
+      name: full_name,
+      email: email_address,
+      phone: mobile_number,
+      address,
+      password, // Assuming hashed password is handled earlier
+      credits,
+      description,
+      facebookLink: facebook_link,
+      twitterLink: twitter_link,
+      youtubeLink: youtube_link,
+      pinterestLink: pinterest_link,
+      linkedinLink: linkedin_link,
+      instagramLink: instagram_link,
+      whatsappPhone,
+      serviceArea: service_area,
+      taxNumber: tax_number,
+      licenseNumber: license_number,
+      created_by: existingUser.id,
     };
 
-    try {
-        // Check if the user already exists
-       const existingUser = await User.getUser(email_address, mobile_number);
+    // Create the developer profile
+    const developer = await prisma.developers.create({
+      data: developerData,
+    });
 
-        if (existingUser) {
-            return response.error(res, res.__('messages.userAlreadyExists'), null);
-        }
+    // Convert BigInt fields to string for response (if applicable)
+    const safeDeveloper = JSON.parse(
+      JSON.stringify(developer, (_, value) =>
+        typeof value === "bigint" ? value.toString() : value
+      )
+    );
 
-        // Create a user
-       const user = await User.createUser(userData);
-
-        if (!user) {
-            return response.error(res, res.__('messages.userNotCreated'), null);
-        }
-
-        // Developer data for creation
-        const developerData = {
-            user_id: user.id, // Use the ID from the created user
-            name: full_name,
-            email: email_address,
-            phone: mobile_number,
-            address,
-            password: user.password,
-            credits,
-            description,
-            facebookLink: facebook_link,
-            twitterLink: twitter_link,
-            youtubeLink: youtube_link,
-            pinterestLink: pinterest_link,
-            linkedinLink: linkedin_link,
-            instagramLink: instagram_link,
-            whatsappPhone,
-            serviceArea: service_area,
-            taxNumber: tax_number,
-            licenseNumber: license_number,
-            created_by: user.id,
-        };
-
-        const developer = await prisma.developers.create({
-            data: developerData,
-        });
-
-         // Convert BigInt fields to string for response
-        const safeUser = JSON.parse(
-            JSON.stringify(user, (_, value) =>
-                typeof value === 'bigint' ? value.toString() : value
-            )
-        );
-
-        const safeDeveloper = JSON.parse(
-            JSON.stringify(developer, (_, value) =>
-                typeof value === 'bigint' ? value.toString() : value
-            )
-        );
-
-        return response.success(res, res.__('messages.developerCreatedSuccessfully'), { user: safeUser, developer: safeDeveloper });
-    } catch (err) {
-        console.error('Error creating developer:', err);
-        return response.serverError(res, res.__('messages.internalServerError'), err.message);
-    }
+    // Success response
+    return response.success(
+      res,
+      res.__('messages.developerCreatedSuccessfully'),
+      { developer: safeDeveloper }
+    );
+  } catch (err) {
+    console.error('Error creating developer:', err);
+    return response.serverError(
+      res,
+      res.__('messages.internalServerError'),
+      err.message
+    );
+  }
 };
+
 
 // Get all developers
+
 export const getAllDevelopers = async (req, res) => {
-    try {
-        const developers = await prisma.developers.findMany();
-         const safeDeveloper = JSON.parse(
-            JSON.stringify(developers, (_, value) =>
-                typeof value === 'bigint' ? value.toString() : value
-            )
-        );
+  const user_id = req.user.id; // Get the logged-in user's ID from the auth token
 
-        return response.success(res, res.__('messages.developersRetrievedSuccessfully'), {developers: safeDeveloper});
-    } catch (err) {
-        console.error('Error retrieving developers:', err);
-        return response.serverError(res, res.__('messages.internalServerError'), err.message);
+  try {
+    // Fetch the developer details for the logged-in user
+    const developer = await prisma.developers.findUnique({
+      where: {
+        user_id: user_id, // Filter by the authenticated user's ID
+      },
+    });
+
+    if (!developer) {
+      return response.error(
+        res,
+        res.__('messages.developerNotFound'), // Message if the developer doesn't exist
+        null
+      );
     }
-};
 
+    // Convert BigInt fields to string for response (if applicable)
+    const safeDeveloper = JSON.parse(
+      JSON.stringify(developer, (_, value) =>
+        typeof value === 'bigint' ? value.toString() : value
+      )
+    );
+
+    return response.success(
+      res,
+      res.__('messages.developersRetrievedSuccessfully'),
+      { developer: safeDeveloper }
+    );
+  } catch (err) {
+    console.error('Error retrieving developer:', err);
+    return response.serverError(
+      res,
+      res.__('messages.internalServerError'),
+      err.message
+    );
+  }
+};
 
 
 // Update a developer
