@@ -1,7 +1,7 @@
 // routes/imageRoutes.js
 import express from 'express';
 import { uploadSingleImage, uploadMultipleImages, uploadMultipleImagesFromJson} from '../controllers/imageController.js';
-import passport from 'passport';
+import { authorize } from '../middleware/authorization.js'; // Import the authorization middleware
 const router = express.Router();
 
 // Route for single image upload

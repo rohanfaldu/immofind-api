@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import response from '../components/utils/response.js';
-import propertyModel from '../models/propertyModel.js';
-import commonFunction from '../components/utils/commonFunction.js';
+import { validate as isUUID } from "uuid";
+
 const prisma = new PrismaClient();
 
 // Get all property type listings
@@ -45,9 +45,14 @@ export const getAllProperty = async (req, res) => {
           },
         },
         districts: {
-          select: {
-            name: true,
-          },
+        select: {
+            langTranslation: {
+            select: {
+                en_string: true,
+                fr_string: true,
+            },
+            },
+        },
         },
         property_meta_details: {
           select: {
@@ -256,9 +261,14 @@ export const createProperty = async (req, res) => {
                         fr_string: true,
                     },
                 },
-                districts: {
+                 districts: {
                     select: {
-                        name: true,
+                        langTranslation: {
+                        select: {
+                            en_string: true,
+                            fr_string: true,
+                        },
+                        },
                     },
                 },
                 property_meta_details: {
@@ -313,7 +323,11 @@ export const createProperty = async (req, res) => {
             price: createdProperty.price,
             bathRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'bathrooms')?.value || 0,
             bedRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'rooms')?.value || 0,
-            district: createdProperty.districts?.name || null,
+            district: createdProperty.districts?.langTranslation
+                ? lang === 'fr'
+                ? createdProperty.districts.langTranslation.fr_string
+                : createdProperty.districts.langTranslation.en_string
+                : null,
             meta_details: createdProperty.property_meta_details.map((meta) => {
                 const langObj = lang === 'en'
                     ? meta.property_type_listings?.lang_translations?.en_string
@@ -349,213 +363,222 @@ export const createProperty = async (req, res) => {
 };
 
 export const updateProperty = async (req, res) => {
-    const {
-        propertyId, // ID of the property to update
-        title_en,
-        title_fr,
-        description_en,
-        description_fr,
+  const {
+    propertyId, // ID of the property to update
+    title_en,
+    title_fr,
+    description_en,
+    description_fr,
+    price,
+    district_id,
+    latitude,
+    longitude,
+    vr_link,
+    picture,
+    video,
+    user_id,
+    type_id,
+    transaction,
+    size,
+    meta_details,
+  } = req.body;
+
+  try {
+    // Validate propertyId
+    if (!propertyId || !isUUID(propertyId)) {
+      return res.status(400).json({
+        success: false,
+        message: res.__("messages.invalidPropertyId"),
+      });
+    }
+
+    // Check if property exists
+    const existingProperty = await prisma.propertyDetails.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!existingProperty) {
+      return res.status(404).json({
+        success: false,
+        message: res.__("messages.propertyNotFound"),
+      });
+    }
+
+    // Update title translations if provided
+    if (title_en || title_fr) {
+      await prisma.langTranslations.update({
+        where: { id: existingProperty.title },
+        data: {
+          en_string: title_en || existingProperty.title_en,
+          fr_string: title_fr || existingProperty.title_fr,
+          updated_by: user_id,
+        },
+      });
+    }
+
+    // Update description translations if provided
+    if (description_en || description_fr) {
+      await prisma.langTranslations.update({
+        where: { id: existingProperty.description },
+        data: {
+          en_string: description_en || existingProperty.description_en,
+          fr_string: description_fr || existingProperty.description_fr,
+          updated_by: user_id,
+        },
+      });
+    }
+
+    // Validate district_id if provided
+    if (district_id && !isUUID(district_id)) {
+      return res.status(400).json({
+        success: false,
+        message: res.__("messages.invalidDistrictId"),
+      });
+    }
+
+    // Update property details
+    const updatedProperty = await prisma.propertyDetails.update({
+      where: { id: propertyId },
+      data: {
         price,
         district_id,
         latitude,
         longitude,
-        vr_link,
-        picture,
-        video,
+        vr_link: vr_link || null,
+        picture: picture || null,
+        video: video || null,
         user_id,
-        type_id,
+        type: type_id,
         transaction,
-        size,
-        meta_details,
-    } = req.body;
+        size: size || null,
+      },
+    });
 
-    try {
-        // Validate propertyId
-        if (!propertyId) {
-            return res.status(400).json({
-                success: false,
-                message: res.__('messages.propertyIdRequired'),
-            });
-        }
+    // Update meta details: delete existing and recreate
+    if (meta_details && meta_details.length > 0) {
+      await prisma.propertyMetaDetails.deleteMany({
+        where: { property_id: propertyId },
+      });
 
-        // Check if property exists
-        const existingProperty = await prisma.propertyDetails.findUnique({
-            where: { id: propertyId },
-        });
-
-        if (!existingProperty) {
-            return res.status(404).json({
-                success: false,
-                message: res.__('messages.propertyNotFound'),
-            });
-        }
-
-        // Update translations for title and description
-        if (title_en || title_fr) {
-            await prisma.langTranslations.update({
-                where: { id: existingProperty.title },
-                data: {
-                    en_string: title_en || existingProperty.title_en,
-                    fr_string: title_fr || existingProperty.title_fr,
-                    updated_by: user_id,
-                },
-            });
-        }
-
-        if (description_en || description_fr) {
-            await prisma.langTranslations.update({
-                where: { id: existingProperty.description },
-                data: {
-                    en_string: description_en || existingProperty.description_en,
-                    fr_string: description_fr || existingProperty.description_fr,
-                    updated_by: user_id,
-                },
-            });
-        }
-
-        // Update property details
-        const updatedProperty = await prisma.propertyDetails.update({
-            where: { id: propertyId },
-            data: {
-                price,
-                district_id,
-                latitude,
-                longitude,
-                vr_link: vr_link || null,
-                picture: picture || null,
-                video: video || null,
-                user_id,
-                type: type_id,
-                transaction,
-                size: size || null,
-            },
-        });
-
-        // Update meta details: delete existing and recreate
-        if (meta_details && meta_details.length > 0) {
-            await prisma.propertyMetaDetails.deleteMany({
-                where: { property_id: propertyId },
-            });
-
-            await prisma.propertyMetaDetails.createMany({
-                data: meta_details.map((meta) => ({
-                    property_id: propertyId,
-                    value: meta.value,
-                    property_type_id: meta.property_type_id,
-                })),
-            });
-        }
-
-        // Fetch updated property with relationships
-        const updatedPropertyDetails = await prisma.propertyDetails.findUnique({
-            where: { id: updatedProperty.id },
-            include: {
-                users: {
-                    select: {
-                        full_name: true,
-                        image: true,
-                    },
-                },
-                lang_translations_property_details_descriptionTolang_translations: {
-                    select: {
-                        en_string: true,
-                        fr_string: true,
-                    },
-                },
-                lang_translations: {
-                    select: {
-                        en_string: true,
-                        fr_string: true,
-                    },
-                },
-                districts: {
-                    select: { name: true },
-                },
-                property_meta_details: {
-                    select: {
-                        value: true,
-                        property_type_listings: {
-                            select: {
-                                id: true,
-                                name: true,
-                                type: true,
-                                key: true,
-                                lang_translations: {
-                                    select: {
-                                        en_string: true,
-                                        fr_string: true,
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-                property_types: {
-                    select: {
-                        id: true,
-                        title: true,
-                        lang_translations: {
-                            select: {
-                                en_string: true,
-                                fr_string: true,
-                            },
-                        },
-                    },
-                },
-            },
-        });
-
-        // Prepare the simplified response data
-        const lang = res.getLocale();
-        const simplifiedProperty = {
-            id: updatedPropertyDetails.id,
-            user_name: updatedPropertyDetails.users?.full_name || null,
-            user_image: updatedPropertyDetails.users?.image || null,
-            description: lang === 'fr'
-                ? updatedPropertyDetails.lang_translations_property_details_descriptionTolang_translations.fr_string
-                : updatedPropertyDetails.lang_translations_property_details_descriptionTolang_translations.en_string,
-            title: lang === 'fr' ? updatedPropertyDetails.lang_translations.fr_string : updatedPropertyDetails.lang_translations.en_string,
-            transaction: `${res.__('messages.propertyType')} ${updatedPropertyDetails.transaction}`,
-            transaction_type: updatedPropertyDetails.transaction,
-            latitude: updatedPropertyDetails.latitude,
-            longitude: updatedPropertyDetails.longitude,
-            size: updatedPropertyDetails.size,
-            price: updatedPropertyDetails.price,
-            bathRooms: updatedPropertyDetails.property_meta_details.find((meta) => meta.property_type_listings.key === 'bathrooms')?.value || 0,
-            bedRooms: updatedPropertyDetails.property_meta_details.find((meta) => meta.property_type_listings.key === 'rooms')?.value || 0,
-            district: updatedPropertyDetails.districts?.name || null,
-            meta_details: updatedPropertyDetails.property_meta_details.map((meta) => {
-                const langObj = lang === 'en'
-                    ? meta.property_type_listings?.lang_translations?.en_string
-                    : meta.property_type_listings?.lang_translations?.fr_string;
-
-                return {
-                    id: meta.property_type_listings?.id || null,
-                    type: meta.property_type_listings?.type || null,
-                    key: meta.property_type_listings?.key || null,
-                    name: langObj,
-                    value: meta.value,
-                };
-            }),
-            type: lang === 'fr'
-                ? updatedPropertyDetails.property_types?.lang_translations?.fr_string
-                : updatedPropertyDetails.property_types?.lang_translations?.en_string,
-        };
-
-        // Send successful response
-        return res.status(200).json({
-            success: true,
-            message: res.__('messages.propertyUpdatedSuccessfully'),
-            data: simplifiedProperty,
-        });
-    } catch (error) {
-        console.error('Error updating property:', error);
-        return res.status(500).json({
-            success: false,
-            message: res.__('messages.errorUpdatingProperty'),
-            error: error.message,
-        });
+      await prisma.propertyMetaDetails.createMany({
+        data: meta_details.map((meta) => ({
+          property_id: propertyId,
+          value: meta.value,
+          property_type_id: meta.property_type_id,
+        })),
+      });
     }
+
+    // Fetch the updated property with relationships
+    const updatedPropertyDetails = await prisma.propertyDetails.findUnique({
+      where: { id: updatedProperty.id },
+      include: {
+        users: {
+          select: { full_name: true, image: true },
+        },
+        lang_translations_property_details_descriptionTolang_translations: {
+          select: { en_string: true, fr_string: true },
+        },
+        lang_translations: {
+          select: { en_string: true, fr_string: true },
+        },
+        districts: {
+          select: {
+            langTranslation: {
+              select: { en_string: true, fr_string: true },
+            },
+          },
+        },
+        property_meta_details: {
+          select: {
+            value: true,
+            property_type_listings: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                key: true,
+                lang_translations: {
+                  select: { en_string: true, fr_string: true },
+                },
+              },
+            },
+          },
+        },
+        property_types: {
+          select: {
+            id: true,
+            title: true,
+            lang_translations: {
+              select: { en_string: true, fr_string: true },
+            },
+          },
+        },
+      },
+    });
+
+    // Prepare the response
+    const lang = res.getLocale();
+    const simplifiedProperty = {
+      id: updatedPropertyDetails.id,
+      user_name: updatedPropertyDetails.users?.full_name || null,
+      user_image: updatedPropertyDetails.users?.image || null,
+      description:
+        lang === "fr"
+          ? updatedPropertyDetails.lang_translations_property_details_descriptionTolang_translations.fr_string
+          : updatedPropertyDetails.lang_translations_property_details_descriptionTolang_translations.en_string,
+      title:
+        lang === "fr"
+          ? updatedPropertyDetails.lang_translations.fr_string
+          : updatedPropertyDetails.lang_translations.en_string,
+      transaction: `${res.__("messages.propertyType")} ${updatedPropertyDetails.transaction}`,
+      transaction_type: updatedPropertyDetails.transaction,
+      latitude: updatedPropertyDetails.latitude,
+      longitude: updatedPropertyDetails.longitude,
+      size: updatedPropertyDetails.size,
+      price: updatedPropertyDetails.price,
+      bathRooms:
+        updatedPropertyDetails.property_meta_details.find(
+          (meta) => meta.property_type_listings.key === "bathrooms"
+        )?.value || 0,
+      bedRooms:
+        updatedPropertyDetails.property_meta_details.find(
+          (meta) => meta.property_type_listings.key === "rooms"
+        )?.value || 0,
+      district:
+        updatedPropertyDetails.districts?.langTranslation &&
+        (lang === "fr"
+          ? updatedPropertyDetails.districts.langTranslation.fr_string
+          : updatedPropertyDetails.districts.langTranslation.en_string),
+      meta_details: updatedPropertyDetails.property_meta_details.map((meta) => ({
+        id: meta.property_type_listings?.id || null,
+        type: meta.property_type_listings?.type || null,
+        key: meta.property_type_listings?.key || null,
+        name:
+          lang === "en"
+            ? meta.property_type_listings?.lang_translations?.en_string
+            : meta.property_type_listings?.lang_translations?.fr_string,
+        value: meta.value,
+      })),
+      type:
+        lang === "fr"
+          ? updatedPropertyDetails.property_types?.lang_translations?.fr_string
+          : updatedPropertyDetails.property_types?.lang_translations?.en_string,
+    };
+
+    return res.status(200).json({
+      success: true,
+      message: res.__("messages.propertyUpdatedSuccessfully"),
+      data: simplifiedProperty,
+    });
+  } catch (error) {
+    console.error("Error updating property:", error);
+    return res.status(500).json({
+      success: false,
+      message: res.__("messages.errorUpdatingProperty"),
+      error: error.message,
+    });
+  }
 };
 
 
