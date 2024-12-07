@@ -9,15 +9,11 @@ const prisma = new PrismaClient();
 
 // Create a developer
 export const createDeveloper = async (req, res) => {
-  const user_id = req.user.id;
+//   const user_id = req.user.id;
 
   // Destructure request body
   const {
-    full_name,
-    email_address,
-    mobile_number,
-    address,
-    password,
+    user_id,
     credits,
     description,
     facebook_link,
@@ -72,11 +68,6 @@ export const createDeveloper = async (req, res) => {
     // Prepare developer data for creation
     const developerData = {
       user_id: existingUser.id, // Use the ID from the authenticated user
-      name: full_name,
-      email: email_address,
-      phone: mobile_number,
-      address,
-      password, // Assuming hashed password is handled earlier
       credits,
       description,
       facebookLink: facebook_link,

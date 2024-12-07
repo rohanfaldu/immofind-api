@@ -348,11 +348,11 @@ model Users {
 model Developers {
   id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id            String           @unique @db.Uuid
-  name               String
-  email              String           @db.VarChar
-  phone              String           @db.VarChar
-  address            String
-  password           String
+  name               String?
+  email              String?           @db.VarChar
+  phone              String?         @db.VarChar
+  address            String?
+  password           String?
   credit             String?          @db.VarChar
   description        String?
   facebookLink       String?          @db.VarChar
