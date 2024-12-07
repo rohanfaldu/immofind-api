@@ -146,6 +146,9 @@
     "stateNotFound": "État introuvable",
     "stateLanguageNotFound": "Langue de l'État introuvable",
     "invalidCityId": "ID de la ville invalide",
-    "districtAlreadyExists": "Le district existe déjà"
+    "districtAlreadyExists": "Le district existe déjà",
+    "invalidStateIdFormat": "Format d'identifiant d'État invalide",
+    "invalidStateId": "Identifiant d'État invalide",
+    "invalidCityIdFormat": "Format d'identifiant de ville invalide"
   }
 }

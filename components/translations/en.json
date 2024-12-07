@@ -146,6 +146,9 @@
 		"stateNotFound": "State Not Found",
 		"stateLanguageNotFound": "State Language Not Found",
 		"invalidCityId": "Invalid City Id",
-		"districtAlreadyExists": "District Already Exists"
+		"districtAlreadyExists": "District Already Exists",
+		"invalidStateIdFormat": "Invalid State Id Format",
+		"invalidStateId": "Invalid State Id",
+		"invalidCityIdFormat": "Invalid CityId Format"
 	}
 }

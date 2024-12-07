@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import response from "../components/utils/response.js";
+import { validate as isUuid } from 'uuid';
+
 // Initialize Prisma Client
 const prisma = new PrismaClient();
 
@@ -8,8 +10,29 @@ export const createCity = async (req, res) => {
   try {
     const { en_name, fr_name, state_id } = req.body;
 
+    // Validate required fields
     if (!en_name || !fr_name || !state_id) {
       return await response.error(res, res.__('messages.fieldError')); // Error when required fields are missing
+    }
+
+    // Validate state_id format
+    if (!isUuid(state_id)) {
+      return await response.error(
+        res,
+        res.__('messages.invalidStateIdFormat') // Custom error message for invalid UUID format
+      );
+    }
+
+    // Check if state_id exists in the states table
+    const stateExists = await prisma.states.findUnique({
+      where: { id: state_id },
+    });
+
+    if (!stateExists) {
+      return await response.error(
+        res,
+        res.__('messages.invalidStateId') // Use a custom error message for invalid state_id
+      );
     }
 
     // Check if a city with the same name already exists in the same state
@@ -78,8 +101,17 @@ export const getCitiesByStateId = async (req, res) => {
   try {
     const { state_id, lang } = req.body; // Extract state_id and lang from the request body
 
+    // Check if state_id is provided
     if (!state_id) {
       return response.error(res, res.__('messages.stateIdRequired')); // Error if state_id is missing
+    }
+
+    // Validate state_id format
+    if (!isUuid(state_id)) {
+      return response.error(
+        res,
+        res.__('messages.invalidStateIdFormat') // Custom error message for invalid UUID format
+      );
     }
 
     const isFrench = lang === 'fr'; // Determine if the language is French
@@ -168,9 +200,6 @@ export const getCitiesByStateId = async (req, res) => {
     }); // Server error
   }
 };
-
-
-
 
 // Get Cities by State Name
 export const getCitiesByState = async (req, res) => {
@@ -272,8 +301,22 @@ export const getCities = async (req, res) => {
   try {
     const { state_id, lang } = req.body; // Extract state_id and lang from the request body
 
+    // Validate state_id presence
     if (!state_id) {
-      return response.error(res, res.__('messages.stateIdRequired'), null); // Error if state_id is missing
+      return response.error(
+        res,
+        res.__('messages.stateIdRequired'),
+        null
+      ); // Error if state_id is missing
+    }
+
+    // Validate state_id format
+    if (!isUuid(state_id)) {
+      return response.error(
+        res,
+        res.__('messages.invalidStateIdFormat'), // Custom error message for invalid UUID format
+        null
+      );
     }
 
     const isFrench = lang === 'fr'; // Determine if the language is French
@@ -292,8 +335,9 @@ export const getCities = async (req, res) => {
       },
     });
 
+    // Handle no cities found
     if (!cities.length) {
-      return response.error(res, res.__('messages.noCitiesFoundForState')); // Error if no cities are found
+      return response.error(res, res.__('messages.noCitiesFoundForState'), null);
     }
 
     // Transform data to simplify language selection
@@ -316,8 +360,3 @@ export const getCities = async (req, res) => {
     }); // Server error
   }
 };
-
-
-
-
-

@@ -1,5 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import response from "../components/utils/response.js";
+import { validate as isUuid } from 'uuid';
+
 // Initialize Prisma Client
 const prisma = new PrismaClient();
 // Create District
@@ -15,25 +17,33 @@ export const createDistrict = async (req, res) => {
 
     // Validate required fields
     if (!city_id || (!en_name && !fr_name)) {
-      return await response.error(
+      return response.error(
         res,
         res.__('messages.fieldError', { field: 'city_id, en_name, or fr_name' })
       );
     }
 
-    // Step 1: Verify city_id exists in Cities table
+    // Validate `city_id` format
+    if (!isUuid(city_id)) {
+      return response.error(
+        res,
+        res.__('messages.invalidCityIdFormat') // Error if city_id is not a valid UUID
+      );
+    }
+
+    // Verify `city_id` exists in Cities table
     const cityExists = await prisma.cities.findUnique({
       where: { id: city_id },
     });
 
     if (!cityExists) {
-      return await response.error(
+      return response.error(
         res,
-        res.__('messages.invalidCityId')
+        res.__('messages.invalidCityId') // Error if city_id does not exist
       );
     }
 
-    // Step 2: Check if a language translation exists for the given names
+    // Check if a language translation exists for the given names
     let langTranslation = await prisma.langTranslations.findFirst({
       where: {
         OR: [
@@ -43,7 +53,7 @@ export const createDistrict = async (req, res) => {
       },
     });
 
-    // Step 3: If no existing translation, create a new one
+    // If no existing translation, create a new one
     if (!langTranslation) {
       langTranslation = await prisma.langTranslations.create({
         data: {
@@ -53,7 +63,7 @@ export const createDistrict = async (req, res) => {
       });
     }
 
-    // Step 4: Check if a district with the same city_id and lang_id already exists
+    // Check if a district with the same city_id and lang_id already exists
     const existingDistrict = await prisma.districts.findFirst({
       where: {
         city_id,
@@ -62,13 +72,13 @@ export const createDistrict = async (req, res) => {
     });
 
     if (existingDistrict) {
-      return await response.error(
+      return response.error(
         res,
-        res.__('messages.districtAlreadyExists')
+        res.__('messages.districtAlreadyExists') // Error if district already exists
       );
     }
 
-    // Step 5: Create the district if it doesn't exist
+    // Create the district if it doesn't exist
     const district = await prisma.districts.create({
       data: {
         city_id,
@@ -78,14 +88,14 @@ export const createDistrict = async (req, res) => {
       },
     });
 
-    return await response.success(
+    return response.success(
       res,
-      res.__('messages.districtCreatedSuccessfully'),
+      res.__('messages.districtCreatedSuccessfully'), // Success message
       district
     );
   } catch (error) {
     console.error('Error creating district:', error);
-    return await response.error(
+    return response.error(
       res,
       res.__('messages.internalServerError'),
       { message: error.message }
@@ -99,11 +109,32 @@ export const getDistrictsByCity = async (req, res) => {
   try {
     const { city_id, lang } = req.body; // Extract city_id and lang from the request body
 
-    // Validate city_id
+ // Validate city_id presence
     if (!city_id) {
-      return response.error(res, res.__('messages.cityIdRequired')); // Error if city_id is missing
+      return response.error(
+        res,
+        res.__('messages.cityIdRequired')
+      ); // Error if city_id is missing
     }
 
+    // Validate city_id format
+    if (!isUuid(city_id)) {
+      return response.error(
+        res,
+        res.__('messages.invalidCityIdFormat') // Error if city_id is not a valid UUID
+      );
+    }
+    // Verify if city_id exists
+    const cityExists = await prisma.cities.findUnique({
+      where: { id: city_id },
+    });
+
+    if (!cityExists) {
+      return response.error(
+        res,
+        res.__('messages.invalidCityId') // Error if city_id does not exist
+      );
+    }
     const isFrench = lang === 'fr'; // Determine if the language is French
 
     // Fetch districts by city_id with language-specific translations
@@ -167,7 +198,25 @@ export const getDistrictById = async (req, res) => {
     if (!id) {
       return response.error(res, res.__('messages.districtIdRequired')); // Error if id is missing
     }
+  // Validate city_id format
+    if (!isUuid(id)) {
+      return response.error(
+        res,
+        res.__('messages.invalidCityIdFormat') // Error if city_id is not a valid UUID
+      );
+    }
 
+    // Verify if city_id exists
+    const cityExists = await prisma.cities.findUnique({
+      where: { id: id },
+    });
+
+    if (!cityExists) {
+      return response.error(
+        res,
+        res.__('messages.invalidCityId') // Error if city_id does not exist
+      );
+    }
     const isFrench = lang === 'fr'; // Determine if the language is French
 
     // Fetch district by ID with language-specific translations
