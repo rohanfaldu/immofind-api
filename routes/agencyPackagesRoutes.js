@@ -5,19 +5,21 @@ import {
   updateAgencyPackage,
   deleteAgencyPackage
 } from '../controllers/agencyPackagesController.js';
+import { authorize } from '../middleware/authorization.js'; // Adjust the path as needed
+
 
 const router = express.Router();
 
 // Fetch all agency packages
-router.post('/', getAgencyPackage);
+router.post('/', authorize, getAgencyPackage);
 
 // Create a new agency package
-router.post('/create', createAgencyPackage);
+router.post('/create', authorize, createAgencyPackage);
 
 // Update an agency package
-router.put('/:id', updateAgencyPackage);
+router.put('/:id', authorize, updateAgencyPackage);
 
 // Soft delete an agency package
-router.delete('/:id', deleteAgencyPackage);
+router.delete('/:id', authorize, deleteAgencyPackage);
 
 export default router;

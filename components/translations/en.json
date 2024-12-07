@@ -149,6 +149,11 @@
 		"districtAlreadyExists": "District Already Exists",
 		"invalidStateIdFormat": "Invalid State Id Format",
 		"invalidStateId": "Invalid State Id",
-		"invalidCityIdFormat": "Invalid CityId Format"
+		"invalidCityIdFormat": "Invalid CityId Format",
+		"duplicateAgencyPackageName": "An agency package with the same name already exists.",
+        "invalidAgencyPackageIdFormat": "Invalid Agency Package ID format.",
+        "foreignKeyConstraintViolation": "Cannot delete this agency package because it is associated with other records."
+
+
 	}
 }

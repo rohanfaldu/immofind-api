@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import response from '../components/utils/response.js';
+import { validate as isUUID } from 'uuid'; // Import UUID validation helper
 
 const prisma = new PrismaClient();
 
@@ -28,39 +29,68 @@ export const createAgencyPackage = async (req, res) => {
   try {
     const { en_string, fr_string, created_by, is_deleted, type } = req.body;
 
-    // Insert translations into LangTranslations
-    const langTranslation = await prisma.langTranslations.create({
-      data: {
-        en_string, // English string
-        fr_string, // French string
-        created_by: created_by,
+    // Step 1: Validate required fields
+    if (!en_string && !fr_string) {
+      return response.error(
+        res,
+        res.__('messages.fieldError', { field: 'en_string or fr_string' })
+      );
+    }
+
+    // Step 2: Check for duplicate name
+    const existingLangTranslation = await prisma.langTranslations.findFirst({
+      where: {
+        OR: [
+          { en_string: en_string?.trim() },
+          { fr_string: fr_string?.trim() },
+        ],
       },
     });
 
+    if (existingLangTranslation) {
+      return response.error(
+        res,
+        res.__('messages.duplicateAgencyPackageName'),
+        { existingLangTranslation }
+      );
+    }
 
+    // Step 3: Create a new LangTranslation entry
+    const langTranslation = await prisma.langTranslations.create({
+      data: {
+        en_string: en_string?.trim(),
+        fr_string: fr_string?.trim(),
+        created_by,
+      },
+    });
 
-    // Creating a new agency package with the current time for 'created_at'
+    // Step 4: Create a new agency package with the LangTranslation ID
     const newPackage = await prisma.agencyPackages.create({
       data: {
         name: langTranslation.id, // Store the LangTranslation ID as a reference
-        type: type, // Use the `Package` directly from the request (should be "BASIC", "PREMIUM", etc.)
+        type: type?.trim(), // Use the `type` from the request (should be "BASIC", "PREMIUM", etc.)
         created_by,
         is_deleted,
-        created_at: new Date(), // Manually set created_at to the current time
+        created_at: new Date(), // Set created_at to the current time
       },
     });
 
-    return response.success(res, res.__('messages.agencyPackageCreatedSuccessfully'), newPackage);
-    } catch (error) {
-        console.error('Error creating agency package:', error);
-        return response.error(
-        res,
-        res.__('messages.errorCreatingagencyPackage'),
-        500,
-        error.message
-        );
-    }
+    return response.success(
+      res,
+      res.__('messages.agencyPackageCreatedSuccessfully'),
+      newPackage
+    );
+  } catch (error) {
+    console.error('Error creating agency package:', error);
+    return response.error(
+      res,
+      res.__('messages.errorCreatingAgencyPackage'),
+      500,
+      { message: error.message }
+    );
+  }
 };
+
 
 const isValidUUID = (id) => /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
 
@@ -146,30 +176,64 @@ export const updateAgencyPackage = async (req, res) => {
  * Soft delete an agency package
  */
 export const deleteAgencyPackage = async (req, res) => {
-    try {
-        const rawId = req.params.id.trim();
-        const id = rawId.startsWith(':') ? rawId.slice(1) : rawId;
+  try {
+    const id = req.params.id;
 
-        // Find the agency package
-        const existingPackage = await prisma.agencyPackages.findUnique({
-            where: { id: id },
-        });
-
-        if (!existingPackage) {
-            return response.error(res, res.__('messages.agencyPackageNotFound'), 404);
-        }
-
-        // Delete the agency package
-        await prisma.agencyPackages.delete({
-            where: { id: id },
-        });
-
-        return response.success(
-            res,
-            res.__('messages.agencyPackageDeletedSuccessfully')
-        );
-    } catch (error) {
-        console.error("Error deleting agency package:", error);
-        return response.error(res, res.__('messages.internalServerError'), 500);
+    // Step 1: Validate UUID format
+    if (!id || !isUUID(id)) {
+      return response.error(
+        res,
+        res.__('messages.invalidAgencyPackageIdFormat'), // Error for invalid UUID
+        400
+      );
     }
+
+    // Step 2: Find the agency package by `id`
+    const existingPackage = await prisma.agencyPackages.findUnique({
+      where: { id },
+    });
+
+    if (!existingPackage) {
+      return response.error(
+        res,
+        res.__('messages.agencyPackageNotFound'), // Error if package is not found
+        404
+      );
+    }
+
+    // Step 3: Delete the agency package
+    await prisma.agencyPackages.delete({
+      where: { id },
+    });
+
+    return response.success(
+      res,
+      res.__('messages.agencyPackageDeletedSuccessfully') // Success message
+    );
+  } catch (error) {
+    console.error('Error deleting agency package:', error);
+
+    // Handle specific Prisma error codes
+    if (error.code === 'P2003') {
+      return response.error(
+        res,
+        res.__('messages.foreignKeyConstraintViolation'), // Error for foreign key constraint
+        400
+      );
+    } else if (error.code === 'P2025') {
+      return response.error(
+        res,
+        res.__('messages.agencyPackageNotFound'), // Package not found
+        404
+      );
+    }
+
+    // Handle unexpected errors
+    return response.error(
+      res,
+      res.__('messages.internalServerError'), // Generic server error message
+      500,
+      { message: error.message }
+    );
+  }
 };

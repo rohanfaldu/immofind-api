@@ -149,6 +149,9 @@
     "districtAlreadyExists": "Le district existe déjà",
     "invalidStateIdFormat": "Format d'identifiant d'État invalide",
     "invalidStateId": "Identifiant d'État invalide",
-    "invalidCityIdFormat": "Format d'identifiant de ville invalide"
+    "invalidCityIdFormat": "Format d'identifiant de ville invalide",
+    "duplicateAgencyPackageName": "Un forfait d'agence avec le même nom existe déjà.",
+    "invalidAgencyPackageIdFormat": "Format d'identifiant de forfait d'agence invalide.",
+    "foreignKeyConstraintViolation": "Impossible de supprimer ce package d'agence car il est associé à d'autres enregistrements."
   }
 }
