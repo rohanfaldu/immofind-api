@@ -12,15 +12,25 @@ export const getAgencyPackage = async (req, res) => {
     const agencyPackages = await prisma.agencyPackages.findMany({
       where: { is_deleted: false },
       include: {
-        developers: true, // Include related developers if needed
+        developers: true, // Include developers if needed
+        language: {       // Fetch associated translations
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
       },
     });
+
     return response.success(res, res.__('messages.listFetchedSuccessfully'), agencyPackages);
   } catch (error) {
     console.error('Error fetching agency packages:', error);
-        return await response.serverError(res, res.__('messages.internalServerError'));
+    return response.serverError(res, res.__('messages.internalServerError'));
   }
 };
+
+
+
 
 /**
  * Create a new agency package

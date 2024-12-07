@@ -1,10 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import Agency from '../models/agencyModel.js';
 import User from '../models/userModel.js'; // Assuming you have a User model defined
-/*import { use } from 'passport';
-import jwtGenerator from "../components/utils/jwtGenerator.js";
-import bcrypt from "bcrypt";*/
-import passwordGenerator from "../components/utils/passwordGenerator.js";
 import sendmail from "../components/utils/sendmail.js";
 import crypto from 'crypto';
 import response from "../components/utils/response.js";
@@ -15,14 +10,15 @@ const prisma = new PrismaClient(); // Assuming response utility is in place
 // Create an agency
 export const createAgency = async (req, res) => {
   // Extract user_id directly from the authenticated user
-  const user_id = req.user.id;
+//   const user_id = req.user.id;
 
-  if (!user_id) {
-    return response.error(res, "User ID is missing", null); // Handle the case where the user_id is missing.
-  }
+//   if (!user_id) {
+//     return response.error(res, "User ID is missing", null); // Handle the case where the user_id is missing.
+//   }
 
   // Destructure agency data from the request body
   const {
+    user_id,
     credit,
     description,
     facebook_link,
@@ -282,22 +278,36 @@ export const updateAgency = async (req, res) => {
 
 // Delete an agency
 export const deleteAgency = async (req, res) => {
-    try {
+  try {
+    const { id } = req.params;
 
-        // Use Prisma's delete method to remove the agency by its ID
-        const deletedAgency = await prisma.agency.delete({
-            where: {
-                id: req.params.id
-            }
-        });
-
-        // Check if agency was deleted successfully
-        if (deletedAgency) {
-            return response.success(res, res.__('messages.agencyDeletedSuccessfully'), null);
-        } else {
-            return response.error(res, res.__('messages.agencyNotFound'), null);
-        }
-    } catch (err) {
-        return response.serverError(res, res.__('messages.internalServerError'), err.message);
+    // Validate UUID format
+    const isValidUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+    if (!isValidUUID) {
+      return response.error(res, res.__('messages.invalidUUIDFormat'), null);
     }
+    // Check if agency exists
+    const existingAgency = await prisma.agencies.findUnique({
+      where: { id },
+    });
+
+// console.log(existingAgency);
+
+    if (!existingAgency) {
+      return response.error(res, res.__('messages.agencyNotFound'), null);
+    }
+
+    // Delete agency
+    const deletedAgency = await prisma.agencies.delete({
+      where: { id },
+    });
+
+    if (deletedAgency) {
+      return response.success(res, res.__('messages.agencyDeletedSuccessfully'), null);
+    }
+
+  } catch (err) {
+    console.error('Error deleting agency:', err);
+    return response.serverError(res, res.__('messages.internalServerError'), err.message);
+  }
 };

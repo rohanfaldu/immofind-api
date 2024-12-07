@@ -167,32 +167,38 @@ export const getAllDevelopers = async (req, res) => {
 
 // Update a developer
 export const updateDeveloper = async (req, res) => {
-    try {
-        const { id } = req.params;
+  try {
+    const { id } = req.params;
 
-        // Validate the UUID format
-        const isValidUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
+    // Validate the UUID format
+    const isValidUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
 
-        if (!isValidUUID) {
-                return response.error(res, res.__('messages.invalidUUIDFormat'), null);
-        }
-
-        // Update developer details
-        const updatedDeveloper = await prisma.developers.update({
-            where: { id: id }, // UUID id should match the format
-            data: req.body,
-        });
-
-        if (!updatedDeveloper) {
-            return response.error(res, res.__('messages.developerNotFound'), null);
-        }
-
-        return response.success(res, res.__('messages.developerUpdatedSuccessfully'), updatedDeveloper);
-    } catch (err) {
-        console.error('Error updating developer:', err);
-        return response.serverError(res, res.__('messages.internalServerError'), err.message);
+    if (!isValidUUID) {
+      return response.error(res, res.__('messages.invalidUUIDFormat'), null);
     }
+
+    // Check if the developer exists
+    const existingDeveloper = await prisma.developers.findUnique({
+      where: { id },
+    });
+
+    if (!existingDeveloper) {
+      return response.error(res, res.__('messages.developerNotFound'), null);
+    }
+
+    // Update developer details
+    const updatedDeveloper = await prisma.developers.update({
+      where: { id },
+      data: req.body,
+    });
+
+    return response.success(res, res.__('messages.developerUpdatedSuccessfully'), updatedDeveloper);
+  } catch (err) {
+    console.error('Error updating developer:', err);
+    return response.serverError(res, res.__('messages.internalServerError'), err.message);
+  }
 };
+
 
 
 // Delete a developer

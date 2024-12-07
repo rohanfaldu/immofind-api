@@ -51,6 +51,8 @@ model AgencyPackages {
   name                                               String?      @db.Uuid
   agencies_agencies_agency_packagesToagency_packages Agencies[]   @relation("agencies_agency_packagesToagency_packages")
   developers                                         Developers[] @relation("DevelopersToAgencyPackages")
+  language                                           LangTranslations? @relation(fields: [name], references: [id]) // Add this line
+
 
   @@map("agency_packages")
 }
@@ -110,6 +112,7 @@ model LangTranslations {
   property_type_listings                                           PropertyTypeListings[]
   property_types                                                   PropertyTypes[]
   states                                                           States[]
+  agencyPackages                                                   AgencyPackages[]
 
   @@map("lang_translations")
 }
@@ -350,7 +353,7 @@ model Developers {
   phone              String           @db.VarChar
   address            String
   password           String
-  credit             String?         @db.VarChar
+  credit             String?          @db.VarChar
   description        String?
   facebookLink       String?          @db.VarChar
   twitterLink        String?          @db.VarChar
