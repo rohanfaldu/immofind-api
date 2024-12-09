@@ -112,6 +112,7 @@ export const createUser = async (req, res) => {
     // }
 };
 
+
 export const updateUser = async (req, res) => {
     try {
         const { social_id, user_id, user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, phone_number, password, is_deleted } = req.body;
