@@ -5,7 +5,7 @@ const router = express.Router();
 
 
 // Routes
-router.post('/',authorize, getAllProperty);
+router.post('/', getAllProperty);
 router.post('/create', authorize,createProperty);
 router.put('/:propertyId',authorize, updateProperty);
 router.delete('/:propertyId',authorize, deleteProperty);
