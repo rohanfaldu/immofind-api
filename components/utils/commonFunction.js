@@ -37,6 +37,16 @@ const commonFunction = {
         }
         const msg = message.replace(/'/g, "\\'");
         return msg;
+    },
+    checkDeviceType: async (deviceType) => {
+        switch (deviceType) {
+            case 'app':
+                return 'app';
+            case 'web':
+                return 'web';
+            default:
+                return '';
+        }
     }
 };
 export default commonFunction;

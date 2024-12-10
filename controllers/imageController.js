@@ -15,6 +15,7 @@ const storage = multer.diskStorage({
         const uploadPath = 'uploads/';
         if (!fs.existsSync(uploadPath)) {
             fs.mkdirSync(uploadPath, { recursive: true }); // Ensure upload directory exists
+            fs.chmodSync(uploadPath, 0o755); // Set folder permissions to 755
         }
         cb(null, uploadPath);
     },

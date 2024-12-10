@@ -454,7 +454,7 @@ export const loginWithPassword = async (req, res) => {
 }
 
 export const sendOtp = async (req, res) => {
-    try {
+    //try {
         const { email_address, phone_number, type, user_login_type, device_type } = req.body;
     
         // Validate device type
@@ -539,9 +539,9 @@ export const sendOtp = async (req, res) => {
         }
     
         return response.error(res, res.__('messages.fieldError'));
-    } catch (error) {
-        return await response.serverError(res, res.__('messages.internalServerError'));
-    }    
+    // } catch (error) {
+    //     return await response.serverError(res, res.__('messages.internalServerError'));
+    // }    
 }
 export const updatePassword = async (req, res) => {
     try {
