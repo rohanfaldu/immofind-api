@@ -159,6 +159,6 @@
 		"onlyDeveloperAgencyCreat": "Developer Or Agency User can only create Project",
 		"projectCreated": "Project Already Created",
 		"propertyExists": "Property Already Exists",
-		"uploadSuccess": "messages.uploadSuccess"
+		"uploadSuccess": "Image Upload Successfully"
 	}
 }
