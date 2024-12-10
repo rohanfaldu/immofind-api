@@ -167,6 +167,7 @@ model PropertyDetails {
   @@map("property_details")
 }
 
+
 model ProjectDetails {
   id                            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   link_uuid                     String               @db.VarChar
