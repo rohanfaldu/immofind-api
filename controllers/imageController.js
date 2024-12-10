@@ -44,35 +44,61 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Single image upload handler
+export const uploadMultipleImage = (req, res) => {
+    // Use `upload.array` to handle multiple files, max 5 files
+    upload.array('image', 5)(req, res, (err) => {
+        if (err) {
+            console.error('Multer Error:', err);
+            return res.status(500).json({ error: err.message });
+        }
+    
+        console.log('Files received:', req.files); // Log the files array
+    
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).json({ error: 'No files received' });
+        }
+    
+        const fileDetails = req.files.map((file) => ({
+            originalName: file.originalname,
+            mimeType: file.mimetype,
+            size: file.size,
+            path: file.path,
+        }));
+    
+        res.status(200).json({ message: 'Files uploaded successfully', files: fileDetails });
+    });    
+};
+
+
 export const uploadSingleImage = (req, res) => {
     upload.array('image', 5)(req, res, (err) => {
         if (err) {
             console.error('Multer Error:', err);
             return response.success(res, res.__('messages.internalServerError'), err.message);
         }
-
-        if (req.existingFile) {
-            // Return the existing file details if the file already exists
-            return response.success(res, res.__('messages.singleUploadSuccess'), {
-                files: [req.existingFile],
-            });
-        }
-
-        if (!req.file) {
+        
+        if (!req.files) {
             return response.error(res, res.__('messages.fileNotProvided'));
         }
-
-        // Return details of the newly uploaded file
-        const fileDetails = {
-            originalName: req.file.originalname,
-            mimeType: req.file.mimetype,
-            size: req.file.size,
-            path: req.file.path,
-            url: `${process.env.BASE_URL}/uploads/${req.file.filename}`,
-        };
-
+        
+        const uploadedFiles = req.files.map((file) => {
+            const filePath = path.resolve(file.path); // Resolve to absolute path
+        
+            // Check if the file exists
+            const fileExists = fs.existsSync(filePath);
+        
+            return {
+                originalName: file.originalname,
+                mimeType: file.mimetype,
+                size: file.size,
+                path: file.path,
+                url: `${process.env.BASE_URL}/uploads/${file.filename}`,
+                exists: fileExists, // Add this flag to indicate if the file exists
+            };
+        });
+        
         return response.success(res, res.__('messages.singleUploadSuccess'), {
-            files: [fileDetails],
+            files: uploadedFiles,
         });
         
     });

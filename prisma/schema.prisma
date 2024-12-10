@@ -108,7 +108,6 @@ model LangTranslations {
   project_details                                                  ProjectDetails[]       @relation("project_title_translation")
   project_type_listings                                            ProjectTypeListings[]
   property_details_property_details_descriptionTolang_translations PropertyDetails[]      @relation("property_details_descriptionTolang_translations")
-  property_details                                                 PropertyDetails[]
   property_type_listings                                           PropertyTypeListings[]
   property_types                                                   PropertyTypes[]
   states                                                           States?
@@ -133,7 +132,6 @@ model MetaData {
 
 model PropertyDetails {
   id                                                                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title                                                             String                @db.Uuid
   link_uuid                                                         String?               @db.Uuid
   price                                                             Int
   district_id                                                       String                @db.Uuid
@@ -155,10 +153,10 @@ model PropertyDetails {
   size                                                              Int?
   city_id                                                           String?               @db.Uuid
   state_id                                                          String?               @db.Uuid
+  title                                                             String                @db.Uuid
   cities                                                            Cities?               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
   districts                                                         Districts             @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
   lang_translations_property_details_descriptionTolang_translations LangTranslations      @relation("property_details_descriptionTolang_translations", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_descriptioj_foreign_key")
-  lang_translations                                                 LangTranslations      @relation(fields: [title], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_title_foreign_key")
   property_types                                                    PropertyTypes         @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_type_foreign_key")
   users                                                             Users                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_user_foreign_key")
   states                                                            States?               @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
@@ -166,7 +164,6 @@ model PropertyDetails {
 
   @@map("property_details")
 }
-
 
 model ProjectDetails {
   id                            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
