@@ -209,16 +209,18 @@ export const createProperty = async (req, res) => {
             },
           },
         });
+        console.log(user);
         if(!user){
           return response.error(res, res.__('messages.onlyDeveloperAgencyCreat'), null, 400);
         }
         
-        
+
         const propertyTitleExist = await prisma.propertyDetails.findFirst({
           where: {
-            lang_translations: {
-              en_string: title_en,  // Ensure the variable `type` has a correct role name
-            },
+            OR: [
+              { lang_translations: { en_string: title_en } },
+              { lang_translations: { fr_string: title_fr } },
+            ],
           },
         })
         

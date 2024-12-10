@@ -187,9 +187,10 @@ export const createProject = async (req, res) => {
     if(projectCount > 0 ){
       const projectTitleExist = await prisma.projectDetails.findFirst({
         where: {
-          lang_translations_title: {
-            en_string: title_en,  // Ensure the variable `type` has a correct role name
-          },
+          OR: [
+            { lang_translations_title: { en_string: title_en } },
+            { lang_translations_title: { fr_string: title_fr } },
+          ],
         },
       })
       
