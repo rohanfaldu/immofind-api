@@ -133,7 +133,7 @@ model MetaData {
 
 model PropertyDetails {
   id                                                                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title                                                             String                @db.Uuid
+  title                                                             String                @db.VarChar
   link_uuid                                                         String?               @db.Uuid
   price                                                             Int
   district_id                                                       String                @db.Uuid
