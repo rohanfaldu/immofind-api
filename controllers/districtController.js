@@ -164,7 +164,7 @@ export const getDistrictsByCity = async (req, res) => {
     const transformedDistricts = districts.map((district) => ({
       id: district.id,
       name: district.name,
-      lang_string: district.langTranslation?.fr_string || district.langTranslation?.en_string,
+      name: district.langTranslation?.fr_string || district.langTranslation?.en_string,
       latitude: district.latitude,
       longitude: district.longitude,
       slug: district.slug,
@@ -207,21 +207,21 @@ export const getDistrictById = async (req, res) => {
     }
 
     // Verify if city_id exists
-    const cityExists = await prisma.cities.findUnique({
-      where: { id: id },
-    });
+    // const cityExists = await prisma.cities.findUnique({
+    //   where: { id: id },
+    // });
 
-    if (!cityExists) {
-      return response.error(
-        res,
-        res.__('messages.invalidCityId') // Error if city_id does not exist
-      );
-    }
+    // if (!cityExists) {
+    //   return response.error(
+    //     res,
+    //     res.__('messages.invalidCityId') // Error if city_id does not exist
+    //   );
+    // }
     const isFrench = lang === 'fr'; // Determine if the language is French
 
     // Fetch district by ID with language-specific translations
     const district = await prisma.districts.findUnique({
-      where: { id },
+      where: { id: id },
       select: {
         id: true,
         langTranslation: {
@@ -236,7 +236,6 @@ export const getDistrictById = async (req, res) => {
         updated_at: true,
       },
     });
-
     if (!district) {
       return response.error(res, res.__('messages.districtNotFound')); // Error if not found
     }
@@ -244,7 +243,7 @@ export const getDistrictById = async (req, res) => {
     // Transform response to include only the relevant language string
     const transformedDistrict = {
       id: district.id,
-      lang_string: district.langTranslation?.fr_string || district.langTranslation?.en_string,
+      name: district.langTranslation?.fr_string || district.langTranslation?.en_string,
       latitude: district.latitude,
       longitude: district.longitude,
       created_at: district.created_at,

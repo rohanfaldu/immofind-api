@@ -153,6 +153,7 @@
 		"duplicateAgencyPackageName": "An agency package with the same name already exists.",
 		"invalidAgencyPackageIdFormat": "Invalid Agency Package ID format.",
 		"foreignKeyConstraintViolation": "Cannot delete this agency package because it is associated with other records.",
-		"invalidPropertyId": "messages.invalidPropertyId"
+		"invalidPropertyId": "Property Id Invalid",
+		"noAgenciesFound": "No Agency Found"
 	}
 }

@@ -13,12 +13,7 @@ export const getAgencyPackage = async (req, res) => {
       where: { is_deleted: false },
       include: {
         developers: true, // Include developers if needed
-        language: {       // Fetch associated translations
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
+        language: true,
       },
     });
 

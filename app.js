@@ -52,21 +52,21 @@ app.use('/uploads', express.static(path.join(getLangDirName, 'uploads')));
 
 // Use auth routes
 
-// app.use(cors({
-//     origin: [ process.env.FRONT_END_URL,process.env.BACKEND_END_URL], // Adjust this to match your frontend URL
-//     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
-//     allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Methods'], // Add necessary headers
-// }));
+app.use(cors({
+    origin: [ process.env.FRONT_END_URL,process.env.BACKEND_END_URL], // Adjust this to match your frontend URL
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+    allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Methods'], // Add necessary headers
+}));
 
 
-app.use((req, res, next) => {
-    res.header("Access-Control-Allow-Origin", "*"); // Replace with your frontend URL
-    res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-    res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-    res.header("Accept", "*/*");
-    res.header("Content-Type", "application/json");
-    next();
-});
+// app.use((req, res, next) => {
+//     res.header("Access-Control-Allow-Origin", "*"); // Replace with your frontend URL
+//     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+//     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+//     res.header("Accept", "*/*");
+//     res.header("Content-Type", "application/json");
+//     next();
+// });
 app.use((req, res, next) => {
     const lang = req.body.lang || 'en';
     res.setLocale(lang);

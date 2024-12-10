@@ -102,10 +102,10 @@ export const getStates = async (req, res) => {
     // Transform results to include the selected language string for states and cities
     const transformedStates = states.map((state) => ({
       ...state,
-      lang_string: isFrench ? state.lang.fr_string : state.lang.en_string, // State language string
+      name: isFrench ? state.lang.fr_string : state.lang.en_string, // State language string
       cities: state.cities.map((city) => ({
         ...city,
-        lang_string: isFrench ? city.lang.fr_string : city.lang.en_string, // City language string
+        name: isFrench ? city.lang.fr_string : city.lang.en_string, // City language string
       })),
       lang: undefined, // Remove the `lang` object if not needed
     }));

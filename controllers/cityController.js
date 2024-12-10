@@ -171,10 +171,10 @@ export const getCitiesByStateId = async (req, res) => {
     // Transform the results to include only the necessary language strings
     const transformedCities = cities.map((city) => ({
       id: city.id,
-      lang_string: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
+      name: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
       districts: city.districts.map((district) => ({
         id: district.id,
-        lang_string: district.langTranslation
+        name: district.langTranslation
           ? (isFrench
               ? district.langTranslation.fr_string
               : district.langTranslation.en_string)
@@ -186,7 +186,7 @@ export const getCitiesByStateId = async (req, res) => {
     const result = {
       state: {
         id: state.id,
-        lang_string: isFrench && state.lang ? state.lang.fr_string : state.lang?.en_string, // State name in the requested language
+        name: isFrench && state.lang ? state.lang.fr_string : state.lang?.en_string, // State name in the requested language
       },
       cities: transformedCities,
     };
@@ -269,11 +269,11 @@ export const getCitiesByState = async (req, res) => {
     // Transform the results to include only the necessary language strings
     const transformedCities = cities.map((city) => ({
       id: city.id,
-      lang_string: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
+      name: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
       districts: city.districts.map((district) => ({
         id: district.id,
         // Safely check if langTranslation exists before accessing strings
-        lang_string: district.langTranslation
+        name: district.langTranslation
           ? (isFrench
               ? district.langTranslation.fr_string // District name in the requested language
               : district.langTranslation.en_string)
@@ -285,7 +285,7 @@ export const getCitiesByState = async (req, res) => {
     const result = {
       state: {
         id: state.id,
-        lang_string: isFrench && state.lang ? state.lang.fr_string : state.lang?.en_string, // State name in requested language
+        name: isFrench && state.lang ? state.lang.fr_string : state.lang?.en_string, // State name in requested language
       },
       cities: transformedCities,
     };
@@ -343,7 +343,7 @@ export const getCities = async (req, res) => {
     // Transform data to simplify language selection
     const transformedCities = cities.map((city) => ({
       id: city.id,
-      lang_string: city.lang?.fr_string || city.lang?.en_string, // City name in the requested language
+      name: city.lang?.fr_string || city.lang?.en_string, // City name in the requested language
     }));
 
     // Return the transformed data

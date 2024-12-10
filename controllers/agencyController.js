@@ -121,7 +121,8 @@ export const createAgency = async (req, res) => {
 export const getAllAgencies = async (req, res) => {
   try {
     // Extract user_id from the authenticated user
-    const user_id = req.user.id;
+    const {user_id} = req.body;
+    //const user_id = req.user.id;
 
     if (!user_id) {
       return res.status(400).json({
