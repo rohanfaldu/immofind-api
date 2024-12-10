@@ -37,13 +37,19 @@ export const getAllProjects = async (req, res) => {
           },
         },
         states: {
-          select: { name: true },
+          select: { 
+            lang: { select: { fr_string: true, en_string: true } } 
+          },
         },
         cities: {
-          select: { name: true },
+          select: { 
+            lang: { select: { fr_string: true, en_string: true } } 
+          },
         },
         districts: {
-          select: { name: true },
+          select: { 
+            langTranslation: { select: { fr_string: true, en_string: true } } 
+          },
         },
         project_meta_details: {
           select: {
@@ -69,16 +75,22 @@ export const getAllProjects = async (req, res) => {
 
     // Step 2: Format the projects data for the response
     const lang = res.getLocale();
+    console.log(projects);
+    const simplifiedProjects1 = projects.map((createdProject1) => {
+      console.log(createdProject1.states);
+    });
+
     const simplifiedProjects = projects.map((createdProject) => ({
+     
       id: createdProject.id,
       user_name: createdProject.users?.full_name || null,
       user_image: createdProject.users?.image || null,
       title: lang === 'fr' ? createdProject.lang_translations_title.fr_string : createdProject.lang_translations_title.en_string,
       description: lang === 'fr' ? createdProject.lang_translations_description.fr_string : createdProject.lang_translations_description.en_string,
       price: createdProject.price,
-      state: createdProject.states?.name || null,
-      city: createdProject.cities?.name || null,
-      district: createdProject.districts?.name || null,
+      state: lang === 'fr' ? createdProject.states.lang.fr_string : createdProject.states.lang.en_string,
+      city: lang === 'fr' ? createdProject.cities.lang.fr_string : createdProject.cities.lang.en_string,
+      district: lang === 'fr' ? createdProject.districts.langTranslation.fr_string : createdProject.districts.langTranslation.en_string,
       latitude: createdProject.latitude,
       longitude: createdProject.longitude,
       vr_link: createdProject.vr_link,
@@ -157,7 +169,33 @@ export const createProject = async (req, res) => {
       return response.error(res, res.__('messages.allFieldsRequired'), null, 400);
     }
 
-    // Step 1: Create translations for title and description
+    
+    const user = await prisma.users.findFirst({
+      where: {
+        id: user_id,
+        roles: {
+          name: 'developer',  // Ensure the variable `type` has a correct role name
+        },
+      },
+    })
+    console.log(user);
+    if(!user){
+      return response.error(res, res.__('messages.onlyDeveloperCreat'), null, 400);
+    }
+
+    const projectTitleExist = await prisma.projectDetails.findFirst({
+      where: {
+        lang_translations_title: {
+          en_string: title_en,  // Ensure the variable `type` has a correct role name
+        },
+      },
+    })
+    
+    if(projectTitleExist){
+      return response.error(res, res.__('messages.projectCreated'), null, 400);
+    }
+
+    // // Step 1: Create translations for title and description
     const titleTranslation = await prisma.langTranslations.create({
       data: {
         en_string: title_en,
@@ -174,7 +212,7 @@ export const createProject = async (req, res) => {
       },
     });
 
-    // Step 2: Create the project
+    // // Step 2: Create the project
     const newProject = await prisma.projectDetails.create({
       data: {
         title: titleTranslation.id, // Link to the title translation
@@ -199,7 +237,7 @@ export const createProject = async (req, res) => {
       },
     });
 
-    // Step 3: Fetch the created project with necessary relationships for the response
+    // // Step 3: Fetch the created project with necessary relationships for the response
     const createdProject = await prisma.projectDetails.findUnique({
       where: { id: newProject.id },
       include: {
@@ -222,13 +260,19 @@ export const createProject = async (req, res) => {
           },
         },
         states: {
-          select: { name: true },
+          select: { 
+            lang: { select: { fr_string: true, en_string: true } } 
+          },
         },
         cities: {
-          select: { name: true },
+          select: { 
+            lang: { select: { fr_string: true, en_string: true } } 
+          },
         },
         districts: {
-          select: { name: true },
+          select: { 
+            langTranslation: { select: { fr_string: true, en_string: true } } 
+          },
         },
         project_meta_details: {
           select: {
@@ -252,7 +296,7 @@ export const createProject = async (req, res) => {
       },
     });
 
-    // Step 4: Format the project data for the response
+    // // Step 4: Format the project data for the response
     const lang = res.getLocale();
     const simplifiedProject = {
       id: createdProject.id,
@@ -284,7 +328,7 @@ export const createProject = async (req, res) => {
       }),
     };
 
-    // Step 5: Return the response
+    // // Step 5: Return the response
     return res.status(201).json({
       success: true,
       message: res.__('messages.projectCreatedSuccessfully'),

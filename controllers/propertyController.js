@@ -185,6 +185,8 @@ export const createProperty = async (req, res) => {
             description_fr,
             price,
             district_id,
+            city_id,
+            state_id,
             latitude,
             longitude,
             vr_link,
@@ -197,6 +199,33 @@ export const createProperty = async (req, res) => {
             meta_details
         } = req.body;
 
+        const user = await prisma.users.findFirst({
+          where: {
+            id: user_id,
+            roles: {
+              name: {
+                in: ['developer', 'agency'], // Check for either 'developer' or 'agency'
+              },
+            },
+          },
+        })
+        console.log(user);
+        if(!user){
+          return response.error(res, res.__('messages.onlyDeveloperAgencyCreat'), null, 400);
+        }
+        
+        const propertyTitleExist = await prisma.propertyDetails.findFirst({
+          where: {
+            lang_translations: {
+              en_string: title_en,  // Ensure the variable `type` has a correct role name
+            },
+          },
+        })
+        
+        if(propertyTitleExist){
+          return response.error(res, res.__('messages.propertyExists'), null, 400);
+        }
+        
         // Create lang translations for title and description
         const titleTranslation = await prisma.langTranslations.create({
             data: {
@@ -221,6 +250,8 @@ export const createProperty = async (req, res) => {
                 description: descriptionTranslation.id, // Linking the description translation
                 price: price,
                 district_id: district_id,
+                city_id: city_id,
+                state_id: state_id,
                 latitude: latitude,
                 longitude: longitude,
                 vr_link: vr_link || null,

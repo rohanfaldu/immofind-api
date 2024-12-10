@@ -10,7 +10,6 @@ datasource db {
 model Agencies {
   id                                                        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id                                                   String          @unique @db.Uuid
-  sub_user_id                                               String?         @db.Uuid // Nullable
   credit                                                    String?         @db.VarChar
   description                                               String?
   facebook_link                                             String?         @db.VarChar
@@ -32,44 +31,44 @@ model Agencies {
   updated_at                                                DateTime?       @default(now()) @db.Timestamp(6)
   created_by                                                String?         @db.Uuid
   updated_by                                                String?         @db.Uuid
-  publishing_status_id                                      Int             @default(1) // 0 or 1 values
+  publishing_status_id                                      Int             @default(1)
+  sub_user_id                                               String?         @db.Uuid
   agency_packages_agencies_agency_packagesToagency_packages AgencyPackages? @relation("agencies_agency_packagesToagency_packages", fields: [agency_packages], references: [id], onDelete: NoAction, onUpdate: NoAction)
   meta_data                                                 MetaData?       @relation(fields: [meta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("agencies")
 }
 
-
 model AgencyPackages {
-  id                                                 String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  id                                                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type                                               AgencyType
-  is_deleted                                         Boolean      @default(false)
-  created_at                                         DateTime?    @default(now()) @db.Timestamp(6)
-  updated_at                                         DateTime?    @default(now()) @db.Timestamp(6)
-  created_by                                         String?      @db.Uuid
-  updated_by                                         String?      @db.Uuid
-  name                                               String?      @db.Uuid
-  agencies_agencies_agency_packagesToagency_packages Agencies[]   @relation("agencies_agency_packagesToagency_packages")
-  developers                                         Developers[] @relation("DevelopersToAgencyPackages")
-  language                                           LangTranslations? @relation(fields: [name], references: [id]) // Add this line
-
+  is_deleted                                         Boolean           @default(false)
+  created_at                                         DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at                                         DateTime?         @default(now()) @db.Timestamp(6)
+  created_by                                         String?           @db.Uuid
+  updated_by                                         String?           @db.Uuid
+  name                                               String?           @db.Uuid
+  agencies_agencies_agency_packagesToagency_packages Agencies[]        @relation("agencies_agency_packagesToagency_packages")
+  language                                           LangTranslations? @relation(fields: [name], references: [id])
+  developers                                         Developers[]      @relation("DevelopersToAgencyPackages")
 
   @@map("agency_packages")
 }
 
 model Cities {
-  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  state_id       String            @db.Uuid
-  lang_id        String?           @db.Uuid
-  is_deleted     Boolean           @default(false)
-  created_at     DateTime?         @default(now()) @db.Timestamp(6)
-  updated_at     DateTime?         @default(now()) @db.Timestamp(6)
-  created_by     String?           @db.Uuid
-  updated_by     String?           @db.Uuid
-  lang           LangTranslations? @relation(fields: [lang_id], references: [id])
-  states         States            @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
-  districts      Districts[]
-  ProjectDetails ProjectDetails[]
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  state_id         String            @db.Uuid
+  lang_id          String?           @db.Uuid
+  is_deleted       Boolean           @default(false)
+  created_at       DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
+  created_by       String?           @db.Uuid
+  updated_by       String?           @db.Uuid
+  lang             LangTranslations? @relation(fields: [lang_id], references: [id])
+  states           States            @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
+  districts        Districts[]
+  ProjectDetails   ProjectDetails[]
+  property_details PropertyDetails[]
 
   @@map("cities")
 }
@@ -102,6 +101,7 @@ model LangTranslations {
   updated_at                                                       DateTime?              @default(now()) @db.Timestamp(6)
   created_by                                                       String?                @db.Uuid
   updated_by                                                       String?                @db.Uuid
+  agencyPackages                                                   AgencyPackages[]
   cities                                                           Cities[]
   districts                                                        Districts[]
   project_details_description_translation                          ProjectDetails[]       @relation("project_description_translation")
@@ -111,8 +111,7 @@ model LangTranslations {
   property_details                                                 PropertyDetails[]
   property_type_listings                                           PropertyTypeListings[]
   property_types                                                   PropertyTypes[]
-  states                                                           States[]
-  agencyPackages                                                   AgencyPackages[]
+  states                                                           States?
 
   @@map("lang_translations")
 }
@@ -154,11 +153,15 @@ model PropertyDetails {
   transaction                                                       String                @db.VarChar
   description                                                       String                @db.Uuid
   size                                                              Int?
+  city_id                                                           String?               @db.Uuid
+  state_id                                                          String?               @db.Uuid
+  cities                                                            Cities?               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
   districts                                                         Districts             @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
   lang_translations_property_details_descriptionTolang_translations LangTranslations      @relation("property_details_descriptionTolang_translations", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_descriptioj_foreign_key")
   lang_translations                                                 LangTranslations      @relation(fields: [title], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_title_foreign_key")
   property_types                                                    PropertyTypes         @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_type_foreign_key")
   users                                                             Users                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_user_foreign_key")
+  states                                                            States?               @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
   property_meta_details                                             PropertyMetaDetails[]
 
   @@map("property_details")
@@ -304,16 +307,17 @@ model Settings {
 }
 
 model States {
-  id             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  lang_id        String?           @unique@db.Uuid
-  is_deleted     Boolean           @default(false)
-  created_at     DateTime?         @default(now()) @db.Timestamp(6)
-  updated_at     DateTime?         @default(now()) @db.Timestamp(6)
-  created_by     String?           @db.Uuid
-  updated_by     String?           @db.Uuid
-  cities         Cities[]
-  ProjectDetails ProjectDetails[]
-  lang           LangTranslations? @relation(fields: [lang_id], references: [id])
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  lang_id          String?           @unique @db.Uuid
+  is_deleted       Boolean           @default(false)
+  created_at       DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at       DateTime?         @default(now()) @db.Timestamp(6)
+  created_by       String?           @db.Uuid
+  updated_by       String?           @db.Uuid
+  cities           Cities[]
+  ProjectDetails   ProjectDetails[]
+  property_details PropertyDetails[]
+  lang             LangTranslations? @relation(fields: [lang_id], references: [id])
 
   @@map("states")
 }
@@ -349,11 +353,10 @@ model Developers {
   id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id            String           @unique @db.Uuid
   name               String?
-  email              String?           @db.VarChar
-  phone              String?         @db.VarChar
+  email              String?          @db.VarChar
+  phone              String?          @db.VarChar
   address            String?
   password           String?
-  credit             String?          @db.VarChar
   description        String?
   facebookLink       String?          @db.VarChar
   twitterLink        String?          @db.VarChar
@@ -365,13 +368,14 @@ model Developers {
   serviceArea        String?          @db.VarChar
   taxNumber          String?          @db.VarChar
   licenseNumber      String?          @db.VarChar
-  publishingStatusId BigInt?          @default(1) // Default value set to 1
+  publishingStatusId BigInt?          @default(1)
   is_deleted         Boolean          @default(false)
   created_at         DateTime?        @default(now()) @db.Timestamp(6)
   updated_at         DateTime?        @default(now()) @db.Timestamp(6)
   created_by         String?          @db.Uuid
   updated_by         String?          @db.Uuid
   agencyPackageId    String?          @map("agency_package_id")
+  credit             String?          @db.VarChar
   agencyPackages     AgencyPackages[] @relation("DevelopersToAgencyPackages")
 
   @@map("developers")

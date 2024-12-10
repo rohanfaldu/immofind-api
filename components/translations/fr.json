@@ -154,6 +154,10 @@
     "invalidAgencyPackageIdFormat": "Format d'identifiant de forfait d'agence invalide.",
     "foreignKeyConstraintViolation": "Impossible de supprimer ce package d'agence car il est associé à d'autres enregistrements.",
     "invalidPropertyId": "ID de propriété invalide",
-		"noAgenciesFound": "Aucune agence trouvée"
+		"noAgenciesFound": "Aucune agence trouvée",
+    "onlyDeveloperCreat": "L'utilisateur développeur peut uniquement créer un projet",
+    "projectCreated": "Projet déjà créé",
+    "onlyDeveloperAgencyCreat": "L'utilisateur développeur ou agence peut uniquement créer un projet",
+    "propertyExists": "La propriété existe déjà"
   }
 }

@@ -71,11 +71,29 @@ export const getProjectTypeList = async (req, res) => {
     });
 
     // Format the response (convert BigInt fields to strings if necessary)
-    const formattedData = projectTypeListings.map((item) => ({
-      ...item,
-      category: item.category.toString(), // Convert BigInt to string
-    }));
+    // const formattedData = projectTypeListings.map((item) => ({
+    //   ...item,
+    //   category: item.category.toString(),
+    //    // Convert BigInt to string
+    // }));
 
+    const formattedData = projectTypeListings.map((item) => {
+      const lang = res.getLocale();
+      const propetyName =
+        lang === 'fr'
+          ? item.lang_translations.fr_string
+          : item.lang_translations.en_string;
+
+          return {
+            id: item.id,
+            icon: item.icon,
+            name: propetyName,
+            type: item.type,
+            key: item.key,
+            category: item.category.toString(),
+          }
+
+    });
     return response.success(
       res,
       res.__('messages.projectTypeListingsFetchedSuccessfully'),

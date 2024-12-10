@@ -154,6 +154,10 @@
 		"invalidAgencyPackageIdFormat": "Invalid Agency Package ID format.",
 		"foreignKeyConstraintViolation": "Cannot delete this agency package because it is associated with other records.",
 		"invalidPropertyId": "Property Id Invalid",
-		"noAgenciesFound": "No Agency Found"
+		"noAgenciesFound": "No Agency Found",
+		"onlyDeveloperCreat": "Developer User can only create Project",
+		"onlyDeveloperAgencyCreat": "Developer Or Agency User can only create Project",
+		"projectCreated": "Project Already Created",
+		"propertyExists":"Property Already Exists"
 	}
 }
