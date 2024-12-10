@@ -158,6 +158,7 @@
     "onlyDeveloperCreat": "L'utilisateur développeur peut uniquement créer un projet",
     "projectCreated": "Projet déjà créé",
     "onlyDeveloperAgencyCreat": "L'utilisateur développeur ou agence peut uniquement créer un projet",
-    "propertyExists": "La propriété existe déjà"
+    "propertyExists": "La propriété existe déjà",
+    "uploadSuccess": "Image Upload Successfully"
   }
 }
