@@ -183,19 +183,21 @@ export const createProject = async (req, res) => {
       return response.error(res, res.__('messages.onlyDeveloperCreat'), null, 400);
     }
 
-    
-    const projectTitleExist = await prisma.projectDetails.findFirst({
-      where: {
-        lang_translations_title: {
-          en_string: title_en,  // Ensure the variable `type` has a correct role name
+    const projectCount = await prisma.projectDetails.count();
+    if(projectCount > 0 ){
+      const projectTitleExist = await prisma.projectDetails.findFirst({
+        where: {
+          lang_translations_title: {
+            en_string: title_en,  // Ensure the variable `type` has a correct role name
+          },
         },
-      },
-    })
-    
-    if(projectTitleExist){
-      return response.error(res, res.__('messages.projectCreated'), null, 400);
+      })
+      
+      if(projectTitleExist){
+        return response.error(res, res.__('messages.projectCreated'), null, 400);
+      }
     }
-
+    
     // // Step 1: Create translations for title and description
     const titleTranslation = await prisma.langTranslations.create({
       data: {
