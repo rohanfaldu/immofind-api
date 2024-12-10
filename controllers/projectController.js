@@ -215,7 +215,27 @@ export const createProject = async (req, res) => {
         created_by: user_id,
       },
     });
-
+    const dataaaa = {
+      title: titleTranslation.id, // Link to the title translation
+      description: descriptionTranslation.id, // Link to the description translation
+      price: price,
+      state_id: state_id,
+      city_id: city_id,
+      district_id: district_id,
+      latitude: latitude,
+      longitude: longitude,
+      vr_link: vr_link || null,
+      picture: picture || null,
+      video: video || null,
+      user_id: user_id, // The user creating the project
+      link_uuid: 'ssssss',
+      project_meta_details: {
+        create: meta_details.map((meta) => ({
+          value: meta.value,
+          project_type_listing_id: meta.project_type_listing_id, // Link to the project type listing
+        })),
+      }
+    };
     // // Step 2: Create the project
     const newProject = await prisma.projectDetails.create({
       data: {
@@ -231,7 +251,7 @@ export const createProject = async (req, res) => {
         picture: picture || null,
         video: video || null,
         user_id: user_id, // The user creating the project
-        link_uuid: link_uuid,
+        link_uuid: 'ssssss',
         project_meta_details: {
           create: meta_details.map((meta) => ({
             value: meta.value,
