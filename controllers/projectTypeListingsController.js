@@ -92,7 +92,6 @@ export const getProjectTypeList = async (req, res) => {
             key: item.key,
             category: item.category.toString(),
           }
-
     });
     return response.success(
       res,

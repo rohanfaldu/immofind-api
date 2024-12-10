@@ -183,6 +183,7 @@ export const createProject = async (req, res) => {
       return response.error(res, res.__('messages.onlyDeveloperCreat'), null, 400);
     }
 
+    
     const projectTitleExist = await prisma.projectDetails.findFirst({
       where: {
         lang_translations_title: {

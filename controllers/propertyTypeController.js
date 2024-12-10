@@ -120,6 +120,7 @@ export const createPropertyType = async (req, res) => {
   }
 };
 
+
 export const updatePropertyType = async (req, res) => {
   const { id, en_string, fr_string, updated_by } = req.body;
 

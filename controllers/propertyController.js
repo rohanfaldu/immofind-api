@@ -208,11 +208,11 @@ export const createProperty = async (req, res) => {
               },
             },
           },
-        })
-        console.log(user);
+        });
         if(!user){
           return response.error(res, res.__('messages.onlyDeveloperAgencyCreat'), null, 400);
         }
+        
         
         const propertyTitleExist = await prisma.propertyDetails.findFirst({
           where: {
