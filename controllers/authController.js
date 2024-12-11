@@ -454,7 +454,7 @@ export const loginWithPassword = async (req, res) => {
 }
 
 export const sendOtp = async (req, res) => {
-    //try {
+    try {
         const { email_address, phone_number, type, user_login_type, device_type } = req.body;
     
         // Validate device type
@@ -527,9 +527,19 @@ export const sendOtp = async (req, res) => {
     
         // Handle user creation or update
         if (userDetails) {
-            const userOperation = userDetails.id 
-                ? await UserModel.updateUser({ id: userDetails.id }, { email_password_code: userDetails.email_password_code, phone_password_code: userDetails.phone_password_code })
-                : await UserModel.createUser(userDetails);
+            let userOperation;
+            if(userDetails.id){
+                userOperation = await UserModel.updateUser({ id: userDetails.id }, { email_password_code: userDetails.email_password_code, phone_password_code: userDetails.phone_password_code })
+            } else{
+                const checkEmail = await UserModel.getUser(email_address, '');
+                if (checkEmail ) {
+                    return await response.error(res, 'Please use another email adddress');
+                }
+                userOperation = await UserModel.createUser(userDetails);
+            }
+            // const userOperation = userDetails.id 
+            //     ? await UserModel.updateUser({ id: userDetails.id }, { email_password_code: userDetails.email_password_code, phone_password_code: userDetails.phone_password_code })
+            //     : await UserModel.createUser(userDetails);
     
             if (!userOperation) {
                 return response.error(res, res.__('messages.userDataNotUpdated'));
@@ -539,9 +549,9 @@ export const sendOtp = async (req, res) => {
         }
     
         return response.error(res, res.__('messages.fieldError'));
-    // } catch (error) {
-    //     return await response.serverError(res, res.__('messages.internalServerError'));
-    // }    
+     } catch (error) {
+         return await response.serverError(res, res.__('messages.internalServerError'));
+     }    
 }
 export const updatePassword = async (req, res) => {
     try {
