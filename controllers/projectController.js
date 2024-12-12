@@ -96,6 +96,8 @@ export const getAllProjects = async (req, res) => {
       vr_link: createdProject.vr_link,
       picture: createdProject.picture,
       video: createdProject.video,
+      created_at: createdProject.created_at,
+      status: createdProject.status,
       meta_details: createdProject.project_meta_details.map((meta) => {
         const langObj = lang === 'en'
           ? meta.project_type_listing?.lang_translations?.en_string
@@ -112,18 +114,10 @@ export const getAllProjects = async (req, res) => {
     }));
 
     // Step 3: Return the response
-    return res.status(200).json({
-      success: true,
-      message: res.__('messages.projectsFetchedSuccessfully'),
-      data: simplifiedProjects,
-    });
+    return await response.success(res, res.__('messages.projectsFetchedSuccessfully'), simplifiedProjects);
   } catch (error) {
     console.error('Error fetching projects:', error);
-    return res.status(500).json({
-      success: false,
-      message: res.__('messages.errorFetchingProjects'),
-      error: error.message,
-    });
+    return await response.serverError(res, res.__('messages.errorFetchingProjects'));
   }
 };
 
@@ -148,7 +142,7 @@ export const createProject = async (req, res) => {
       video,
       user_id,
       link_uuid,
-      meta_details,
+      meta_details
     } = req.body;
 
     // Validate required fields
@@ -333,18 +327,10 @@ export const createProject = async (req, res) => {
     };
 
     // // Step 5: Return the response
-    return res.status(201).json({
-      success: true,
-      message: res.__('messages.projectCreatedSuccessfully'),
-      data: simplifiedProject,
-    });
+    return await response.success(res, res.__('messages.projectCreatedSuccessfully'), simplifiedProject);
   } catch (error) {
     console.error('Error creating project:', error);
-    return res.status(500).json({
-      success: false,
-      message: res.__('messages.errorCreatingProject'),
-      error: error.message,
-    });
+    return await response.serverError(res, res.__('messages.errorCreatingProject'));
   }
 };
 
@@ -546,18 +532,10 @@ export const updateProject = async (req, res) => {
     };
 
     // Step 6: Return the response
-    return res.status(200).json({
-      success: true,
-      message: res.__('messages.projectUpdatedSuccessfully'),
-      data: simplifiedProject,
-    });
+    return await response.success(res, res.__('messages.projectUpdatedSuccessfully'), simplifiedProject);
   } catch (error) {
     console.error('Error updating project:', error);
-    return res.status(500).json({
-      success: false,
-      message: res.__('messages.errorUpdatingProject'),
-      error: error.message,
-    });
+    return await response.serverError(res, res.__('messages.errorCreatingProject'));
   }
 };
 
@@ -570,10 +548,7 @@ export const deleteProject = async (req, res) => {
 
     // Validate required field
     if (!project_id) {
-      return res.status(400).json({
-        success: false,
-        message: res.__('messages.projectIdRequired'),
-      });
+      return await response.error(res, res.__('messages.projectIdRequired'));
     }
 
     // Step 1: Check if the project exists
@@ -582,10 +557,7 @@ export const deleteProject = async (req, res) => {
     });
 
     if (!existingProject) {
-      return res.status(404).json({
-        success: false,
-        message: res.__('messages.projectNotFound'),
-      });
+      return await response.error(res, res.__('messages.projectNotFound'));
     }
 
     // Step 2: Delete related project_meta_details
@@ -599,16 +571,9 @@ export const deleteProject = async (req, res) => {
     });
 
     // Step 4: Return success response
-    return res.status(200).json({
-      success: true,
-      message: res.__('messages.projectDeletedSuccessfully'),
-    });
+    return await response.success(res, res.__('messages.projectDeletedSuccessfully'), null);
   } catch (error) {
     console.error('Error deleting project:', error);
-    return res.status(500).json({
-      success: false,
-      message: res.__('messages.errorDeletingProject'),
-      error: error.message,
-    });
+    return await response.serverError(res, res.__('messages.errorDeletingProject'));
   }
 };

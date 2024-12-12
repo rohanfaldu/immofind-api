@@ -43,19 +43,10 @@ export const createProjectTypeListing = async (req, res) => {
       category: projectTypeListings.category.toString(), // Convert BigInt to string
     };
 
-    return response.success(
-      res,
-      res.__('messages.projectTypeListingCreatedSuccessfully'),
-      responseData
-    );
+    return await response.success(res, res.__('messages.projectTypeListingCreatedSuccessfully'), responseData);
   } catch (error) {
     console.error('Error creating project type listing:', error);
-    return response.error(
-      res,
-      res.__('messages.projectTypeListingCreationError'),
-      error.message,
-      500
-    );
+    return await response.serverError(res, res.__('messages.projectTypeListingCreationError'));
   }
 };
 
@@ -93,19 +84,10 @@ export const getProjectTypeList = async (req, res) => {
             category: item.category.toString(),
           }
     });
-    return response.success(
-      res,
-      res.__('messages.projectTypeListingsFetchedSuccessfully'),
-      formattedData
-    );
+    return await response.success(res, res.__('messages.projectTypeListingsFetchedSuccessfully'), formattedData);
   } catch (error) {
     console.error('Error fetching project type listings:', error);
-    return response.error(
-      res,
-      res.__('messages.projectTypeListingFetchError'),
-      error.message,
-      500
-    );
+    return await response.error(res, res.__('messages.projectTypeListingFetchError'));
   }
 };
 
@@ -163,19 +145,10 @@ export const updateProjectTypeListing = async (req, res) => {
       category: updatedProjectTypeListing.category.toString(), // Convert BigInt to string
     };
 
-    return response.success(
-      res,
-      res.__('messages.projectTypeListingUpdatedSuccessfully'),
-      responseData
-    );
+    return response.success( res, res.__('messages.projectTypeListingUpdatedSuccessfully'), responseData );
   } catch (error) {
     console.error('Error updating project type listing:', error);
-    return response.error(
-      res,
-      res.__('messages.projectTypeListingUpdateError'),
-      error.message,
-      500
-    );
+    return response.error( res, res.__('messages.projectTypeListingUpdateError'));
   }
 };
 
@@ -225,22 +198,13 @@ export const deleteProjectTypeListing = async (req, res) => {
     });
 
     // Step 3: Return success response
-    return response.success(
-      res,
-      res.__('messages.projectTypeListingDeletedSuccessfully'),
-      null
-    );
+    return response.success( res, res.__('messages.projectTypeListingDeletedSuccessfully'), null );
   } catch (error) {
     console.error('Error deleting project type listing:', error);
 
     // Handle specific error cases
     if (error.code === 'P2003') {
-      return response.error(
-        res,
-        res.__('messages.cannotDeleteProjectTypeListingDueToDependencies'),
-        null,
-        400
-      );
+      return response.error( res, res.__('messages.cannotDeleteProjectTypeListingDueToDependencies'));
     }
 
     return response.serverError(res, error);

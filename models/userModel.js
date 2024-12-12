@@ -140,6 +140,29 @@ const UserModel = {
         });
         return  await commonFunction.bigIntiger(userInfo);
     },
+    getAgencyDeveloperUserd: async () => {
+        const userInfo = await prisma.users.findMany({
+            where: {
+                is_deleted: false,
+                roles: {
+                    
+                        name: { in: ['developer', 'agency'] }, // Check for specific role names
+                    
+                },
+            },
+            include: {
+                roles: {
+                    select: {
+                        name: true, // Select only the role name
+                    },
+                },
+            },
+            orderBy: {
+                created_at: 'desc', // Order by creation date in descending order (newest first)
+            },
+        });
+        return  await commonFunction.bigIntiger(userInfo);
+    },
     getUserWithPhoneOTP: async (mobile_number, otp) => {
         const userInfo = await prisma.users.findFirst({
             where: { mobile_number: BigInt(mobile_number), phone_password_code: parseInt(otp, 10)},

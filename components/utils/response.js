@@ -20,6 +20,13 @@ const response = {
             data: null,
         });
     },
+    authError: async (res, message ) => {
+        return res.status(401).json({
+            status: false,
+            message: message,
+            data: null,
+        });
+    },
 };
 
 export default response;

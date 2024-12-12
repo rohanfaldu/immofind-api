@@ -64,14 +64,10 @@ export const getAllPropertyTypeListings = async (req, res) => {
       totalPages: Math.ceil(totalCount / validLimit),
       currentPage: validPage,
       itemsPerPage: validLimit,
-      data: simplifiedListings,
+      list: simplifiedListings,
     };
 
-    return response.success(
-      res,
-      res.__('messages.listFetchedSuccessfully'),
-      responsePayload
-    );
+    return response.success( res, res.__('messages.listFetchedSuccessfully'), responsePayload );
   } catch (error) {
     console.error('Error fetching property type listings:', error);
     return response.serverError(res, error);
@@ -145,11 +141,7 @@ export const createPropertyTypeListing = async (req, res) => {
       category: propertyTypeListing.category.toString(), // Convert BigInt to string
     };
 
-    return response.success(
-      res,
-      res.__('messages.propertyTypeListingCreatedSuccessfully'),
-      responseData
-    );
+    return response.success( res, res.__('messages.propertyTypeListingCreatedSuccessfully'), responseData );
   } catch (error) {
     console.error('Error creating property type listing:', error);
     return response.serverError(res, error);

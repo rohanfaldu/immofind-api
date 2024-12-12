@@ -52,23 +52,14 @@ export const getPropertyTypes = async (req, res) => {
       totalPages: Math.ceil(totalCount / limit),
       currentPage: page,
       itemsPerPage: limit,
-      data: simplifiedProperties,
+      list: simplifiedProperties,
     };
 
-    return response.success(
-      res,
-      res.__('messages.propertyTypesFetchedSuccessfully'),
-      responsePayload
-    );
+    return response.success( res, res.__('messages.propertyTypesFetchedSuccessfully'), responsePayload );
   } catch (error) {
     console.error('Error fetching property types:', error);
 
-    return response.error(
-      res,
-      res.__('messages.errorFetchingPropertyTypes'),
-      error.message,
-      500
-    );
+    return response.error( res, res.__('messages.errorFetchingPropertyTypes') );
   }
 };
 
@@ -77,11 +68,7 @@ export const createPropertyType = async (req, res) => {
 
   // Validate required fields
   if (!en_string || !fr_string || !created_by) {
-    return response.error(
-      res,
-      res.__('messages.missingRequiredFields'),
-      400
-    );
+    return response.error( res, res.__('messages.missingRequiredFields') );
   }
 
   try {
@@ -103,20 +90,11 @@ export const createPropertyType = async (req, res) => {
     });
 
     // Return success response
-    return response.success(
-      res,
-      res.__('messages.propertyTypeCreatedSuccessfully'),
-      newPropertyType
-    );
+    return response.success( res, res.__('messages.propertyTypeCreatedSuccessfully'), newPropertyType );
   } catch (error) {
     console.error(error);
     // Return error response
-    return response.error(
-      res,
-      res.__('messages.errorCreatingPropertyType'),
-      500,
-      error.message
-    );
+    return response.error( res, res.__('messages.errorCreatingPropertyType'));
   }
 };
 
@@ -126,11 +104,7 @@ export const updatePropertyType = async (req, res) => {
 
   // Validate required fields
   if (!id || !updated_by) {
-    return response.error(
-      res,
-      res.__('messages.missingRequiredFields'),
-      400
-    );
+    return response.error( res, res.__('messages.missingRequiredFields') );
   }
 
   try {
@@ -140,11 +114,7 @@ export const updatePropertyType = async (req, res) => {
     });
 
     if (!existingPropertyType) {
-      return response.error(
-        res,
-        res.__('messages.propertyTypeNotFound'),
-        404
-      );
+      return response.error( res, res.__('messages.propertyTypeNotFound') );
     }
 
     // Update the translations in LangTranslations
@@ -166,20 +136,11 @@ export const updatePropertyType = async (req, res) => {
     });
 
     // Return success response
-    return response.success(
-      res,
-      res.__('messages.propertyTypeUpdatedSuccessfully'),
-      updatedPropertyType
-    );
+    return response.success( res, res.__('messages.propertyTypeUpdatedSuccessfully'), updatedPropertyType );
   } catch (error) {
     console.error(error);
     // Return error response
-    return response.error(
-      res,
-      res.__('messages.errorUpdatingPropertyType'),
-      500,
-      error.message
-    );
+    return response.error( res, res.__('messages.errorUpdatingPropertyType'));
   }
 };
 
@@ -188,11 +149,7 @@ export const deletePropertyType = async (req, res) => {
 
   // Validate required fields
   if (!id) {
-    return response.error(
-      res,
-      res.__('messages.missingRequiredFields'),
-      400
-    );
+    return response.error( res, res.__('messages.missingRequiredFields') );
   }
 
   try {
@@ -202,11 +159,7 @@ export const deletePropertyType = async (req, res) => {
     });
 
     if (!existingPropertyType) {
-      return response.error(
-        res,
-        res.__('messages.propertyTypeNotFound'),
-        404
-      );
+      return response.error( res, res.__('messages.propertyTypeNotFound') );
     }
 
     // Print the query before deleting (Ensure UUID is in quotes)
@@ -227,19 +180,10 @@ export const deletePropertyType = async (req, res) => {
     });
 
     // Return success response
-    return response.success(
-      res,
-      res.__('messages.propertyTypeDeletedSuccessfully'),
-      result
-    );
+    return response.success( res, res.__('messages.propertyTypeDeletedSuccessfully'), result );
   } catch (error) {
     console.error('Error deleting property type:', error); // More detailed logging
     // Return error response
-    return response.error(
-      res,
-      res.__('messages.errorDeletingPropertyType'),
-      500,
-      error.message
-    );
+    return response.error( res, res.__('messages.errorDeletingPropertyType'));
   }
 };

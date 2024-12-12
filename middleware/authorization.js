@@ -1,6 +1,6 @@
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-
+import response from '../components/utils/response.js';
 dotenv.config();
 
 export const authorize = async (req, res, next) => {
@@ -9,7 +9,7 @@ export const authorize = async (req, res, next) => {
     const token = req.header("Authorization")?.split(" ")[1]; // Expected: "Bearer <token>"
 
     if (!token) {
-      return res.status(403).json({ error: "Unauthorized: No token provided" });
+      return response.authError(res, "Unauthorized: No token provided");
     }
 
     // Verify the token
@@ -21,6 +21,6 @@ export const authorize = async (req, res, next) => {
     next(); // Proceed to the next middleware or route handler
   } catch (err) {
     console.error('Authorization error:', err.message);
-    res.status(403).json({ error: "Unauthorized: Invalid token" });
+    return response.authError(res, "Unauthorized: Invalid token");
   }
 };

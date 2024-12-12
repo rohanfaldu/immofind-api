@@ -9,5 +9,5 @@ import { authorize } from '../middleware/authorization.js'; // Import the author
 router.post('/',authorize, getAllProjects);
 router.post('/create',authorize, createProject);
 router.put('/:id',authorize, updateProject);
-router.delete('/:id',authorize, deleteProject);
+router.delete('/',authorize, deleteProject);
 export default router;

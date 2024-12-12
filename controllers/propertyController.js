@@ -150,7 +150,7 @@ export const getAllProperty = async (req, res) => {
       totalPages: Math.ceil(totalCount / validLimit),
       currentPage: validPage,
       itemsPerPage: validLimit,
-      data: simplifiedProperties,
+      list: simplifiedProperties,
     };
 
     // Send response
@@ -165,9 +165,7 @@ export const getAllProperty = async (req, res) => {
     // Return error response
     return response.error(
       res,
-      res.__('messages.errorFetchingProperties'),
-      error.message,
-      500
+      res.__('messages.errorFetchingProperties')
     );
   }
 };
@@ -214,7 +212,7 @@ export const createProperty = async (req, res) => {
           return response.error(res, res.__('messages.onlyDeveloperAgencyCreat'), null, 400);
         }
         
-
+        
         const propertyTitleExist = await prisma.propertyDetails.findFirst({
           where: {
             OR: [
@@ -380,18 +378,10 @@ export const createProperty = async (req, res) => {
         };
 
         // Return the response with the created property data
-        return res.status(201).json({
-            success: true,
-            message: res.__('messages.propertyCreatedSuccessfully'),
-            data: simplifiedProperty,
-        });
+        return await response.success(res, res.__('messages.propertyCreatedSuccessfully'), simplifiedProperty);
     } catch (error) {
         console.error('Error creating property:', error);
-        return res.status(500).json({
-            success: false,
-            message: res.__('messages.errorCreatingProperty'),
-            error: error.message,
-        });
+        return await response.serverError(res, res.__('messages.errorCreatingProperty'));
     }
 };
 
@@ -419,10 +409,7 @@ export const updateProperty = async (req, res) => {
   try {
     // Validate propertyId
     if (!propertyId || !isUUID(propertyId)) {
-      return res.status(400).json({
-        success: false,
-        message: res.__("messages.invalidPropertyId"),
-      });
+      return await response.error(res, res.__('messages.invalidPropertyId'));
     }
 
     // Check if property exists
@@ -431,10 +418,7 @@ export const updateProperty = async (req, res) => {
     });
 
     if (!existingProperty) {
-      return res.status(404).json({
-        success: false,
-        message: res.__("messages.propertyNotFound"),
-      });
+      return await response.error(res, res.__('messages.propertyNotFound'));
     }
 
     // Update title translations if provided
@@ -463,10 +447,7 @@ export const updateProperty = async (req, res) => {
 
     // Validate district_id if provided
     if (district_id && !isUUID(district_id)) {
-      return res.status(400).json({
-        success: false,
-        message: res.__("messages.invalidDistrictId"),
-      });
+      return await response.error(res, res.__('messages.invalidDistrictId'));
     }
 
     // Update property details
@@ -599,18 +580,10 @@ export const updateProperty = async (req, res) => {
           : updatedPropertyDetails.property_types?.lang_translations?.en_string,
     };
 
-    return res.status(200).json({
-      success: true,
-      message: res.__("messages.propertyUpdatedSuccessfully"),
-      data: simplifiedProperty,
-    });
+    return await response.success(res, res.__('messages.propertyUpdatedSuccessfully'), simplifiedProperty);
   } catch (error) {
     console.error("Error updating property:", error);
-    return res.status(500).json({
-      success: false,
-      message: res.__("messages.errorUpdatingProperty"),
-      error: error.message,
-    });
+    return await response.serverError(res, res.__('messages.errorUpdatingProperty'));
   }
 };
 
@@ -620,10 +593,7 @@ export const deleteProperty = async (req, res) => {
 
     try {
         if (!propertyId) {
-            return res.status(400).json({
-                success: false,
-                message: res.__('messages.propertyIdRequired'),
-            });
+            return await response.error(res, res.__('messages.propertyIdRequired'));
         }
 
         const existingProperty = await prisma.propertyDetails.findUnique({
@@ -631,10 +601,7 @@ export const deleteProperty = async (req, res) => {
         });
 
         if (!existingProperty) {
-            return res.status(404).json({
-                success: false,
-                message: res.__('messages.propertyNotFound'),
-            });
+          return await response.error(res, res.__('messages.propertyNotFound'));
         }
 
         // Corrected deleteMany call with the proper field
@@ -647,16 +614,9 @@ export const deleteProperty = async (req, res) => {
             where: { id: propertyId },
         });
 
-        return res.status(200).json({
-            success: true,
-            message: res.__('messages.propertyDeletedSuccessfully'),
-        });
+        return await response.success(res, res.__('messages.propertyDeletedSuccessfully'), null);
     } catch (error) {
         console.error('Error deleting property:', error);
-        return res.status(500).json({
-            success: false,
-            message: res.__('messages.errorDeletingProperty'),
-            error: error.message,
-        });
+        return await response.serverError(res, res.__('messages.errorDeletingProperty'));
     }
 };

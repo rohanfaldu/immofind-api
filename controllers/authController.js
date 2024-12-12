@@ -238,15 +238,30 @@ export const getallUser = async (req, res) => {
     const { type } = req.body;
     const userData = await UserModel.getAllUserd(type);
     console.log(userData.length);
-        const userList = {
-            count : userData.length,
-            user_data : userData
-        }
-        if (userData) {
-            return await response.success(res, res.__('messages.listFetchedSuccessfully'), userList);
-        } else {
-            return await response.error(res, res.__('messages.listingNotFound'));
-            }
+    const userList = {
+        count : userData.length,
+        user_data : userData
+    }
+    if (userData) {
+        return await response.success(res, res.__('messages.listFetchedSuccessfully'), userList);
+    } else {
+        return await response.error(res, res.__('messages.listingNotFound'));
+    }
+}
+
+export const getagencyDeveloper = async (req, res) => {
+    const { type } = req.body;
+    const userData = await UserModel.getAgencyDeveloperUserd();
+    console.log(userData.length);
+    const userList = {
+        count : userData.length,
+        user_data : userData
+    }
+    if (userData) {
+        return await response.success(res, res.__('messages.listFetchedSuccessfully'), userList);
+    } else {
+        return await response.error(res, res.__('messages.listingNotFound'));
+    }
 }
 export const getUser = async (req, res) => {
     
@@ -527,19 +542,9 @@ export const sendOtp = async (req, res) => {
     
         // Handle user creation or update
         if (userDetails) {
-            let userOperation;
-            if(userDetails.id){
-                userOperation = await UserModel.updateUser({ id: userDetails.id }, { email_password_code: userDetails.email_password_code, phone_password_code: userDetails.phone_password_code })
-            } else{
-                const checkEmail = await UserModel.getUser(email_address, '');
-                if (checkEmail ) {
-                    return await response.error(res, 'Please use another email adddress');
-                }
-                userOperation = await UserModel.createUser(userDetails);
-            }
-            // const userOperation = userDetails.id 
-            //     ? await UserModel.updateUser({ id: userDetails.id }, { email_password_code: userDetails.email_password_code, phone_password_code: userDetails.phone_password_code })
-            //     : await UserModel.createUser(userDetails);
+            const userOperation = userDetails.id 
+                ? await UserModel.updateUser({ id: userDetails.id }, { email_password_code: userDetails.email_password_code, phone_password_code: userDetails.phone_password_code })
+                : await UserModel.createUser(userDetails);
     
             if (!userOperation) {
                 return response.error(res, res.__('messages.userDataNotUpdated'));
@@ -549,9 +554,9 @@ export const sendOtp = async (req, res) => {
         }
     
         return response.error(res, res.__('messages.fieldError'));
-     } catch (error) {
-         return await response.serverError(res, res.__('messages.internalServerError'));
-     }    
+    } catch (error) {
+        return await response.serverError(res, res.__('messages.internalServerError'));
+    }    
 }
 export const updatePassword = async (req, res) => {
     try {
