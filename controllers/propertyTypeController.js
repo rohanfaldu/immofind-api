@@ -67,7 +67,7 @@ export const createPropertyType = async (req, res) => {
   const { en_string, fr_string, created_by } = req.body;
 
   // Validate required fields
-  if (!en_string || !fr_string || !created_by) {
+  if (!en_string || !fr_string ) {
     return response.error( res, res.__('messages.missingRequiredFields') );
   }
 
@@ -84,7 +84,6 @@ export const createPropertyType = async (req, res) => {
     const newPropertyType = await prisma.propertyTypes.create({
       data: {
         title: langTranslation.id, // Reference the LangTranslation entry
-        created_by,
         created_at: new Date(),
       },
     });

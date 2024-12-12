@@ -97,6 +97,27 @@ export const getPropertyTypeListingById = async (req, res) => {
   }
 };
 
+export const checkProjectTypeListing = async (req, res) => {
+  try {
+    const { key } = req.body;
+    console.log(key);
+    if (!key) {
+      return response.error(res, 'Key is required', 400);
+    }
+
+    const listing = await prisma.propertyTypeListings.findFirst({
+      where: { key },
+    });
+    if (listing) {
+      return response.error(res, 'Property Of key was Exist');
+    }else{
+      return response.success(res, 'Property Of key was not Exist', null);
+    }
+  } catch (error) {
+    return response.serverError(res, error);
+  }
+};
+
 // Create a new property type listing
 
 
@@ -104,7 +125,7 @@ export const createPropertyTypeListing = async (req, res) => {
   const { en_string, fr_string, icon, type, category, created_by, lang, key } = req.body;
 
   // Ensure the required fields are provided
-  if (!en_string || !fr_string || !icon || !type || !category || !created_by || !lang || !key) {
+  if (!en_string || !fr_string || !icon || !type || !category || !key) {
         return response.error(res, res.__('messages.allFieldsRequired'), null, 400);
 
   }
@@ -115,7 +136,6 @@ export const createPropertyTypeListing = async (req, res) => {
       data: {
         en_string: en_string,  // English translation
         fr_string: fr_string,  // French translation
-        created_by: created_by,  // The creator's ID
       },
     });
 
@@ -125,7 +145,6 @@ export const createPropertyTypeListing = async (req, res) => {
         icon: icon,
         type: type,
         category: category,
-        created_by: created_by,
         lang_translations: {
           connect: {
             id: langTranslation.id,  // Link to the newly created LangTranslation

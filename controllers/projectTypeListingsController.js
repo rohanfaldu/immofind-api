@@ -7,7 +7,7 @@ export const createProjectTypeListing = async (req, res) => {
   const { en_string, fr_string, icon, type, category, created_by, lang, key } = req.body;
 
   // Ensure the required fields are provided
-  if (!en_string || !fr_string || !icon || !type || !category || !created_by || !lang || !key) {
+  if (!en_string || !fr_string || !icon || !type || !category || !key) {
     return response.error(res, res.__('messages.allFieldsRequired'), null, 400);
   }
 
@@ -17,7 +17,6 @@ export const createProjectTypeListing = async (req, res) => {
       data: {
         en_string: en_string, // English translation
         fr_string: fr_string, // French translation
-        created_by: created_by, // The creator's ID
       },
     });
 
@@ -27,7 +26,6 @@ export const createProjectTypeListing = async (req, res) => {
         icon: icon,
         type: type,
         category: category,
-        created_by: created_by,
         lang_translations: {
           connect: {
             id: langTranslation.id, // Link to the newly created LangTranslation
@@ -51,6 +49,61 @@ export const createProjectTypeListing = async (req, res) => {
 };
 
 export const getProjectTypeList = async (req, res) => {
+
+  const { lang, page = 1, limit = 10 } = req.body; // Extract language, page, and limit from the request body
+
+  try {
+    // Ensure valid page and limit
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
+
+    // Calculate offset (skip) for pagination
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch total count of listings
+    const totalCount = await prisma.projectTypeListings.count();
+
+    // Fetch paginated PropertyTypeListings with related LangTranslations
+    const listings = await prisma.projectTypeListings.findMany({
+      skip,
+      take: validLimit,
+      include: {
+        lang_translations: true, // Include the related LangTranslations based on `name`
+      },
+    });
+
+    // Map the results and apply language selection
+    const simplifiedListings = listings.map((listing) => ({
+      id: listing.id,
+      icon: listing.icon,
+      name:
+        listing.lang_translations
+          ? lang === 'fr'
+            ? listing.lang_translations.fr_string // Fetch French translation
+            : listing.lang_translations.en_string // Fetch English translation
+          : 'No name available', // Fallback if no translation exists
+      type: listing.type,
+      key: listing.key,
+      category: listing.category?.toString() || null, // Serialize BigInt to string
+      created_at: listing.created_at,
+      updated_at: listing.updated_at,
+    }));
+
+    // Return response with pagination metadata
+    const responsePayload = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      list: simplifiedListings,
+    };
+
+    return response.success( res, res.__('messages.projectTypeListingsFetchedSuccessfully'), responsePayload );
+  } catch (error) {
+    console.error('Error fetching property type listings:', error);
+    return response.serverError(res, error);
+  }
+/*
   try {
     const projectTypeListings = await prisma.projectTypeListings.findMany({
       where: {
@@ -88,7 +141,7 @@ export const getProjectTypeList = async (req, res) => {
   } catch (error) {
     console.error('Error fetching project type listings:', error);
     return await response.error(res, res.__('messages.projectTypeListingFetchError'));
-  }
+  }*/
 };
 
 export const updateProjectTypeListing = async (req, res) => {
@@ -151,6 +204,28 @@ export const updateProjectTypeListing = async (req, res) => {
     return response.error( res, res.__('messages.projectTypeListingUpdateError'));
   }
 };
+
+export const checkProjectTypeListing = async (req, res) => {
+  try {
+    const { key } = req.body;
+    console.log(key);
+    if (!key) {
+      return response.error(res, 'Key is required', 400);
+    }
+
+    const listing = await prisma.projectTypeListings.findFirst({
+      where: { key },
+    });
+    if (listing) {
+      return response.error(res, 'Property Of key was Exist');
+    }else{
+      return response.success(res, 'Property Of key was not Exist', null);
+    }
+  } catch (error) {
+    return response.serverError(res, error);
+  }
+};
+
 
 export const deleteProjectTypeListing = async (req, res) => {
   const { id } = req.body;
