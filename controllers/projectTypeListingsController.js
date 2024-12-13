@@ -48,6 +48,53 @@ export const createProjectTypeListing = async (req, res) => {
   }
 };
 
+
+export const getProjectTypeListAll = async (req, res) => {
+  try {
+    // Ensure valid page and limit
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
+
+    // Calculate offset (skip) for pagination
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch total count of listings
+    const totalCount = await prisma.projectTypeListings.count();
+
+    // Fetch paginated PropertyTypeListings with related LangTranslations
+    const listings = await prisma.projectTypeListings.findMany({
+      skip,
+      take: validLimit,
+      include: {
+        lang_translations: true, // Include the related LangTranslations based on `name`
+      },
+    });
+
+    // Map the results and apply language selection
+    const simplifiedListings = listings.map((listing) => ({
+      id: listing.id,
+      icon: listing.icon,
+      name:
+        listing.lang_translations
+          ? lang === 'fr'
+            ? listing.lang_translations.fr_string // Fetch French translation
+            : listing.lang_translations.en_string // Fetch English translation
+          : 'No name available', // Fallback if no translation exists
+      type: listing.type,
+      key: listing.key,
+      category: listing.category?.toString() || null, // Serialize BigInt to string
+      created_at: listing.created_at,
+      updated_at: listing.updated_at,
+    }));
+
+    // Return response with pagination metadata
+
+    return response.success( res, res.__('messages.projectTypeListingsFetchedSuccessfully'), simplifiedListings );
+  } catch (error) {
+    console.error('Error fetching property type listings:', error);
+    return response.serverError(res, error);
+  }
+}
 export const getProjectTypeList = async (req, res) => {
 
   const { lang, page = 1, limit = 10 } = req.body; // Extract language, page, and limit from the request body
