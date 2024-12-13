@@ -51,20 +51,13 @@ export const createProjectTypeListing = async (req, res) => {
 
 export const getProjectTypeListAll = async (req, res) => {
   try {
-    // Ensure valid page and limit
-    const validPage = Math.max(1, parseInt(page, 10));
-    const validLimit = Math.max(1, parseInt(limit, 10));
-
-    // Calculate offset (skip) for pagination
-    const skip = (validPage - 1) * validLimit;
+    const lang = res.getLocale();
 
     // Fetch total count of listings
     const totalCount = await prisma.projectTypeListings.count();
 
     // Fetch paginated PropertyTypeListings with related LangTranslations
     const listings = await prisma.projectTypeListings.findMany({
-      skip,
-      take: validLimit,
       include: {
         lang_translations: true, // Include the related LangTranslations based on `name`
       },
@@ -88,6 +81,13 @@ export const getProjectTypeListAll = async (req, res) => {
     }));
 
     // Return response with pagination metadata
+    // const responsePayload = {
+    //   totalCount,
+    //   totalPages: Math.ceil(totalCount / validLimit),
+    //   currentPage: validPage,
+    //   itemsPerPage: validLimit,
+    //   list: simplifiedListings,
+    // };
 
     return response.success( res, res.__('messages.projectTypeListingsFetchedSuccessfully'), simplifiedListings );
   } catch (error) {
