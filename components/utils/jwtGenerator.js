@@ -9,7 +9,7 @@ const JwtModel = {
     return jwt.sign(
       { id: id, email_address: email_address },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '3h' }
     );
   },
 };

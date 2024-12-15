@@ -7,8 +7,8 @@ const router = express.Router();
 router.post('/',authorize, getProjectTypeList);
 router.post('/all',authorize, getProjectTypeListAll);
 router.post('/create',authorize, createProjectTypeListing);
-router.put('/:ID',authorize, updateProjectTypeListing);
-router.delete('/:ID',authorize, deleteProjectTypeListing);
+router.put('/:id',authorize, updateProjectTypeListing);
+router.delete('/:id',authorize, deleteProjectTypeListing);
 router.post('/check',authorize, checkProjectTypeListing);
 
 export default router;

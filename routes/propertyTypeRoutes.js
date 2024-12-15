@@ -8,7 +8,7 @@ const router = express.Router();
 // Route to create Property Type
 router.post('/create',authorize, createPropertyType);
 router.post('/', authorize,getPropertyTypes);
-router.put('/:Id',authorize, updatePropertyType);
-router.delete('/:Id',authorize, deletePropertyType );
+router.put('/:id',authorize, updatePropertyType);
+router.delete('/:id',authorize, deletePropertyType );
 
 export default router;

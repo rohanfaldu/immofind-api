@@ -144,7 +144,7 @@ export const updatePropertyType = async (req, res) => {
 };
 
 export const deletePropertyType = async (req, res) => {
-  const { id } = req.body;
+  const { id } = req.params;
 
   // Validate required fields
   if (!id) {

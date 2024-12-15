@@ -25,6 +25,9 @@ export const getAllProperty = async (req, res) => {
     const properties = await prisma.propertyDetails.findMany({
       skip,
       take: validLimit,
+      orderBy:{
+        created_at: 'desc',
+      },
       include: {
         users: {
           select: {
@@ -62,6 +65,7 @@ export const getAllProperty = async (req, res) => {
                 id: true,
                 name: true,
                 type: true,
+                icon: true,
                 key: true,
                 lang_translations: {
                   select: {
@@ -113,6 +117,7 @@ export const getAllProperty = async (req, res) => {
           id: meta.property_type_listings?.id || null,
           type: meta.property_type_listings?.type || null,
           key: meta.property_type_listings?.key || null,
+          icon: meta.property_type_listings?.icon || null,
           name: langObj,
           value: meta.value,
         };
@@ -173,9 +178,6 @@ export const getAllProperty = async (req, res) => {
   }
 };
 
-
-
-
 export const createProperty = async (req, res) => {
     try {
         // Extracting the data from the request body
@@ -196,6 +198,7 @@ export const createProperty = async (req, res) => {
             user_id,
             type_id,
             transaction,
+            project_id,
             size,
             meta_details
         } = req.body;
@@ -214,7 +217,6 @@ export const createProperty = async (req, res) => {
         if(!user){
           return response.error(res, res.__('messages.onlyDeveloperAgencyCreat'), null, 400);
         }
-        
         
         const propertyTitleExist = await prisma.propertyDetails.findFirst({
           where: {
@@ -257,6 +259,7 @@ export const createProperty = async (req, res) => {
                 state_id: state_id,
                 latitude: latitude,
                 longitude: longitude,
+                project_id: project_id || null,
                 vr_link: vr_link || null,
                 picture: picture || null,
                 video: video || null,

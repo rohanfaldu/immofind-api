@@ -88,7 +88,6 @@ export const createAgency = async (req, res) => {
       cover,
       agency_packages,
     };
-
     // Save agency details to the agency table
     const newAgency = await prisma.agencies.create({
       data: agencyData,

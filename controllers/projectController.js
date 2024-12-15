@@ -142,7 +142,8 @@ export const createProject = async (req, res) => {
       video,
       user_id,
       link_uuid,
-      meta_details
+      meta_details,
+      
     } = req.body;
 
     // Validate required fields
@@ -542,18 +543,20 @@ export const updateProject = async (req, res) => {
 
 // Delete a project (soft delete)
 export const deleteProject = async (req, res) => {
+  console.log(req.body);
   try {
     // Extracting the project_id from the request body
-    const { project_id } = req.body;
+    //const { project_id } = req.body;
+    const { id } = req.params;
 
     // Validate required field
-    if (!project_id) {
+    if (!id) {
       return await response.error(res, res.__('messages.projectIdRequired'));
     }
 
     // Step 1: Check if the project exists
     const existingProject = await prisma.projectDetails.findUnique({
-      where: { id: project_id },
+      where: { id: id },
     });
 
     if (!existingProject) {
@@ -562,12 +565,12 @@ export const deleteProject = async (req, res) => {
 
     // Step 2: Delete related project_meta_details
     await prisma.projectMetaDetails.deleteMany({
-      where: { project_detail_id: project_id },
+      where: { project_detail_id: id },
     });
 
     // Step 3: Delete the project
     await prisma.projectDetails.delete({
-      where: { id: project_id },
+      where: { id: id },
     });
 
     // Step 4: Return success response

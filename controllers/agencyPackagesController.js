@@ -9,15 +9,45 @@ const prisma = new PrismaClient();
  */
 export const getAgencyPackage = async (req, res) => {
   try {
+    const { page = 1, limit = 10 } = req.body;
+
+    // Ensure page and limit are valid numbers
+    const validPage = Math.max(1, parseInt(page, 10)); // Default to 1 if invalid
+    const validLimit = Math.max(1, parseInt(limit, 10)); // Default to 1 if invalid
+
+    // Calculate the offset (skip) for pagination
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch total count for properties
+    const totalCount = await prisma.agencyPackages.count();
+
     const agencyPackages = await prisma.agencyPackages.findMany({
+      skip,
+      take: validLimit,
       where: { is_deleted: false },
       include: {
         developers: true, // Include developers if needed
         language: true,
       },
     });
-
-    return response.success(res, res.__('messages.listFetchedSuccessfully'), agencyPackages);
+    const lang = res.getLocale();
+    const agencyPackagesList = await agencyPackages.map((item) => {
+      return {
+        id: item.id,
+        name: lang === 'fr' ? item.language.fr_string : item.language.en_string,
+        type: item.type,
+        created_by: item.created_by,
+        created_at: item.created_at,
+      };
+    });
+    const responsePayload = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      list: agencyPackagesList,
+    };
+    return response.success(res, res.__('messages.listFetchedSuccessfully'), responsePayload);
   } catch (error) {
     console.error('Error fetching agency packages:', error);
     return response.serverError(res, res.__('messages.internalServerError'));

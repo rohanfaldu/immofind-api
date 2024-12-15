@@ -176,7 +176,7 @@ export const deleteUser = async (req, res) => {
             return await response.error(res, res.__(`messages.${type}NotFound`));
         }
     } catch (error) {
-         return await response.serverError(res, res.__('messages.internalServerError'));
+         return await response.error(res, 'Please check that user id is already used on another table');
     }
 }
 
@@ -249,9 +249,24 @@ export const getallUser = async (req, res) => {
     }
 }
 
-export const getagencyDeveloper = async (req, res) => {
+export const getagency = async (req, res) => {
     const { type } = req.body;
-    const userData = await UserModel.getAgencyDeveloperUserd();
+    const userData = await UserModel.getagencyUsered();
+    console.log(userData.length);
+    const userList = {
+        count : userData.length,
+        user_data : userData
+    }
+    if (userData) {
+        return await response.success(res, res.__('messages.listFetchedSuccessfully'), userList);
+    } else {
+        return await response.error(res, res.__('messages.listingNotFound'));
+    }
+}
+
+export const getDeveloper = async (req, res) => {
+    const { type } = req.body;
+    const userData = await UserModel.getdeveloperUsered();
     console.log(userData.length);
     const userList = {
         count : userData.length,

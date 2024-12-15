@@ -1,5 +1,5 @@
 import express from 'express';
-import {createNormalUser,createUser, getallUser, getagencyDeveloper, loginWithPassword, deleteUser, updateUser, getUser, loginUser,checkUserExists,sendOtp,updatePassword} from '../controllers/authController.js';
+import {createNormalUser,createUser, getallUser, getagency, getDeveloper, loginWithPassword, deleteUser, updateUser, getUser, loginUser,checkUserExists,sendOtp,updatePassword} from '../controllers/authController.js';
 import passport from 'passport';
 const router = express.Router();
 
@@ -16,7 +16,9 @@ router.post('/get/user', getUser);
 
 router.post('/getall', getallUser);
 
-router.post('/get/agency-developer', getagencyDeveloper);
+router.post('/get/agency', getagency);
+
+router.post('/get/developer', getDeveloper);
 
 router.post('/login', loginUser);
 

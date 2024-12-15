@@ -275,7 +275,7 @@ export const checkProjectTypeListing = async (req, res) => {
 
 
 export const deleteProjectTypeListing = async (req, res) => {
-  const { id } = req.body;
+  const { id } = req.params;
 
   if (!id) {
     return response.error(res, res.__('messages.idRequired'), null, 400);

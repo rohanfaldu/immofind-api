@@ -14,7 +14,7 @@ export const createDeveloper = async (req, res) => {
   // Destructure request body
   const {
     user_id,
-    credits,
+    credit,
     description,
     facebook_link,
     twitter_link,
@@ -68,7 +68,7 @@ export const createDeveloper = async (req, res) => {
     // Prepare developer data for creation
     const developerData = {
       user_id: existingUser.id, // Use the ID from the authenticated user
-      credits,
+      credit,
       description,
       facebookLink: facebook_link,
       twitterLink: twitter_link,

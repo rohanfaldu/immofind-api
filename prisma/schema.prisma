@@ -155,8 +155,10 @@ model PropertyDetails {
   city_id                                                           String?               @db.Uuid
   state_id                                                          String?               @db.Uuid
   title                                                             String                @db.Uuid
+  project_id                                                        String?               @db.Uuid
   cities                                                            Cities?               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
   districts                                                         Districts             @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
+  property_details                                                  ProjectDetails?       @relation("property_detailsToproperty_details", fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_id_foreign_key")
   lang_translations_property_details_descriptionTolang_translations LangTranslations      @relation("property_details_descriptionTolang_translations", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_descriptioj_foreign_key")
   lang_translations                                                 LangTranslations      @relation("property_details_titleTolang_translations", fields: [title], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_title_foreign_key")
   property_types                                                    PropertyTypes         @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_type_foreign_key")
@@ -188,16 +190,14 @@ model ProjectDetails {
   updated_by                    String?              @db.Uuid
   title                         String               @db.Uuid
   description                   String               @db.Uuid
-  project_id                    String?              @db.Uuid
   cities                        Cities               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_project_foreign_key")
   districts                     Districts            @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_project_foreign_key")
   lang_translations_description LangTranslations     @relation("project_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_title       LangTranslations     @relation("project_title_translation", fields: [title], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  project_details               ProjectDetails?      @relation("project_detailsToproject_details", fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_id_foreign_key")
-  other_project_details         ProjectDetails[]     @relation("project_detailsToproject_details")
   users                         Users                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_user_foreign_key")
   states                        States               @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_project_foreign_key")
   project_meta_details          ProjectMetaDetails[]
+  other_property_details        PropertyDetails[]    @relation("property_detailsToproperty_details")
 
   @@map("project_details")
 }
@@ -378,7 +378,7 @@ model Developers {
   created_by         String?          @db.Uuid
   updated_by         String?          @db.Uuid
   agencyPackageId    String?          @map("agency_package_id")
-  credit             String?          @db.VarChar
+  credit             String           @db.VarChar
   agencyPackages     AgencyPackages[] @relation("DevelopersToAgencyPackages")
 
   @@map("developers")
