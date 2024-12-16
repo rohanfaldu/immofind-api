@@ -378,7 +378,7 @@ model Developers {
   created_by         String?          @db.Uuid
   updated_by         String?          @db.Uuid
   agencyPackageId    String?          @map("agency_package_id")
-  credit             String           @db.VarChar
+  credit             String?          @db.VarChar
   agencyPackages     AgencyPackages[] @relation("DevelopersToAgencyPackages")
 
   @@map("developers")
