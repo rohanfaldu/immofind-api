@@ -358,8 +358,8 @@ export const createProperty = async (req, res) => {
             longitude: createdProperty.longitude,
             size: createdProperty.size,
             price: createdProperty.price,
-            bathRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'bathrooms')?.value || 0,
-            bedRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'rooms')?.value || 0,
+            bathRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'bathrooms')?.value || "0",
+            bedRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'rooms')?.value || "0",
             district: createdProperty.districts?.langTranslation
                 ? lang === 'fr'
                 ? createdProperty.districts.langTranslation.fr_string
