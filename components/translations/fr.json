@@ -159,6 +159,7 @@
     "projectCreated": "Projet déjà créé",
     "onlyDeveloperAgencyCreat": "L'utilisateur développeur ou agence peut uniquement créer un projet",
     "propertyExists": "La propriété existe déjà",
-    "uploadSuccess": "Image Upload Successfully"
+    "uploadSuccess": "Image Upload Successfully",
+    "dashboardList": "Données de liste du tableau de bord"
   }
 }

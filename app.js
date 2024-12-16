@@ -17,6 +17,7 @@ import agencyPackagesRoutes from './routes/agencyPackagesRoutes.js';
 import developersRoutes from './routes/developersRoutes.js';
 import projectRoutes from './routes/projectRoutes.js';
 import projectTypeListingsRoutes from './routes/projectTypeListingsRoutes.js';
+import dashboardListingsRoutes from './routes/dashboardListingsRoutes.js';
 import cors from 'cors';
 import i18n from 'i18n';
 import path from 'path';
@@ -85,6 +86,7 @@ app.use('/api/agency-packages', agencyPackagesRoutes);
 app.use('/api/developer', developersRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/project-type-listings', projectTypeListingsRoutes);
+app.use('/api/dashboard', dashboardListingsRoutes);
 
 // Home route
 app.get('/', (req, res) => {

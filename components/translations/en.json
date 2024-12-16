@@ -159,6 +159,7 @@
 		"onlyDeveloperAgencyCreat": "Developer Or Agency User can only create Project",
 		"projectCreated": "Project Already Created",
 		"propertyExists": "Property Already Exists",
-		"uploadSuccess": "Image Upload Successfully"
+		"uploadSuccess": "Image Upload Successfully",
+		"dashboardList": "Dashboard listing Data"
 	}
 }
