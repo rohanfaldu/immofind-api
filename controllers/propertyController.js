@@ -1,12 +1,15 @@
 import { PrismaClient } from '@prisma/client';
 import response from '../components/utils/response.js';
 import { validate as isUUID } from "uuid";
-
+import commonFunction from "../components/utils/commonFunction.js";
 const prisma = new PrismaClient();
 
-// Get all property type listings
-export const getAllProperty = async (req, res) => {
+// Get all property type listing
+
+export const getAgentDeveloperProperty = async (req, res) => {
   try {
+    const userInfo = await commonFunction.getLoginUser(req.user.id);
+
     // Extract pagination and locale from the request
     const { page = 1, limit = 10 } = req.body;
     const lang = res.getLocale();
@@ -19,6 +22,183 @@ export const getAllProperty = async (req, res) => {
     const skip = (validPage - 1) * validLimit;
 
     // Fetch total count for properties
+    
+    const whereCondition = (userInfo !== 'admin')?{ user_id: req.user.id }:{};
+    const totalCount = await prisma.propertyDetails.count({where: whereCondition});
+    console.log(totalCount)
+    // Fetch paginated property details
+    const properties = await prisma.propertyDetails.findMany({
+      skip,
+      take: validLimit,
+      where: whereCondition,
+      orderBy:{
+        created_at: 'desc',
+      },
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+          },
+        },
+        lang_translations_property_details_descriptionTolang_translations: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        lang_translations: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        districts: {
+        select: {
+            langTranslation: {
+            select: {
+                en_string: true,
+                fr_string: true,
+            },
+            },
+        },
+        },
+        property_meta_details: {
+          select: {
+            value: true,
+            property_type_listings: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                icon: true,
+                key: true,
+                lang_translations: {
+                  select: {
+                    en_string: true,
+                    fr_string: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        property_types: {
+          select: {
+            id: true,
+            title: true,
+            lang_translations: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Simplify and process the property details
+    const simplifiedProperties = properties.map((property) => {
+      const description =
+        lang === 'fr'
+          ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
+          : property.lang_translations_property_details_descriptionTolang_translations.en_string;
+      const title =
+        lang === 'fr'
+          ? property.lang_translations.fr_string
+          : property.lang_translations.en_string;
+      const type =
+        lang === 'fr'
+          ? property.property_types?.lang_translations?.fr_string
+          : property.property_types?.lang_translations?.en_string;
+
+      const metaDetails = property.property_meta_details.map((meta) => {
+        const langObj =
+          lang === 'fr'
+            ? meta.property_type_listings?.lang_translations?.fr_string
+            : meta.property_type_listings?.lang_translations?.en_string;
+
+        return {
+          id: meta.property_type_listings?.id || null,
+          type: meta.property_type_listings?.type || null,
+          key: meta.property_type_listings?.key || null,
+          icon: meta.property_type_listings?.icon || null,
+          name: langObj,
+          value: meta.value,
+        };
+      });
+
+      const bathRooms =
+        metaDetails.find((meta) => meta.key === 'bathrooms')?.value || "0";
+      const bedRooms =
+        metaDetails.find((meta) => meta.key === 'rooms')?.value || "0";
+      const propertyType = res.__('messages.propertyType') + " " + property.transaction;
+
+      return {
+        id: property.id,
+        user_name: property.users?.full_name || null,
+        user_image: property.users?.image || null,
+        description,
+        title,
+        transaction: propertyType,
+        transaction_type: property.transaction,
+        picture: property.picture,
+        video: property.video,
+        latitude: property.latitude,
+        longitude: property.longitude,
+        size: property.size,
+        price: property.price,
+        created_at: property.created_at,
+        bathRooms,
+        bedRooms,
+        district: property.districts?.name || null,
+        meta_details: metaDetails,
+        type,
+      };
+    });
+
+    // Construct the response payload with pagination metadata
+    const responsePayload = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      list: simplifiedProperties,
+    };
+
+    // Send response
+    return response.success(
+      res,
+      res.__('messages.propertyFetchSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error('Error fetching property details:', error);
+
+    // Return error response
+    return response.error(
+      res,
+      res.__('messages.errorFetchingProperties')
+    );
+  }
+};
+export const getAllProperty = async (req, res) => {
+  try {
+
+    // Extract pagination and locale from the request
+    const { page = 1, limit = 10 } = req.body;
+    const lang = res.getLocale();
+
+    // Ensure page and limit are valid numbers
+    const validPage = Math.max(1, parseInt(page, 10)); // Default to 1 if invalid
+    const validLimit = Math.max(1, parseInt(limit, 10)); // Default to 1 if invalid
+
+    // Calculate the offset (skip) for pagination
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch total count for properties
+    
     const totalCount = await prisma.propertyDetails.count();
 
     // Fetch paginated property details

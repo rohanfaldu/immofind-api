@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllProjects,createProject, updateProject, deleteProject} from '../controllers/projectController.js';
+import { getAllProjects,createProject, updateProject, deleteProject, getAgentDeveloperProjects} from '../controllers/projectController.js';
 import passport from 'passport';
 const router = express.Router();
 import { authorize } from '../middleware/authorization.js'; // Import the authorization middleware
@@ -7,6 +7,7 @@ import { authorize } from '../middleware/authorization.js'; // Import the author
 
 // Routes
 router.post('/',authorize, getAllProjects);
+router.post('/developer', authorize, getAgentDeveloperProjects);
 router.post('/create',authorize, createProject);
 router.put('/:id',authorize, updateProject);
 router.delete('/:id',authorize, deleteProject);

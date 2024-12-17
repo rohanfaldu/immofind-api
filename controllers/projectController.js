@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import response from '../components/utils/response.js';
+import commonFunction from "../components/utils/commonFunction.js";
 
 const prisma = new PrismaClient();
 
@@ -115,6 +116,138 @@ export const getAllProjects = async (req, res) => {
 
     // Step 3: Return the response
     return await response.success(res, res.__('messages.projectsFetchedSuccessfully'), simplifiedProjects);
+  } catch (error) {
+    console.error('Error fetching projects:', error);
+    return await response.serverError(res, res.__('messages.errorFetchingProjects'));
+  }
+};
+
+export const getAgentDeveloperProjects = async (req, res) => {
+  try {
+    const userInfo = await commonFunction.getLoginUser(req.user.id);
+    const { page = 1, limit = 10 } = req.body;
+
+    // Ensure page and limit are valid numbers
+    const validPage = Math.max(1, parseInt(page, 10)); // Default to 1 if invalid
+    const validLimit = Math.max(1, parseInt(limit, 10)); // Default to 1 if invalid
+
+    // Calculate the offset (skip) for pagination
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch total count for properties
+    
+    const whereCondition = (userInfo !== 'admin')?{ user_id: req.user.id }:{};
+    const totalCount = await prisma.projectDetails.count({where: whereCondition});
+
+    // Step 1: Fetch all projects from the database
+    const projects = await prisma.projectDetails.findMany({
+      skip,
+      take: validLimit,
+      where: whereCondition,
+      orderBy:{
+        created_at: 'desc',
+      },
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+          },
+        },
+        lang_translations_title: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        lang_translations_description: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        states: {
+          select: { 
+            lang: { select: { fr_string: true, en_string: true } } 
+          },
+        },
+        cities: {
+          select: { 
+            lang: { select: { fr_string: true, en_string: true } } 
+          },
+        },
+        districts: {
+          select: { 
+            langTranslation: { select: { fr_string: true, en_string: true } } 
+          },
+        },
+        project_meta_details: {
+          select: {
+            value: true,
+            project_type_listing: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                key: true,
+                lang_translations: {
+                  select: {
+                    en_string: true,
+                    fr_string: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Step 2: Format the projects data for the response
+    const lang = res.getLocale();
+
+    const simplifiedProjects = projects.map((createdProject) => ({
+     
+      id: createdProject.id,
+      user_name: createdProject.users?.full_name || null,
+      user_image: createdProject.users?.image || null,
+      title: lang === 'fr' ? createdProject.lang_translations_title.fr_string : createdProject.lang_translations_title.en_string,
+      description: lang === 'fr' ? createdProject.lang_translations_description.fr_string : createdProject.lang_translations_description.en_string,
+      price: createdProject.price,
+      state: lang === 'fr' ? createdProject.states.lang.fr_string : createdProject.states.lang.en_string,
+      city: lang === 'fr' ? createdProject.cities.lang.fr_string : createdProject.cities.lang.en_string,
+      district: lang === 'fr' ? createdProject.districts.langTranslation.fr_string : createdProject.districts.langTranslation.en_string,
+      latitude: createdProject.latitude,
+      longitude: createdProject.longitude,
+      vr_link: createdProject.vr_link,
+      picture: createdProject.picture,
+      video: createdProject.video,
+      created_at: createdProject.created_at,
+      status: createdProject.status,
+      meta_details: createdProject.project_meta_details.map((meta) => {
+        const langObj = lang === 'en'
+          ? meta.project_type_listing?.lang_translations?.en_string
+          : meta.project_type_listing?.lang_translations?.fr_string;
+
+        return {
+          id: meta.project_type_listing?.id || null,
+          type: meta.project_type_listing?.type || null,
+          key: meta.project_type_listing?.key || null,
+          name: langObj,
+          value: meta.value,
+        };
+      }),
+    }));
+
+    const responsePayload = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      list: simplifiedProjects,
+    };
+    // Step 3: Return the response
+    return await response.success(res, res.__('messages.projectsFetchedSuccessfully'), responsePayload);
   } catch (error) {
     console.error('Error fetching projects:', error);
     return await response.serverError(res, res.__('messages.errorFetchingProjects'));
