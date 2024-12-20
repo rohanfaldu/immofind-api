@@ -59,6 +59,8 @@ model Cities {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   state_id         String            @db.Uuid
   lang_id          String?           @db.Uuid
+  latitude         Float?
+  longitude        Float?
   is_deleted       Boolean           @default(false)
   created_at       DateTime?         @default(now()) @db.Timestamp(6)
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
@@ -88,8 +90,28 @@ model Districts {
   langTranslation  LangTranslations? @relation(fields: [lang_id], references: [id])
   ProjectDetails   ProjectDetails[]
   property_details PropertyDetails[]
+  neighborhoods        Neighborhoods[]
 
   @@map("districts")
+}
+
+model Neighborhoods {
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  district_id     String            @db.Uuid
+  lang_id         String?           @db.Uuid
+  latitude        Float?
+  longitude       Float?
+  is_deleted      Boolean           @default(false)
+  created_at      DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at      DateTime?         @default(now()) @db.Timestamp(6)
+  created_by      String?           @db.Uuid
+  updated_by      String?           @db.Uuid
+
+  // Relationships
+  district        Districts         @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "district_foreign_key")
+  langTranslation LangTranslations? @relation(fields: [lang_id], references: [id])
+
+  @@map("neighborhoods")
 }
 
 model LangTranslations {
@@ -104,6 +126,7 @@ model LangTranslations {
   agencyPackages                                                   AgencyPackages[]
   cities                                                           Cities[]
   districts                                                        Districts[]
+  neighborhoods                                                    Neighborhoods[]
   project_details_description_translation                          ProjectDetails[]       @relation("project_description_translation")
   project_details                                                  ProjectDetails[]       @relation("project_title_translation")
   project_type_listings                                            ProjectTypeListings[]
@@ -312,6 +335,8 @@ model Settings {
 model States {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   lang_id          String?           @unique @db.Uuid
+  latitude         Float?
+  longitude        Float?
   is_deleted       Boolean           @default(false)
   created_at       DateTime?         @default(now()) @db.Timestamp(6)
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)

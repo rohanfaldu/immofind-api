@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 // Create City with LangTranslations
 export const createCity = async (req, res) => {
   try {
-    const { en_name, fr_name, state_id } = req.body;
+    const { en_name, fr_name, state_id, latitude, longitude } = req.body;
 
     // Validate required fields
     if (!en_name || !fr_name || !state_id) {
@@ -78,6 +78,8 @@ export const createCity = async (req, res) => {
       data: {
         state_id, // Link to the state
         lang_id: langTranslation.id, // Link to LangTranslations ID
+        latitude: latitude, // Exclude soft-deleted entries
+        longitude: longitude, // Exclude soft-deleted entries
       },
     });
 
@@ -235,31 +237,32 @@ export const getCitiesByState = async (req, res) => {
     }
 
     // Fetch cities for the state
-    const cities = await prisma.cities.findMany({
-      where: {
-        state_id: state.id, // Match cities by state ID
-        is_deleted: false,
-      },
-      select: {
+   const cities = await prisma.cities.findMany({
+    where: { state_id },
+    select: {
         id: true,
+        latitude: true, // Include latitude
+        longitude: true, // Include longitude
         lang: {
-          select: {
+        select: {
             fr_string: isFrench,
             en_string: !isFrench,
-          },
+        },
         },
         districts: {
-          select: {
+        select: {
             id: true,
-            langTranslation: { // Correct relation field for language translations
-              select: {
+            latitude: true, // Include district latitude
+            longitude: true, // Include district longitude
+            langTranslation: {
+            select: {
                 fr_string: isFrench,
                 en_string: !isFrench,
-              },
             },
-          },
+            },
         },
-      },
+        },
+    },
     });
 
     if (!cities.length) {
@@ -283,11 +286,13 @@ export const getCitiesByState = async (req, res) => {
 
     // Include state details in the response
     const result = {
-      state: {
-        id: state.id,
-        name: isFrench && state.lang ? state.lang.fr_string : state.lang?.en_string, // State name in requested language
-      },
-      cities: transformedCities,
+        state: {
+            id: state.id,
+            name: isFrench && state.lang ? state.lang.fr_string : state.lang?.en_string, // State name in requested language
+            latitude: state.latitude, // Include latitude
+            longitude: state.longitude, // Include longitude
+        },
+        cities: transformedCities, // Include transformed cities
     };
 
     return response.success(res, res.__('messages.citiesFetchedSuccessfully'), result); // Success response
@@ -323,27 +328,31 @@ export const getCities = async (req, res) => {
 
     // Fetch cities related to the provided state_id
     const cities = await prisma.cities.findMany({
-      where: { state_id }, // Filter by state_id
-      select: {
+    where: { state_id }, // Filter by state_id
+    select: {
         id: true, // City ID
+        latitude: true, // Include latitude
+        longitude: true, // Include longitude
         lang: {
-          select: {
+        select: {
             fr_string: isFrench, // Include fr_string if lang is 'fr'
             en_string: !isFrench, // Include en_string otherwise
-          },
         },
-      },
+        },
+    },
     });
 
     // Handle no cities found
     if (!cities.length) {
-      return response.error(res, res.__('messages.noCitiesFoundForState'), null);
+    return response.error(res, res.__('messages.noCitiesFoundForState'), null);
     }
 
     // Transform data to simplify language selection
     const transformedCities = cities.map((city) => ({
-      id: city.id,
-      name: city.lang?.fr_string || city.lang?.en_string, // City name in the requested language
+    id: city.id,
+    name: city.lang?.fr_string || city.lang?.en_string, // City name in the requested language
+    latitude: city.latitude, // Include latitude
+    longitude: city.longitude, // Include longitude
     }));
 
     // Return the transformed data

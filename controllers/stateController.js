@@ -6,7 +6,7 @@ const prisma = new PrismaClient();
 // Create State with LangTranslations
 export const createState = async (req, res) => {
   try {
-    const { en_name, fr_name} = req.body;
+    const { en_name, fr_name, latitude, longitude} = req.body;
 
     if (!en_name || !fr_name) {
       return await response.error(res, res.__('messages.fieldError')); // Error when required fields are missing
@@ -54,6 +54,8 @@ export const createState = async (req, res) => {
     const state = await prisma.states.create({
       data: {
         lang_id: newLangTranslation.id, // Link to LangTranslations ID
+        latitude: latitude,
+        longitude: longitude,
       },
     });
 
@@ -102,12 +104,16 @@ export const getStates = async (req, res) => {
     // Transform results to include the selected language string for states and cities
     const transformedStates = states.map((state) => ({
       ...state,
-      name: isFrench ? state.lang.fr_string : state.lang.en_string, // State language string
+      name: isFrench ? state.lang.fr_string : state.lang.en_string,
+      latitude: state.latitude,
+      longitude: state.longitude,
       cities: state.cities.map((city) => ({
         ...city,
-        name: isFrench ? city.lang.fr_string : city.lang.en_string, // City language string
+        name: isFrench ? city.lang.fr_string : city.lang.en_string,
+        latitude: city.latitude,
+        longitude: city.longitude,
       })),
-      lang: undefined, // Remove the `lang` object if not needed
+      lang: undefined,
     }));
 
     return await response.success(
