@@ -5,7 +5,7 @@ import {
   getNeighborhoodById,
   updateNeighborhood,
   deleteNeighborhood
-} from '../controllers/neighborhoodController.js';
+} from '../controllers/neighborhoodsController.js';
 import { authorize } from '../middleware/authorization.js'; // Import the authorization middleware
 
 const router = express.Router();
