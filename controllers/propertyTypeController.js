@@ -72,24 +72,41 @@ export const createPropertyType = async (req, res) => {
   }
 
   try {
-    // Insert the translations into LangTranslations
-    const langTranslation = await prisma.langTranslations.create({
-      data: {
-        en_string, // English string
-        fr_string, // French string
-      },
-    });
 
-    // Insert into PropertyTypes with the LangTranslation ID
-    const newPropertyType = await prisma.propertyTypes.create({
-      data: {
-        title: langTranslation.id, // Reference the LangTranslation entry
-        created_at: new Date(),
-      },
+    const checkPropertTypeExits =await prisma.propertyTypes.findFirst({ 
+      where: { 
+        lang_translations: {
+          OR: [
+            { en_string: en_string },
+            { fr_string: fr_string },
+          ],
+        }
+      } 
     });
+    console.log('checkPropertTypeExits');
+    console.log(checkPropertTypeExits);
+    if(!checkPropertTypeExits){
+      // Insert the translations into LangTranslations
+      const langTranslation = await prisma.langTranslations.create({
+        data: {
+          en_string, // English string
+          fr_string, // French string
+        },
+      });
 
-    // Return success response
-    return response.success( res, res.__('messages.propertyTypeCreatedSuccessfully'), newPropertyType );
+      // Insert into PropertyTypes with the LangTranslation ID
+      const newPropertyType = await prisma.propertyTypes.create({
+        data: {
+          title: langTranslation.id, // Reference the LangTranslation entry
+          created_at: new Date(),
+        },
+      });
+
+      // Return success response
+      return response.success( res, res.__('messages.propertyTypeCreatedSuccessfully'), newPropertyType );
+    }else{
+      return response.error( res, res.__('messages.propertyTypeListingExists') );
+    }
   } catch (error) {
     console.error(error);
     // Return error response

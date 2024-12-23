@@ -59,13 +59,13 @@ model Cities {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   state_id         String            @db.Uuid
   lang_id          String?           @db.Uuid
-  latitude         Float?
-  longitude        Float?
   is_deleted       Boolean           @default(false)
   created_at       DateTime?         @default(now()) @db.Timestamp(6)
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
   created_by       String?           @db.Uuid
   updated_by       String?           @db.Uuid
+  latitude         Float?
+  longitude        Float?
   lang             LangTranslations? @relation(fields: [lang_id], references: [id])
   states           States            @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
   districts        Districts[]
@@ -88,9 +88,9 @@ model Districts {
   updated_by       String?           @db.Uuid
   cities           Cities            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
   langTranslation  LangTranslations? @relation(fields: [lang_id], references: [id])
+  neighborhoods    Neighborhoods[]
   ProjectDetails   ProjectDetails[]
   property_details PropertyDetails[]
-  neighborhoods        Neighborhoods[]
 
   @@map("districts")
 }
@@ -106,8 +106,6 @@ model Neighborhoods {
   updated_at      DateTime?         @default(now()) @db.Timestamp(6)
   created_by      String?           @db.Uuid
   updated_by      String?           @db.Uuid
-
-  // Relationships
   district        Districts         @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "district_foreign_key")
   langTranslation LangTranslations? @relation(fields: [lang_id], references: [id])
 
@@ -162,7 +160,6 @@ model PropertyDetails {
   latitude                                                          String                @db.VarChar
   longitude                                                         String                @db.VarChar
   vr_link                                                           String?               @db.VarChar
-  picture                                                           String?               @db.VarChar
   video                                                             String?               @db.VarChar
   status                                                            Boolean               @default(false)
   user_id                                                           String                @db.Uuid
@@ -179,6 +176,7 @@ model PropertyDetails {
   state_id                                                          String?               @db.Uuid
   title                                                             String                @db.Uuid
   project_id                                                        String?               @db.Uuid
+  picture                                                           String[]
   cities                                                            Cities?               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
   districts                                                         Districts             @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
   property_details                                                  ProjectDetails?       @relation("property_detailsToproperty_details", fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_id_foreign_key")
@@ -195,7 +193,7 @@ model PropertyDetails {
 model ProjectDetails {
   id                            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   link_uuid                     String               @db.VarChar
-  price                         Int
+  price                         Int?
   state_id                      String               @db.Uuid
   city_id                       String               @db.Uuid
   district_id                   String               @db.Uuid
@@ -335,13 +333,13 @@ model Settings {
 model States {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   lang_id          String?           @unique @db.Uuid
-  latitude         Float?
-  longitude        Float?
   is_deleted       Boolean           @default(false)
   created_at       DateTime?         @default(now()) @db.Timestamp(6)
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
   created_by       String?           @db.Uuid
   updated_by       String?           @db.Uuid
+  latitude         Float?
+  longitude        Float?
   cities           Cities[]
   ProjectDetails   ProjectDetails[]
   property_details PropertyDetails[]

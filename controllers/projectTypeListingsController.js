@@ -12,36 +12,51 @@ export const createProjectTypeListing = async (req, res) => {
   }
 
   try {
-    // Step 1: Insert translations into LangTranslations
-    const langTranslation = await prisma.langTranslations.create({
-      data: {
-        en_string: en_string, // English translation
-        fr_string: fr_string, // French translation
-      },
-    });
-
-    // Step 2: Insert the ProjectTypeListing and link it to the LangTranslation by ID
-    const projectTypeListings = await prisma.projectTypeListings.create({
-      data: {
-        icon: icon,
-        type: type,
-        category: category,
+    const checkExits =await prisma.projectTypeListings.findFirst({ 
+      where: { 
         lang_translations: {
-          connect: {
-            id: langTranslation.id, // Link to the newly created LangTranslation
-          },
-        },
-        key: key,
-      },
+          OR: [
+            { en_string: en_string },
+            { fr_string: fr_string },
+          ],
+        }
+      } 
     });
+    if(!checkExits){
+        // Step 1: Insert translations into LangTranslations
+      const langTranslation = await prisma.langTranslations.create({
+        data: {
+          en_string: en_string, // English translation
+          fr_string: fr_string, // French translation
+        },
+      });
 
-    // Step 3: Convert BigInt to string for response
-    const responseData = {
-      ...projectTypeListings,
-      category: projectTypeListings.category.toString(), // Convert BigInt to string
-    };
+      // Step 2: Insert the ProjectTypeListing and link it to the LangTranslation by ID
+      const projectTypeListings = await prisma.projectTypeListings.create({
+        data: {
+          icon: icon,
+          type: type,
+          category: category,
+          lang_translations: {
+            connect: {
+              id: langTranslation.id, // Link to the newly created LangTranslation
+            },
+          },
+          key: key,
+        },
+      });
 
-    return await response.success(res, res.__('messages.projectTypeListingCreatedSuccessfully'), responseData);
+      // Step 3: Convert BigInt to string for response
+      const responseData = {
+        ...projectTypeListings,
+        category: projectTypeListings.category.toString(), // Convert BigInt to string
+      };
+
+      return await response.success(res, res.__('messages.projectTypeListingCreatedSuccessfully'), responseData);
+    } else{
+      return await response.error(res, res.__('messages.projectTypeCreated'));
+    }
+    
   } catch (error) {
     console.error('Error creating project type listing:', error);
     return await response.serverError(res, res.__('messages.projectTypeListingCreationError'));

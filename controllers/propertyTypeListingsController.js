@@ -131,36 +131,52 @@ export const createPropertyTypeListing = async (req, res) => {
   }
 
   try {
-    // Step 1: Insert translations into LangTranslations
-    const langTranslation = await prisma.langTranslations.create({
-      data: {
-        en_string: en_string,  // English translation
-        fr_string: fr_string,  // French translation
-      },
-    });
 
-    // Step 2: Insert the PropertyTypeListing and link it to the LangTranslation by ID
-    const propertyTypeListing = await prisma.propertyTypeListings.create({
-      data: {
-        icon: icon,
-        type: type,
-        category: category,
+    const checkPropertTypeExits =await prisma.propertyTypeListings.findFirst({ 
+      where: { 
         lang_translations: {
-          connect: {
-            id: langTranslation.id,  // Link to the newly created LangTranslation
-          },
-        },
-        key: key,
-      },
+          OR: [
+            { en_string: en_string },
+            { fr_string: fr_string },
+          ],
+        }
+      } 
     });
+    if(!checkPropertTypeExits){
 
-    // Step 3: Return success response (convert BigInt to string if present)
-    const responseData = {
-      ...propertyTypeListing,
-      category: propertyTypeListing.category.toString(), // Convert BigInt to string
-    };
+    // Step 1: Insert translations into LangTranslations
+      const langTranslation = await prisma.langTranslations.create({
+        data: {
+          en_string: en_string,  // English translation
+          fr_string: fr_string,  // French translation
+        },
+      });
 
-    return response.success( res, res.__('messages.propertyTypeListingCreatedSuccessfully'), responseData );
+      // Step 2: Insert the PropertyTypeListing and link it to the LangTranslation by ID
+      const propertyTypeListing = await prisma.propertyTypeListings.create({
+        data: {
+          icon: icon,
+          type: type,
+          lang_translations: {
+            category: category,
+            connect: {
+              id: langTranslation.id,  // Link to the newly created LangTranslation
+            },
+          },
+          key: key,
+        },
+      });
+
+      // Step 3: Return success response (convert BigInt to string if present)
+      const responseData = {
+        ...propertyTypeListing,
+        category: propertyTypeListing.category.toString(), // Convert BigInt to string
+      };
+
+      return response.success( res, res.__('messages.propertyTypeListingCreatedSuccessfully'), responseData );
+    }else{
+      return response.error( res, res.__('messages.propertyTypeListingExists') );
+    }
   } catch (error) {
     console.error('Error creating property type listing:', error);
     return response.serverError(res, error);

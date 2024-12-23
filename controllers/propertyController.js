@@ -327,6 +327,7 @@ export const getAllProperty = async (req, res) => {
         bathRooms,
         bedRooms,
         district: property.districts?.name || null,
+        images: property.images_data,
         meta_details: metaDetails,
         type,
       };
@@ -427,7 +428,6 @@ export const createProperty = async (req, res) => {
                 created_by: user_id,
             },
         });
-
         // Create the property
         const newProperty = await prisma.propertyDetails.create({
             data: {
@@ -538,6 +538,7 @@ export const createProperty = async (req, res) => {
             longitude: createdProperty.longitude,
             size: createdProperty.size,
             price: createdProperty.price,
+            picture: createdProperty.picture,
             bathRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'bathrooms')?.value || "0",
             bedRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'rooms')?.value || "0",
             district: createdProperty.districts?.langTranslation

@@ -160,6 +160,8 @@
 		"projectCreated": "Project Already Created",
 		"propertyExists": "Property Already Exists",
 		"uploadSuccess": "Image Upload Successfully",
-		"dashboardList": "Dashboard listing Data"
+		"dashboardList": "Dashboard listing Data",
+		"projectTypeCreated": "Project Type was Already Created",
+		"propertyTypeListingExists": "Property Type Already Exists"
 	}
 }

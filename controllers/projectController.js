@@ -285,7 +285,6 @@ export const createProject = async (req, res) => {
       !title_fr ||
       !description_en ||
       !description_fr ||
-      !price ||
       !state_id ||
       !city_id ||
       !district_id ||
