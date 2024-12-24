@@ -257,6 +257,13 @@ export const getAllProperty = async (req, res) => {
             },
           },
         },
+        currency: {
+          select: {
+              name: true,
+              symbol: true,
+              status: true
+          }
+        },
         property_types: {
           select: {
             id: true,
@@ -329,6 +336,11 @@ export const getAllProperty = async (req, res) => {
         district: property.districts?.name || null,
         images: property.images_data,
         meta_details: metaDetails,
+        currency_details: {
+          name: property.currency?.name || null,
+          symbol: property.currency?.symbol || null,
+          status: property.currency?.status || null,
+        },
         type,
       };
     });
@@ -368,6 +380,7 @@ export const createProperty = async (req, res) => {
             description_en,
             description_fr,
             price,
+            currency_id,
             district_id,
             city_id,
             state_id,
@@ -434,6 +447,7 @@ export const createProperty = async (req, res) => {
                 title: titleTranslation.id, // Linking the title translation
                 description: descriptionTranslation.id, // Linking the description translation
                 price: price,
+                currency_id: currency_id,
                 district_id: district_id,
                 city_id: city_id,
                 state_id: state_id,
@@ -507,6 +521,14 @@ export const createProperty = async (req, res) => {
                         },
                     },
                 },
+                  currency: { // Fetch currency details
+                      select: {
+                          name: true,
+                          symbol: true,
+                          status: true,
+                      },
+                    },
+
                 property_types: {
                     select: {
                         id: true,
@@ -562,6 +584,13 @@ export const createProperty = async (req, res) => {
             type: lang === 'fr'
                 ? createdProperty.property_types?.lang_translations?.fr_string
                 : createdProperty.property_types?.lang_translations?.en_string,
+                
+            currency_details: createdProperty.currency?{
+                name: createdProperty.currency.name,
+                symbol: createdProperty.currency.symbol,
+                status: createdProperty.currency.status,
+            }
+            : null,
         };
 
         // Return the response with the created property data
@@ -580,6 +609,7 @@ export const updateProperty = async (req, res) => {
     description_en,
     description_fr,
     price,
+    currency_id,
     district_id,
     latitude,
     longitude,
@@ -637,22 +667,27 @@ export const updateProperty = async (req, res) => {
       return await response.error(res, res.__('messages.invalidDistrictId'));
     }
 
+    const updateData = {
+      price: price !== undefined ? price : existingProperty.price,
+      district_id: district_id !== undefined ? district_id : existingProperty.district_id,
+      latitude: latitude !== undefined ? latitude : existingProperty.latitude,
+      currency_id: currency_id !== undefined ? currency_id : existingProperty.currency_id,
+      longitude: longitude !== undefined ? longitude : existingProperty.longitude,
+      vr_link: vr_link !== undefined ? vr_link : existingProperty.vr_link,
+      picture: picture !== undefined ? picture : existingProperty.picture,
+      video: video !== undefined ? video : existingProperty.video,
+      user_id,
+      type: type_id !== undefined ? type_id : existingProperty.type,
+      transaction: transaction !== undefined ? transaction : existingProperty.transaction,
+      size: size !== undefined ? size : existingProperty.size,
+    };
+
+  console.log(updateData,"updateData")
     // Update property details
     const updatedProperty = await prisma.propertyDetails.update({
       where: { id: propertyId },
-      data: {
-        price,
-        district_id,
-        latitude,
-        longitude,
-        vr_link: vr_link || null,
-        picture: picture || null,
-        video: video || null,
-        user_id,
-        type: type_id,
-        transaction,
-        size: size || null,
-      },
+      data: 
+        updateData
     });
 
     // Update meta details: delete existing and recreate
@@ -718,6 +753,7 @@ export const updateProperty = async (req, res) => {
       },
     });
 
+    console.log(updatedPropertyDetails,"updatedPropertyDetails")
     // Prepare the response
     const lang = res.getLocale();
     const simplifiedProperty = {
@@ -738,6 +774,7 @@ export const updateProperty = async (req, res) => {
       longitude: updatedPropertyDetails.longitude,
       size: updatedPropertyDetails.size,
       price: updatedPropertyDetails.price,
+      currency_id: updatedPropertyDetails.currency_id,
       bathRooms:
         updatedPropertyDetails.property_meta_details.find(
           (meta) => meta.property_type_listings.key === "bathrooms"
@@ -806,4 +843,49 @@ export const deleteProperty = async (req, res) => {
         console.error('Error deleting property:', error);
         return await response.serverError(res, res.__('messages.errorDeletingProperty'));
     }
+};
+
+
+export const statusUpdateProperty = async (req, res) => {
+  const {id, status } = req.body;
+
+  try {
+      // Step 1: Validate that the status is provided
+    if (status === undefined) {
+      return await response.error(res, res.__('messages.statusRequired'));
+    }
+
+    // Step 2: Check if the project exists
+    const existingPropery = await prisma.propertyDetails.findUnique({
+      where: { id: id },
+    });
+
+    if (!existingPropery) {
+      return await response.error(res, res.__('messages.projectNotFound'));
+    }
+
+    // Step 3: Update the project status
+    await prisma.propertyDetails.update({
+      where: { id: id },
+      data: {
+        status: status, // Update status field of the project
+      },
+    });
+
+    // Step 4: Update project_meta_details if needed (e.g., for status or related info)
+    await prisma.propertyMetaDetails.updateMany({
+      where: { property_detail_id: id }, // Ensure you update the related meta details
+      data: {
+        // Add any updates you need to perform on the meta details
+        // status: status, // Example: update the status on meta details as well
+        // is_deleted: status === 'inactive',
+        property_detail_id: id 
+      },
+    });
+
+      return await response.success(res, res.__('messages.propertyUpdatedSuccessfully'), null);
+  } catch (error) {
+      console.error('Error statusUpdate property:', error);
+      return await response.serverError(res, res.__('messages.errorstatusUpdateProperty'));
+  }
 };

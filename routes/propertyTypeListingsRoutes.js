@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllPropertyTypeListings, checkProjectTypeListing, createPropertyTypeListing,updatePropertyTypeListing,deletePropertyTypeListing} from '../controllers/propertyTypeListingsController.js';
+import { getAllPropertyTypeListings, checkProjectTypeListing, createPropertyTypeListing,updatePropertyTypeListing,deletePropertyTypeListing,statusUpdatePropertyTypeListing} from '../controllers/propertyTypeListingsController.js';
 import { authorize } from '../middleware/authorization.js'; // Import the authorization middleware
 const router = express.Router();
 
@@ -9,5 +9,6 @@ router.post('/create',authorize, createPropertyTypeListing);
 router.put('/:id',authorize, updatePropertyTypeListing);
 router.delete('/:id',authorize, deletePropertyTypeListing);
 router.post('/check',authorize, checkProjectTypeListing);
+router.post('/statusUpdate',authorize, statusUpdatePropertyTypeListing);
 
 export default router;

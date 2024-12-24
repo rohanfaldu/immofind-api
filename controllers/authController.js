@@ -19,7 +19,7 @@ const prisma = new PrismaClient();
 
 export const createUser = async (req, res) => {
     //try {
-        const { social_id, user_id, user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, phone_number, password, device_type } = req.body;
+        const { social_id, user_id, user_name, full_name, email_address, user_login_type, fcm_token, image_url, type, phone_number, password, device_type,country_code } = req.body;
         
         if (!user_name ||!full_name || !type || !device_type ) {
             return await response.error(res, res.__('messages.fieldError'));
@@ -61,6 +61,7 @@ export const createUser = async (req, res) => {
                 password: (password)? await passwordGenerator.encrypted(password):null,
                 email_address: email_address,
                 mobile_number: (phone_number)? BigInt(phone_number):null,
+                country_code: country_code? country_code: null
             };
             const where = {
                 id: user_id
@@ -96,6 +97,7 @@ export const createUser = async (req, res) => {
                 user_login_type: user_login_type,
                 mobile_number: (phone_number)? BigInt(phone_number):null,
                 password: (password)? await passwordGenerator.encrypted(password):null,
+                country_code: country_code? country_code: null
             });
             const CreateToken = await jwtGenerator.generateToken(users.id, users.email_address);
             const responseData = {
