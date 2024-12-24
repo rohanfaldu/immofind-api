@@ -162,6 +162,17 @@
 		"uploadSuccess": "Image Upload Successfully",
 		"dashboardList": "Dashboard listing Data",
 		"projectTypeCreated": "Project Type was Already Created",
-		"propertyTypeListingExists": "Property Type Already Exists"
+		"propertyTypeListingExists": "Property Type Already Exists",
+		"projectStatusUpdatedSuccessfully": "project Status Updated Successfully",
+		"ProjectTypeListingStatusUpdatedSuccessfully": "Project Type Listing Status Updated Successfully",
+		"propertyTypeStatusUpdatedSuccessfully": "Property Type Status Updated Successfully",
+		"propertyTypeListingStatusUpdatedSuccessfully": "Property TypeListing Status Updated Successfully",
+		"currencyCreatedSuccessfully": "Currency Created Successfully",
+		"currencyAlreadyExists": "Currency Already Exists",
+		"currencyUpdatedSuccessfully": "Currency updated successfully!",
+		"currencyNotFound": "No Currency Found",
+		"missingCurrencyId": "Currency Id Missing!",
+		"currencyDeletedSuccessfully": "Currency Deleted Successfully",
+		"currencyListedSuccessfully": "Currency Listed Successfully"
 	}
 }

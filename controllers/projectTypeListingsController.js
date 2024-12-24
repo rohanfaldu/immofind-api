@@ -347,3 +347,47 @@ export const deleteProjectTypeListing = async (req, res) => {
     return response.serverError(res, error);
   }
 };
+
+export const statusUpdateProjectTypeListing = async (req, res) => {
+  const {id, status } = req.body;
+
+  try {
+      // Step 1: Validate that the status is provided
+    if (status === undefined) {
+      return await response.error(res, res.__('messages.statusRequired'));
+    }
+
+    // Step 2: Check if the project exists
+    const existingProjectTypeListing = await prisma.projectTypeListings.findUnique({
+      where: { id: id },
+    });
+
+    if (!existingProjectTypeListing) {
+      return await response.error(res, res.__('messages.projectNotFound'));
+    }
+
+    // Step 3: Update the project status
+    await prisma.projectTypeListings.update({
+      where: { id: id },
+      data: {
+        status: status, // Update status field of the project
+      },
+    });
+
+    // Step 4: Update project_meta_details if needed (e.g., for status or related info)
+    await prisma.projectMetaDetails.updateMany({
+      where: { project_type_listing_id: id }, // Ensure you update the related meta details
+      data: {
+        // Add any updates you need to perform on the meta details
+        // status: status, // Example: update the status on meta details as well
+        // is_deleted: status === 'inactive',
+        project_type_listing_id: id 
+      },
+    });
+
+      return await response.success(res, res.__('messages.ProjectTypeListingStatusUpdatedSuccessfully'), null);
+  } catch (error) {
+      console.error('Error statusUpdateProjectTypeListing:', error);
+      return await response.serverError(res, res.__('messages.statusUpdateProjectTypeListing'));
+  }
+};

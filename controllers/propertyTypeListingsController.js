@@ -317,3 +317,47 @@ export const deletePropertyTypeListing = async (req, res) => {
     return response.serverError(res, error);
   }
 };
+
+export const statusUpdatePropertyTypeListing = async (req, res) => {
+  const {id, status } = req.body;
+
+  try {
+      // Step 1: Validate that the status is provided
+    if (status === undefined) {
+      return await response.error(res, res.__('messages.statusRequired'));
+    }
+
+    // Step 2: Check if the project exists
+    const existingPropertyTypeListing = await prisma.propertyTypeListings.findUnique({
+      where: { id: id },
+    });
+
+    if (!existingPropertyTypeListing) {
+      return await response.error(res, res.__('messages.propertyNotFound'));
+    }
+
+    // Step 3: Update the project status
+    await prisma.propertyTypeListings.update({
+      where: { id: id },
+      data: {
+        status: status, // Update status field of the project
+      },
+    });
+
+    // Step 4: Update project_meta_details if needed (e.g., for status or related info)
+    await prisma.propertyMetaDetails.updateMany({
+      where: { property_type_id: id }, // Ensure you update the related meta details
+      data: {
+        // Add any updates you need to perform on the meta details
+        // status: status, // Example: update the status on meta details as well
+        is_deleted: status === 'inactive',
+        // property_type_id: id 
+      },
+    });
+
+      return await response.success(res, res.__('messages.propertyTypeListingStatusUpdatedSuccessfully'), null);
+  } catch (error) {
+      console.error('Error statusUpdatePropertyTypeListing:', error);
+      return await response.serverError(res, res.__('messages.statusUpdatePropertyTypeListing'));
+  }
+};

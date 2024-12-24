@@ -712,3 +712,50 @@ export const deleteProject = async (req, res) => {
     return await response.serverError(res, res.__('messages.errorDeletingProject'));
   }
 };
+
+
+export const statusUpdateProject = async (req, res) => {
+  try {
+    // const { id } = req.params; // Extract the project ID from URL params
+    const {id, status } = req.body; // Extract the status from the request body
+
+    // Step 1: Validate that the status is provided
+    if (status === undefined) {
+      return await response.error(res, res.__('messages.statusRequired'));
+    }
+
+    // Step 2: Check if the project exists
+    const existingProject = await prisma.projectDetails.findUnique({
+      where: { id: id },
+    });
+
+    if (!existingProject) {
+      return await response.error(res, res.__('messages.projectNotFound'));
+    }
+
+    // Step 3: Update the project status
+    await prisma.projectDetails.update({
+      where: { id: id },
+      data: {
+        status: status, // Update status field of the project
+      },
+    });
+
+    // Step 4: Update project_meta_details if needed (e.g., for status or related info)
+    await prisma.projectMetaDetails.updateMany({
+      where: { project_detail_id: id }, // Ensure you update the related meta details
+      data: {
+        // Add any updates you need to perform on the meta details
+        // status: status, // Example: update the status on meta details as well
+        // is_deleted: status === 'inactive',
+        project_detail_id: id 
+      },
+    });
+
+    // Step 5: Return success response
+    return await response.success(res, res.__('messages.projectStatusUpdatedSuccessfully'));
+  } catch (error) {
+    console.error('Error updating project status:', error);
+    return await response.serverError(res, res.__('messages.errorUpdatingProjectStatus'));
+  }
+};
