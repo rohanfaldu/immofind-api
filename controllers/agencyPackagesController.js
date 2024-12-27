@@ -25,10 +25,10 @@ export const getAgencyPackage = async (req, res) => {
       skip,
       take: validLimit,
       where: { is_deleted: false },
-      include: {
-        developers: true, // Include developers if needed
-        language: true,
-      },
+      // include: {
+      //   developers: true, // Include developers if needed
+      //   language: true,
+      // },
     });
     const lang = res.getLocale();
     const agencyPackagesList = await agencyPackages.map((item) => {
