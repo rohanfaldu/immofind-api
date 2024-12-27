@@ -83,12 +83,12 @@ export const createCurrency = async (req, res) => {
         createdAt: currency.createdAt,
         updatedAt: currency.updatedAt,
       }));
-  
-      return res.status(200).json({
-        success: true,
-        message: res.__('messages.currencyListedSuccessfully'),
-        data: formattedCurrencies,
-      });
+
+      return await response.success(
+        res,
+        res.__('messages.currencyListedSuccessfully'),
+        formattedCurrencies
+      );
     } catch (error) {
       console.error('Error fetching currencies:', error);
       return res.status(500).json({

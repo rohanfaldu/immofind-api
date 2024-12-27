@@ -178,6 +178,9 @@
 		"invalidDistrictId": "invalid DistrictId",
 		"neighborhoodFetchedSuccessfully": "neighborhood Fetched Successfully",
 		"neighborhoodsFetchedSuccessfully": "neighborhoods Fetched Successfully",
-		"neighborhoodUpdatedSuccessfully": "neighborhood Updated Successfully"
+		"neighborhoodUpdatedSuccessfully": "neighborhood Updated Successfully",
+		"invalidLanguage": "messages.invalidLanguage",
+		"languageRequired": "messages.languageRequired",
+		"noNeighborhoodsFoundForDistrict": "messages.noNeighborhoodsFoundForDistrict"
 	}
 }
