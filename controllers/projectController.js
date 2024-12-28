@@ -16,8 +16,27 @@ const serializeBigInt = (data) => {
 // Get all project listings
 export const getAllProjects = async (req, res) => {
   try {
+    const { page = 1, limit = 10 } = req.body;
+    const lang = res.getLocale();
+
+    // Ensure page and limit are valid numbers
+    const validPage = Math.max(1, parseInt(page, 10)); // Default to 1 if invalid
+    const validLimit = Math.max(1, parseInt(limit, 10)); // Default to 1 if invalid
+
+    // Calculate the offset (skip) for pagination
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch total count for properties
+    
+    const totalCount = await prisma.projectDetails.count();
+
     // Step 1: Fetch all projects from the database
     const projects = await prisma.projectDetails.findMany({
+      skip,
+      take: validLimit,
+      orderBy:{
+        created_at: 'desc',
+      },
       include: {
         users: {
           select: {
@@ -85,12 +104,6 @@ export const getAllProjects = async (req, res) => {
     });
 
     // Step 2: Format the projects data for the response
-    const lang = res.getLocale();
-    console.log(projects);
-    const simplifiedProjects1 = projects.map((createdProject1) => {
-      console.log(createdProject1.states);
-    });
-
     const simplifiedProjects = projects.map((createdProject) => ({
      
       id: createdProject.id,
@@ -125,8 +138,17 @@ export const getAllProjects = async (req, res) => {
       }),
     }));
 
+    const responsePayload = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      list: simplifiedProjects,
+    };
+
+
     // Step 3: Return the response
-    return await response.success(res, res.__('messages.projectsFetchedSuccessfully'), simplifiedProjects);
+    return await response.success(res, res.__('messages.projectsFetchedSuccessfully'), responsePayload);
   } catch (error) {
     console.error('Error fetching projects:', error);
     return await response.serverError(res, res.__('messages.errorFetchingProjects'));
