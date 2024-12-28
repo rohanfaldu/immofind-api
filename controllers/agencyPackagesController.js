@@ -25,8 +25,7 @@ export const getAgencyPackage = async (req, res) => {
       skip,
       take: validLimit,
       where: { is_deleted: false },
-      include: {
-        developers: true, // Include developers if needed
+      include: { // Include developers if needed
         language: true,
       },
     });
