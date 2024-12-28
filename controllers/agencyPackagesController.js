@@ -30,6 +30,7 @@ export const getAgencyPackage = async (req, res) => {
         language: true,
       },
     });
+    
     const lang = res.getLocale();
     const agencyPackagesList = await agencyPackages.map((item) => {
       return {
