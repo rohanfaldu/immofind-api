@@ -3,58 +3,63 @@ import User from '../models/userModel.js'; // Assuming you have a User model def
 import sendmail from "../components/utils/sendmail.js";
 import crypto from 'crypto';
 import response from "../components/utils/response.js";
+import jwt from 'jsonwebtoken';
 
 // Initialize Prisma Client
 const prisma = new PrismaClient(); // Assuming response utility is in place
 
 // Create an agency
 export const createAgency = async (req, res) => {
-  // Extract user_id directly from the authenticated user
-//   const user_id = req.user.id;
-
-//   if (!user_id) {
-//     return response.error(res, "User ID is missing", null); // Handle the case where the user_id is missing.
-//   }
-
-  // Destructure agency data from the request body
-  const {
-    user_id,
-    credit,
-    description,
-    facebook_link,
-    twitter_link,
-    youtube_link,
-    pinterest_link,
-    linkedin_link,
-    instagram_link,
-    whatsup_number,
-    service_area,
-    tax_number,
-    license_number,
-    picture,
-    cover,
-    country_code,
-    agency_packages,
-  } = req.body;
-
   try {
+    // Extract Bearer token from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return response.error(res, 'Authorization token missing or invalid', null, 401);
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    // Decode the token to get the user ID (assuming JWT)
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    const user_id = decodedToken.id; // Adjust based on your token structure
+
+    if (!user_id) {
+      return response.error(res, 'User ID is missing', null, 401);
+    }
+
+    // Destructure agency data from the request body
+    const {
+      credit,
+      description,
+      facebook_link,
+      twitter_link,
+      youtube_link,
+      pinterest_link,
+      linkedin_link,
+      instagram_link,
+      whatsup_number,
+      service_area,
+      tax_number,
+      license_number,
+      picture,
+      cover,
+      country_code,
+      agency_packages,
+    } = req.body;
+
     // Fetch user details along with their role
     const existingUser = await prisma.users.findUnique({
       where: {
-        id: user_id,  // Use the correct userId to fetch the user
+        id: user_id, // Use the correct userId to fetch the user
       },
       include: {
-        roles: true,  // Include the related role (note: it's 'roles', not 'role')
+        roles: true, // Include the related role
       },
     });
 
     // Ensure the user has a role and the role is 'agency'
-    if (!existingUser || !existingUser.roles || existingUser.roles.name !== "agency") {
-      return response.error(
-        res,
-        res.__('messages.userNotRightsTocreateAgency'),
-        null
-      );
+    if (!existingUser || !existingUser.roles || existingUser.roles.name !== 'agency') {
+      return response.error(res, res.__('messages.userNotRightsTocreateAgency'), null);
     }
 
     // Check if an agency already exists for the given user_id
@@ -63,16 +68,33 @@ export const createAgency = async (req, res) => {
     });
 
     if (existingAgency) {
-      return response.error(
-        res,
-        res.__('messages.agencyAlreadyExists'),
-        null
-      );
+      return response.error(res, res.__('messages.agencyAlreadyExists'), null);
     }
 
+    
+    let agencyPackagesName = null;
+    if (agency_packages) {
+      const agencyPackage = await prisma.agencyPackages.findUnique({
+        where: { id: agency_packages },
+        select: { name: true }, // Select only the `name` field
+      });
+
+      const agencyPackageDetails = await prisma.langTranslations.findFirst({
+        where: { id: agencyPackage.name }, // Assuming `ref_id` links to `agency_packages` ID
+        select: {
+          en_string: true,
+          fr_string: true,
+        },
+      });
+      agencyPackagesName = agencyPackageDetails;
+    }
+
+    console.log(agencyPackagesName);
+    
     // Prepare agency data for the agency table
     const agencyData = {
-      user_id: user_id, // Link to the newly created user
+      user_id: user_id, // Link to the user creating the agency
+      created_by: user_id, // Store the user ID from the token
       credit,
       description,
       facebook_link,
@@ -90,17 +112,16 @@ export const createAgency = async (req, res) => {
       cover,
       agency_packages,
     };
+
     // Save agency details to the agency table
     const newAgency = await prisma.agencies.create({
       data: agencyData,
     });
 
     if (newAgency) {
-      return response.success(
-        res,
-        res.__('messages.agencyCreatedSuccessfully'),
-        { agency: newAgency }
-      );
+      return response.success(res, res.__('messages.agencyCreatedSuccessfully'), {
+        agency: newAgency,
+      });
     } else {
       return response.error(res, res.__('messages.agencyNotCreated'), null);
     }
@@ -118,6 +139,7 @@ export const createAgency = async (req, res) => {
 
 
 
+
 // Get all agencies
 export const getAllAgencies = async (req, res) => {
   try {
@@ -127,7 +149,7 @@ export const getAllAgencies = async (req, res) => {
 
     if (!user_id) {
       return res.status(400).json({
-        success: false,
+        status: false,
         message: res.__('messages.userIdMissing'),
       });
     }
@@ -140,14 +162,14 @@ export const getAllAgencies = async (req, res) => {
     // If no agencies found
     if (!agencies || agencies.length === 0) {
       return res.status(404).json({
-        success: false,
+        status: false,
         message: res.__('messages.noAgenciesFound'),
       });
     }
 
     // Return success response with the agencies data
     return res.status(200).json({
-      success: true,
+      status: true,
       message: res.__('messages.agenciesRetrievedSuccessfully'),
       data: agencies,
     });
@@ -155,7 +177,7 @@ export const getAllAgencies = async (req, res) => {
     // Handle any errors that occur during the query
     console.error('Error fetching agencies:', err);
     return res.status(500).json({
-      success: false,
+      status: false,
       message: res.__('messages.internalServerError'),
       error: err.message,
     });
@@ -205,30 +227,27 @@ export const getAgencyById = async (req, res) => {
     // Fetch the agency by its ID using Prisma
     const agency = await prisma.agencies.findUnique({
       where: {
-        id: req.params.id, // Fetch by the agency ID from the request parameters
+        id: req.params.id,
       },
     });
 
     if (agency) {
-      // Return success response if agency is found
       return res.status(200).json({
-        success: true,
+        status: true,
         message: res.__('messages.agencyRetrievedSuccessfully'),
         data: agency,
       });
     } else {
-      // Return error if agency is not found
       return res.status(404).json({
-        success: false,
+        status: false,
         message: res.__('messages.agencyNotFound'),
         data: null,
       });
     }
   } catch (err) {
-    // Handle any errors that occur during the query
     console.error('Error fetching agency:', err);
     return res.status(500).json({
-      success: false,
+      status: false,
       message: res.__('messages.internalServerError'),
       error: err.message,
     });
@@ -238,6 +257,28 @@ export const getAgencyById = async (req, res) => {
 // Update an agency
 export const updateAgency = async (req, res) => {
   try {
+    // Extract Bearer token from the Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({
+        status: false,
+        message: 'Authorization token missing or invalid',
+      });
+    }
+
+    const token = authHeader.split(' ')[1];
+
+    // Decode the token to get the user ID (assuming JWT)
+    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    const user_id = decodedToken.id; // Adjust based on your token structure
+
+    if (!user_id) {
+      return res.status(401).json({
+        status: false,
+        message: 'User ID is missing',
+      });
+    }
+
     // Fetch the agency by ID
     const agency = await prisma.agencies.findUnique({
       where: {
@@ -251,18 +292,22 @@ export const updateAgency = async (req, res) => {
         where: {
           id: req.params.id,
         },
-        data: req.body, // The new data for the agency
+        data: {
+          ...req.body, // Include the new data from the request body
+          updated_by: user_id, // Set updated_by to the authenticated user ID
+          updated_at: new Date(), // Set updated_at to the current timestamp
+        },
       });
 
       return res.status(200).json({
-        success: true,
+        status: true,
         message: res.__('messages.agencyUpdatedSuccessfully'),
         data: updatedAgency,
       });
     } else {
       // If no agency is found, return an error response
       return res.status(404).json({
-        success: false,
+        status: false,
         message: res.__('messages.agencyNotFound'),
         data: null,
       });
@@ -271,12 +316,13 @@ export const updateAgency = async (req, res) => {
     // Handle any errors during the update process
     console.error('Error updating agency:', err);
     return res.status(500).json({
-      success: false,
+      status: false,
       message: res.__('messages.internalServerError'),
       error: err.message,
     });
   }
 };
+
 
 // Delete an agency
 export const deleteAgency = async (req, res) => {

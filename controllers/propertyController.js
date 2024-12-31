@@ -188,7 +188,7 @@ export const getAllProperty = async (req, res) => {
   try {
 
     // Extract pagination and locale from the request
-    const { page = 1, limit = 10 } = req.body;
+    const { page = 1, limit = 10, title, description, minPrice, maxPrice, amenities_id } = req.body;
     const lang = res.getLocale();
 
     // Ensure page and limit are valid numbers
@@ -199,8 +199,74 @@ export const getAllProperty = async (req, res) => {
     const skip = (validPage - 1) * validLimit;
 
     // Fetch total count for properties
-    
-    const totalCount = await prisma.propertyDetails.count();
+    const titleCondition = title ? lang === 'fr'? 
+        {
+          lang_translations: {
+            fr_string: {
+              contains: title,
+              mode: 'insensitive',
+            },
+          },
+        }
+      : {
+        lang_translations: {
+            en_string: {
+              contains: title,
+              mode: 'insensitive',
+            },
+          },
+        }: undefined;
+
+
+        const descriptionCondition = description
+        ? lang === 'fr'
+          ? {
+            lang_translations_property_details_descriptionTolang_translations: {
+                fr_string: {
+                  contains: description,
+                  mode: 'insensitive',
+                },
+              },
+            }
+          : {
+            lang_translations_property_details_descriptionTolang_translations: {
+                en_string: {
+                  contains: description,
+                  mode: 'insensitive',
+                },
+              },
+            }
+        : undefined;
+
+        const priceCondition = {
+          price: {
+            gte: minPrice ? parseFloat(minPrice) : undefined,
+            lte: maxPrice ? parseFloat(maxPrice) : undefined,
+          },
+        };
+
+        const amenitiesCondition = Array.isArray(amenities_id) && amenities_id.length > 0
+      ? {
+        property_meta_details: {
+          some: {
+            property_type_id: {
+              in: amenities_id, // Use "in" to match any ID in the array
+            },
+          },
+        },
+        }
+      : undefined;
+      console.log(amenitiesCondition);
+      
+    // Get the total count of projects
+    const combinedCondition = {
+      AND: [titleCondition, descriptionCondition, priceCondition, amenitiesCondition].filter(Boolean),
+    };
+
+
+    const totalCount = await prisma.propertyDetails.count({
+      where: combinedCondition,
+    });
 
     // Fetch paginated property details
     const properties = await prisma.propertyDetails.findMany({
@@ -209,6 +275,7 @@ export const getAllProperty = async (req, res) => {
       orderBy:{
         created_at: 'desc',
       },
+      where: combinedCondition,
       include: {
         users: {
           select: {
@@ -365,13 +432,37 @@ export const getAllProperty = async (req, res) => {
       };
     });
 
+
+    const listings = await prisma.propertyTypeListings.findMany({
+      include: {
+        lang_translations: true, // Include the related LangTranslations based on `name`
+      },
+    });
+
+    // Map the results and apply language selection
+    const simplifiedListings = listings.map((listing) => ({
+      id: listing.id,
+      name:
+        listing.lang_translations
+          ? lang === 'fr'
+            ? listing.lang_translations.fr_string // Fetch French translation
+            : listing.lang_translations.en_string // Fetch English translation
+          : 'No name available', // Fallback if no translation exists
+      type: listing.type,
+      key: listing.key,
+      category: listing.category?.toString() || null, // Serialize BigInt to string
+    }));
+
+
+
     // Construct the response payload with pagination metadata
     const responsePayload = {
+      list: simplifiedProperties,
+      property_meta_details: simplifiedListings,
       totalCount,
       totalPages: Math.ceil(totalCount / validLimit),
       currentPage: validPage,
       itemsPerPage: validLimit,
-      list: simplifiedProperties,
     };
 
     // Send response
