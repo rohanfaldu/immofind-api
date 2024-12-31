@@ -205,6 +205,7 @@ model ProjectDetails {
   city_id                       String               @db.Uuid
   district_id                   String               @db.Uuid
   neighborhoods_id              String?              @db.Uuid
+  currency_id                   String?              @db.Uuid
   latitude                      Float?               
   longitude                     Float?               
   address                       String?              @db.VarChar
@@ -213,6 +214,7 @@ model ProjectDetails {
   video                         String?              @db.VarChar
   status                        Boolean              @default(false)
   user_id                       String               @db.Uuid
+  price                         Int
   is_deleted                    Boolean              @default(false)
   created_at                    DateTime?            @default(now()) @db.Timestamp(6)
   updated_at                    DateTime?            @default(now()) @db.Timestamp(6)
@@ -227,6 +229,7 @@ model ProjectDetails {
   users                         Users                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_user_foreign_key")
   states                        States               @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_project_foreign_key")
   neighborhoods                 Neighborhoods?       @relation("ProjectNeighborhoods", fields: [neighborhoods_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  currency                      Currency?            @relation("ProjectCurrency", fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   project_meta_details          ProjectMetaDetails[]
   other_property_details        PropertyDetails[]    @relation("property_detailsToproperty_details")
 
@@ -394,7 +397,8 @@ model Currency {
   status          Boolean        @default(true) // Status to indicate if the currency is active
   createdAt       DateTime       @default(now()) // Timestamp when the currency was created
   updatedAt       DateTime       @updatedAt // Timestamp when the currency was last updated
-  propertyDetails  PropertyDetails[] @relation("PropertyCurrency")
+  propertyDetails PropertyDetails[] @relation("PropertyCurrency")
+  projectDetails  ProjectDetails[]  @relation("ProjectCurrency")
 
   @@map("currency")
 }

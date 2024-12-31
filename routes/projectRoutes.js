@@ -6,7 +6,7 @@ import { authorize } from '../middleware/authorization.js'; // Import the author
 
 
 // Routes
-router.post('/', authorize, getAllProjects);
+router.post('/', getAllProjects);
 router.post('/developer', authorize, getAgentDeveloperProjects);
 router.post('/create', authorize, createProject);
 router.put('/:id', authorize, updateProject);
