@@ -335,8 +335,83 @@ export const getProjectsById = async (req, res) => {
       return response.error(res, res.__('messages.projectNotFound'));
     }
 
-    // Step 4: Format the project data for the response
     const lang = res.getLocale();
+
+    const propertyDetails = await prisma.propertyDetails.findMany({
+      where: { project_id },
+      orderBy: { created_at: 'desc' },
+      take: 5,
+      include: {
+        lang_translations: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        lang_translations_property_details_descriptionTolang_translations: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        states: {
+          select: {
+            lang: { select: { fr_string: true, en_string: true } },
+          },
+        },
+        cities: {
+          select: {
+            lang: { select: { fr_string: true, en_string: true } },
+          },
+        },
+        districts: {
+          select: {
+            langTranslation: { select: { fr_string: true, en_string: true } },
+          },
+        },
+        currency: {
+          select: {
+            id: true,
+            symbol: true,
+          },
+        },
+        neighborhoods: {
+          select: {
+            langTranslation: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+
+    const propertyDetailsResponse = propertyDetails.map((property) => ({
+      id: property.id,
+      price: property.price,
+      district: lang === 'fr' ? property.districts.langTranslation.fr_string : property.districts.langTranslation.en_string,
+      state: lang === 'fr' ? property.states?.lang?.fr_string : property.states?.lang?.en_string,
+      city: lang === 'fr' ? property.cities?.lang?.fr_string : property.cities?.lang?.en_string,
+      title: lang === 'fr' ? property.lang_translations.fr_string : property.lang_translations.en_string,
+      description: lang === 'fr'
+        ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
+        : property.lang_translations_property_details_descriptionTolang_translations.en_string,
+      currency: property.currency?.symbol || null,
+      neighborhood: lang === 'fr' ? property.neighborhoods?.langTranslation?.fr_string : property.neighborhoods?.langTranslation?.en_string,
+      latitude: property.latitude,
+      longitude: property.longitude,
+      vr_link: property.vr_link,
+      address: property.address,
+      video: property.video,
+      picture: property.picture,
+      created_at: property.created_at,
+      updated_at: property.updated_at,
+    }));
+
+    // Step 4: Format the project data for the response
     const simplifiedProject = {
       id: project.id,
       user_name: project.users?.full_name || null,
@@ -368,6 +443,7 @@ export const getProjectsById = async (req, res) => {
           : meta.project_type_listing?.lang_translations?.fr_string,
         value: meta.value,
       })),
+      property_details: propertyDetailsResponse,
     };
 
     // Step 5: Return the response
