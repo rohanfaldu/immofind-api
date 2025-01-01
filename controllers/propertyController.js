@@ -187,7 +187,7 @@ export const getAllProperty = async (req, res) => {
   try {
 
     // Extract pagination and locale from the request
-    const { page = 1, limit = 10, title, description, minPrice, maxPrice, amenities_id } = req.body;
+    const { page = 1, limit = 10, title, description, minPrice, maxPrice, amenities_id, type_id } = req.body;
     const lang = res.getLocale();
 
     // Ensure page and limit are valid numbers
@@ -255,11 +255,23 @@ export const getAllProperty = async (req, res) => {
         },
         }
       : undefined;
+
+
+        const typeCondition = type_id
+        ? {
+            property_types: {
+                id: type_id,
+            },
+          }
+        : undefined;
+
+    
+
       console.log(amenitiesCondition);
       
     // Get the total count of projects
     const combinedCondition = {
-      AND: [titleCondition, descriptionCondition, priceCondition, amenitiesCondition].filter(Boolean),
+      AND: [titleCondition, descriptionCondition, priceCondition, amenitiesCondition, typeCondition].filter(Boolean),
     };
 
 
@@ -431,6 +443,9 @@ export const getAllProperty = async (req, res) => {
       };
     });
 
+    const maxPriceSliderRange = Math.max(
+      ...simplifiedProperties.map((property) => property.price || 0)
+    );
 
     const listings = await prisma.propertyTypeListings.findMany({
       include: {
@@ -458,6 +473,7 @@ export const getAllProperty = async (req, res) => {
     const responsePayload = {
       list: simplifiedProperties,
       property_meta_details: simplifiedListings,
+      maxPriceSliderRange,
       totalCount,
       totalPages: Math.ceil(totalCount / validLimit),
       currentPage: validPage,
