@@ -196,7 +196,7 @@ export const updateState = async (req, res) => {
 
 export const getStateByStateId = async (req, res) => {
   try {
-    const { state_id, lang } = req.body;
+    const { state_id } = req.body;
     if (!state_id) {
       return response.error(res, res.__('messages.stateIdRequired'));
     }
@@ -221,12 +221,11 @@ export const getStateByStateId = async (req, res) => {
       return response.error(res, res.__('messages.translationNotFound'));
     }
 
-    const name = lang === 'fr' ? langTranslation.fr_string : langTranslation.en_string;
-
     const result = {
       state: {
         id: state.id,
-        name,
+        en_name: langTranslation.en_string,
+        fr_name: langTranslation.fr_string,
         is_deleted: state.is_deleted,
         created_at: state.created_at,
         updated_at: state.updated_at,

@@ -323,6 +323,7 @@ export const getProjectsById = async (req, res) => {
                 name: true,
                 type: true,
                 key: true,
+                icon: true,
                 lang_translations: {
                   select: {
                     en_string: true,
@@ -348,6 +349,12 @@ export const getProjectsById = async (req, res) => {
       orderBy: { created_at: 'desc' },
       take: 5,
       include: {
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+          },
+        },
         lang_translations: {
           select: {
             en_string: true,
@@ -398,6 +405,8 @@ export const getProjectsById = async (req, res) => {
     const propertyDetailsResponse = propertyDetails.map((property) => ({
       id: property.id,
       price: property.price,
+      user_name: property.users?.full_name || null,
+      user_image: property.users?.image || null,
       district: lang === 'fr' ? property.districts.langTranslation.fr_string : property.districts.langTranslation.en_string,
       state: lang === 'fr' ? property.states?.lang?.fr_string : property.states?.lang?.en_string,
       city: lang === 'fr' ? property.cities?.lang?.fr_string : property.cities?.lang?.en_string,
@@ -424,8 +433,10 @@ export const getProjectsById = async (req, res) => {
       id: project.id,
       user_name: project.users?.full_name || null,
       user_image: project.users?.image || null,
-      title: lang === 'fr' ? project.lang_translations_title?.fr_string : project.lang_translations_title?.en_string,
-      description: lang === 'fr' ? project.lang_translations_description?.fr_string : project.lang_translations_description?.en_string,
+      title_en: project.lang_translations_title?.en_string,
+      title_fr: project.lang_translations_title?.fr_string,
+      description_fr: project.lang_translations_description?.fr_string,
+      description_en: project.lang_translations_description?.en_string,
       state: lang === 'fr' ? project.states?.lang?.fr_string : project.states?.lang?.en_string,
       city: lang === 'fr' ? project.cities?.lang?.fr_string : project.cities?.lang?.en_string,
       district: lang === 'fr' ? project.districts?.langTranslation?.fr_string : project.districts?.langTranslation?.en_string,
@@ -452,6 +463,7 @@ export const getProjectsById = async (req, res) => {
           ? meta.project_type_listing?.lang_translations?.en_string
           : meta.project_type_listing?.lang_translations?.fr_string,
         value: meta.value,
+        icon: meta.project_type_listing?.icon || null,
       })),
       property_details: propertyDetailsResponse,
     };

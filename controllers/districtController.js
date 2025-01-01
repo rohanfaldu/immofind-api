@@ -281,7 +281,8 @@ export const getDistrictById = async (req, res) => {
     // Transform response to include only the relevant language string
     const transformedDistrict = {
       id: district.id,
-      name: district.langTranslation?.fr_string || district.langTranslation?.en_string,
+      en_name: district.langTranslation?.en_string || 'Unknown',
+      fr_name: district.langTranslation?.fr_string || 'Unknown',
       latitude: district.latitude,
       longitude: district.longitude,
       created_at: district.created_at,
