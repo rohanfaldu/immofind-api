@@ -284,7 +284,7 @@ export const getNeighborhoodsByDistrict = async (req, res) => {
 // Get Neighborhood by ID
 export const getNeighborhoodById = async (req, res) => {
   try {
-    const { id, lang } = req.body;
+    const { id } = req.body;
 
     // Validate ID
     if (!id) {
@@ -298,7 +298,6 @@ export const getNeighborhoodById = async (req, res) => {
       );
     }
 
-    const isFrench = lang === 'fr';
 
     // Fetch neighborhood by ID
     const neighborhood = await prisma.neighborhoods.findUnique({
@@ -307,8 +306,8 @@ export const getNeighborhoodById = async (req, res) => {
         id: true,
         langTranslation: {
           select: {
-            fr_string: isFrench,
-            en_string: !isFrench,
+            fr_string: true,
+            en_string: true,
           },
         },
         latitude: true,
@@ -324,7 +323,8 @@ export const getNeighborhoodById = async (req, res) => {
 
     const transformedNeighborhood = {
       id: neighborhood.id,
-      name: neighborhood.langTranslation?.fr_string || neighborhood.langTranslation?.en_string,
+      en_name: neighborhood.langTranslation?.en_string,
+      fr_name: neighborhood.langTranslation?.fr_string,
       latitude: neighborhood.latitude,
       longitude: neighborhood.longitude,
       created_at: neighborhood.created_at,

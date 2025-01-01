@@ -179,11 +179,8 @@ export const getProjectTypeListById = async (req, res) => {
     const simplifiedListing = {
       id: propertyType.id,
       icon: propertyType.icon,
-      name: propertyType.lang_translations
-        ? lang === 'fr'
-          ? propertyType.lang_translations.fr_string // Fetch French translation
-          : propertyType.lang_translations.en_string // Fetch English translation
-        : 'No name available', // Fallback if no translation exists
+      en_string : propertyType.lang_translations.en_string,
+      fr_string : propertyType.lang_translations.fr_string,
       type: propertyType.type,
       key: propertyType.key,
       category: propertyType.category?.toString() || null, // Serialize BigInt to string

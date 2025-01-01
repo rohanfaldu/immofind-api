@@ -512,7 +512,7 @@ export const getCities = async (req, res) => {
 
 export const getCityById = async (req, res) => {
   try {
-    const { city_id, lang } = req.body;
+    const { city_id } = req.body;
 
     if (!city_id) {
       return response.error(res, res.__('messages.cityIdRequired'));
@@ -522,7 +522,6 @@ export const getCityById = async (req, res) => {
       return response.error(res, res.__('messages.invalidCityIdFormat'));
     }
 
-    const isFrench = lang === 'fr';
 
     const city = await prisma.cities.findUnique({
       where: { id: city_id },
@@ -547,9 +546,8 @@ export const getCityById = async (req, res) => {
 
     const transformedCity = {
       id: city.id,
-      name: isFrench
-        ? city.lang?.fr_string || city.lang?.en_string || 'Unknown'
-        : city.lang?.en_string || city.lang?.fr_string || 'Unknown',
+      en_name: city.lang?.en_string || 'Unknown',
+      fr_name: city.lang?.fr_string || 'Inconnu',
       latitude: city.latitude,
       longitude: city.longitude,
       created_at: city.created_at,
