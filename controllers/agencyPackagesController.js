@@ -72,7 +72,7 @@ export const getAgencyPackageById = async (req, res) => {
     const agencyPackage = await prisma.agencyPackages.findUnique({
       where: { id: agency_package_id },
       include: {
-        developers: true, // Include developers if needed
+        
         language: true,   // Include language relation for translations
       },
     });
