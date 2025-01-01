@@ -12,6 +12,6 @@ router.post('/create', authorize, createProject);
 router.put('/:id', authorize, updateProject);
 router.delete('/:id', authorize, deleteProject);
 router.post('/statusUpdate', authorize, statusUpdateProject);
-router.post('/getbyid', authorize, getProjectsById);
+router.post('/getbyid', getProjectsById);
 
 export default router;

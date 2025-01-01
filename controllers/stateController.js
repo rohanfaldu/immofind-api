@@ -311,17 +311,26 @@ export const deleteState = async (req, res) => {
 
 
 
-
-
-
-
-// Get All States with Cities and LangTranslations
 export const getAllStates = async (req, res) => {
   try {
-    const { lang } = req.body;
+    const { page = 1, limit = 10, lang } = req.body;
 
+    const validPage = Math.max(1, parseInt(page, 10) || 1); // Default to 1 if invalid
+    const validLimit = Math.max(1, parseInt(limit, 10) || 10); // Default to 10 if invalid
+
+    // Calculate the offset (skip) for pagination
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch the total count of non-deleted states
+    const totalCount = await prisma.states.count({
+      where: {
+        is_deleted: false, // Assuming you want only non-deleted states
+      },
+    });
     // Fetch all states from the database
     const states = await prisma.states.findMany({
+      skip,
+      take: validLimit,
       where: {
         is_deleted: false, // Assuming you want only non-deleted states
       },
@@ -354,7 +363,13 @@ export const getAllStates = async (req, res) => {
       };
     });
 
-    return response.success(res, res.__('messages.statesFetchedSuccessfully'), { states: result }); // Wrap states in an object
+    return response.success(res, res.__('messages.statesFetchedSuccessfully'), { 
+      states: result,
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+     }); // Wrap states in an object
   } catch (error) {
     console.error('Error fetching states:', error);
     return response.error(res, res.__('messages.internalServerError'), {

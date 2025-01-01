@@ -400,18 +400,26 @@ export const createCity = async (req, res) => {
 
 export const getCities = async (req, res) => {
   try {
-    const { lang } = req.body; // Extract lang from the request body
+    const { page = 1, limit = 10, lang } = req.body;
 
-    // Check if lang is provided
-    if (!lang) {
-      return response.error(res, res.__('messages.languageRequired')); // Error if lang is missing
-    }
 
-    // Determine if the language is French
     const isFrench = lang === 'fr'; 
 
-    // Fetch all cities with their corresponding states and districts
+    const validPage = Math.max(1, parseInt(page, 10) || 1);
+    const validLimit = Math.max(1, parseInt(limit, 10) || 10);
+
+    const skip = (validPage - 1) * validLimit;
+
+    const totalCount = await prisma.cities.count({
+      where: {
+        is_deleted: false,
+      },
+    });
+
+
     const cities = await prisma.cities.findMany({
+      skip,
+      take: validLimit,
       where: {
         is_deleted: false, // Only fetch non-deleted cities
       },
@@ -419,6 +427,7 @@ export const getCities = async (req, res) => {
         id: true,
         latitude: true,
         longitude: true,
+        created_at: true,
         lang: {
           select: {
             fr_string: isFrench,
@@ -456,17 +465,19 @@ export const getCities = async (req, res) => {
       return response.error(res, res.__('messages.noCitiesFound')); // Error if no cities are found
     }
 
+    console.log(cities);
     // Transform the results to include only the necessary language strings
     const transformedCities = cities.map((city) => ({
       id: city.id,
       city_name: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
       latitude: city.latitude, // Include latitude
       longitude: city.longitude, // Include longitude
+      created_at: city.created_at,  
       state: {
         id: city.states.id,
         state_name: isFrench && city.states.lang ? city.states.lang.fr_string : city.states.lang?.en_string, // State name in the requested language
-        latitude: city.states.latitude, // Include state latitude
-        longitude: city.states.longitude, // Include state longitude
+        latitude: city.states.latitude,
+        longitude: city.states.longitude,
       },
       districts: city.districts.map((district) => ({
         id: district.id,
@@ -474,15 +485,21 @@ export const getCities = async (req, res) => {
           ? (isFrench
               ? district.langTranslation.fr_string
               : district.langTranslation.en_string)
-          : null, // Handle missing translations
+          : null,
       })),
     }));
 
     return response.success(
       res,
       res.__('messages.citiesFetchedSuccessfully'),
-      { cities: transformedCities } // Include transformed cities in the response
-    ); // Success response
+      { 
+        cities: transformedCities,
+        totalCount,
+        totalPages: Math.ceil(totalCount / validLimit),
+        currentPage: validPage,
+        itemsPerPage: validLimit,
+      }
+    );
   } catch (error) {
     console.error('Error fetching cities:', error);
     return response.error(res, res.__('messages.internalServerError'), {
