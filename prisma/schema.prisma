@@ -210,7 +210,8 @@ model ProjectDetails {
   longitude                     Float?               
   address                       String?              @db.VarChar
   vr_link                       String?              @db.VarChar
-  picture                       String?              @db.VarChar
+  picture                       String[]
+  icon                          String?              @db.VarChar
   video                         String?              @db.VarChar
   status                        Boolean              @default(false)
   user_id                       String               @db.Uuid
