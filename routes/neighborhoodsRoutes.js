@@ -4,7 +4,8 @@ import {
   getNeighborhoodsByDistrict,
   getNeighborhoodById,
   updateNeighborhood,
-  deleteNeighborhood
+  deleteNeighborhood,
+  getAllNeighborhoods
 } from '../controllers/neighborhoodsController.js';
 import { authorize } from '../middleware/authorization.js'; // Import the authorization middleware
 
@@ -14,7 +15,9 @@ const router = express.Router();
 router.post("/create", authorize, createNeighborhood);
 
 // Get neighborhoods by district
-router.post("/", authorize, getNeighborhoodsByDistrict);
+router.post("/id", authorize, getNeighborhoodsByDistrict);
+
+router.post("/", authorize, getAllNeighborhoods);
 
 // Get neighborhood by ID
 router.post("/getId", authorize, getNeighborhoodById);
@@ -23,6 +26,6 @@ router.post("/getId", authorize, getNeighborhoodById);
 router.put("/:id", authorize, updateNeighborhood);
 
 // Delete a neighborhood
-router.delete("/:id", authorize, deleteNeighborhood);
+router.delete("/delete/:id", authorize, deleteNeighborhood);
 
 export default router;

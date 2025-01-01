@@ -298,22 +298,31 @@ export const getDistrictById = async (req, res) => {
 
 export const getDistricts = async (req, res) => {
   try {
-    const { lang } = req.body;
-
-    // Validate language input
-    if (!lang) {
-      return response.error(res, res.__('messages.languageRequired'));
-    }
-
+    const { page = 1, limit = 10, lang } = req.body;
     const isFrench = lang === 'fr';
+
+    const validPage = Math.max(1, parseInt(page, 10) || 1);
+    const validLimit = Math.max(1, parseInt(limit, 10) || 10);
+
+    const skip = (validPage - 1) * validLimit;
+
+    const totalCount = await prisma.districts.count({
+      where: {
+        is_deleted: false,
+      },
+    });
+
 
     // Fetch districts with nested relationships
     const districts = await prisma.districts.findMany({
+      skip,
+      take: validLimit,
       where: { is_deleted: false },
       select: {
         id: true,
         latitude: true,
         longitude: true,
+        created_at: true,
         langTranslation: {
           select: {
             fr_string: true,
@@ -349,6 +358,7 @@ export const getDistricts = async (req, res) => {
         : district.langTranslation?.en_string || 'Unknown',
       latitude: district.latitude,
       longitude: district.longitude,
+      created_at: district.created_at,
       city: {
         id: district.cities?.id,
         city_name: isFrench
@@ -363,7 +373,13 @@ export const getDistricts = async (req, res) => {
     return response.success(
       res,
       res.__('messages.districtsFetchedSuccessfully'),
-      { districts: transformedDistricts }
+      { 
+        districts: transformedDistricts,
+        totalCount,
+        totalPages: Math.ceil(totalCount / validLimit),
+        currentPage: validPage,
+        itemsPerPage: validLimit,
+      }
     );
   } catch (error) {
     console.error('Error fetching districts:', error);

@@ -118,6 +118,87 @@ export const createNeighborhood = async (req, res) => {
   }
 };
 
+export const getAllNeighborhoods = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, lang } = req.query;
+
+    const validPage = Math.max(1, parseInt(page, 10) || 1);
+    const validLimit = Math.max(1, parseInt(limit, 10) || 10);
+
+    const skip = (validPage - 1) * validLimit;
+
+    const totalCount = await prisma.neighborhoods.count({
+      where: {
+        is_deleted: false,
+      },
+    });
+
+    const neighborhoods = await prisma.neighborhoods.findMany({
+      skip,
+      take: validLimit,
+      include: {
+        langTranslation: true,
+        district: {
+          include: {
+            langTranslation: true,
+          },
+        },
+      },
+    });
+
+    if (!neighborhoods.length) {
+      return response.error(res, res.__('messages.noNeighborhoodsFound'));
+    }
+
+    const neighborhoodList = neighborhoods.map(neighborhood => {
+      // Check if langTranslation exists for the neighborhood
+      const neighborhoodTranslation = neighborhood.langTranslation || {};
+      const districtTranslation = neighborhood.district.langTranslation || {};
+
+      // Get district name based on the requested language, with fallback
+      const districtName = lang === 'fr' 
+        ? districtTranslation.fr_string || 'District name not available' 
+        : districtTranslation.en_string || 'District name not available';
+
+      return {
+        id: neighborhood.id,
+        district_name: districtName,
+        neighborhood_name: lang === 'fr'
+          ? neighborhoodTranslation.fr_string || 'Neighborhood name not available'
+          : neighborhoodTranslation.en_string || 'Neighborhood name not available',
+        latitude: neighborhood.latitude,
+        longitude: neighborhood.longitude,
+        is_deleted: neighborhood.is_deleted,
+        created_at: neighborhood.created_at,
+        updated_at: neighborhood.updated_at,
+        created_by: neighborhood.created_by,
+        updated_by: neighborhood.updated_by,
+      };
+    });
+
+    return response.success(
+      res,
+      res.__('messages.neighborhoodsRetrievedSuccessfully'),
+      {
+        neighborhoods: neighborhoodList,
+        totalCount,
+        totalPages: Math.ceil(totalCount / validLimit),
+        currentPage: validPage,
+        itemsPerPage: validLimit,
+      }
+    );
+
+  } catch (error) {
+    console.error('Error retrieving neighborhoods:', error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError'),
+      { message: error.message }
+    );
+  }
+};
+
+
 // Get Neighborhoods by District
 export const getNeighborhoodsByDistrict = async (req, res) => {
   try {
@@ -334,14 +415,37 @@ export const deleteNeighborhood = async (req, res) => {
       return response.error(res, res.__('messages.neighborhoodIdRequired'));
     }
 
-    const deletedNeighborhood = await prisma.neighborhoods.update({
+    // Attempt to delete the neighborhood
+    const deletedNeighborhood = await prisma.neighborhoods.delete({
       where: { id },
-      data: { is_deleted: true },
     });
 
-    return response.success(res, res.__('messages.neighborhoodDeletedSuccessfully'), deletedNeighborhood);
+    return response.success(
+      res,
+      res.__('messages.neighborhoodDeletedSuccessfully'),
+      deletedNeighborhood
+    );
   } catch (error) {
+    if (error.code === 'P2003') {
+      // Handle foreign key constraint error
+      console.error(
+        `Neighborhood deletion failed due to foreign key constraint: ${error.meta.field_name}`
+      );
+      return response.error(
+        res,
+        res.__('messages.neighborhoodInUse'),
+        { message: 'The neighborhood is in use by another table (e.g., Property Details).' }
+      );
+    }
+
+    // General error handling
     console.error('Error deleting neighborhood:', error);
-    return response.error(res, res.__('messages.internalServerError'), { message: error.message });
+    return response.error(
+      res,
+      res.__('messages.internalServerError'),
+      { message: error.message }
+    );
   }
 };
+
+
