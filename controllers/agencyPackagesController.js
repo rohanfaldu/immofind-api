@@ -87,7 +87,8 @@ export const getAgencyPackageById = async (req, res) => {
     // Prepare response object
     const responsePayload = {
       id: agencyPackage.id,
-      name: lang === 'fr' ? agencyPackage.language?.fr_string : agencyPackage.language?.en_string,
+      en_string: agencyPackage.language?.en_string,
+      fr_string: agencyPackage.language?.fr_string,
       type: agencyPackage.type,
       created_by: agencyPackage.created_by,
       updated_by: agencyPackage.updated_by,
