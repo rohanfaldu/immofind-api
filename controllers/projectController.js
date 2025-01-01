@@ -208,6 +208,10 @@ export const getAllProjects = async (req, res) => {
       })),
     }));
 
+    const maxPriceSliderRange = Math.max(
+      ...simplifiedProjects.map((property) => property.price || 0)
+    );
+
     const listings = await prisma.projectTypeListings.findMany({
       include: {
         lang_translations: true, // Include the related LangTranslations based on `name`
@@ -234,6 +238,7 @@ export const getAllProjects = async (req, res) => {
     { 
       projects: simplifiedProjects,
       project_meta_details: simplifiedListings,
+      maxPriceSliderRange,
       totalCount,
       totalPages: Math.ceil(totalCount / validLimit),
       currentPage: validPage,
