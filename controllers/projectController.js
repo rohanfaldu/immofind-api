@@ -631,7 +631,6 @@ export const createProject = async (req, res) => {
       icon,
       video,
       user_id,
-      link_uuid,
       meta_details,
       neighborhoods_id,
       price,
@@ -650,7 +649,6 @@ export const createProject = async (req, res) => {
       !latitude ||
       !longitude ||
       !user_id ||
-      !link_uuid ||
       !neighborhoods_id
     ) {
       return response.error(res, res.__('messages.allFieldsRequired'), null, 400);
@@ -721,8 +719,7 @@ export const createProject = async (req, res) => {
         picture: picture || null,
         icon: icon || null,
         video: video || null,
-        user_id: user_id, // The user creating the project
-        link_uuid: link_uuid,
+        user_id: user_id,
         created_by: createdBy,
         created_at: new Date(),
         updated_at: new Date(),
@@ -889,7 +886,6 @@ export const updateProject = async (req, res) => {
       icon,
       video,
       user_id,
-      link_uuid,
       meta_details,
       currency_id,
       price
@@ -907,8 +903,7 @@ export const updateProject = async (req, res) => {
       !district_id ||
       !latitude ||
       !longitude ||
-      !user_id ||
-      !link_uuid
+      !user_id
     ) {
       return response.error(res, res.__('messages.allFieldsRequired'), null, 400);
     }
@@ -974,7 +969,6 @@ export const updateProject = async (req, res) => {
         icon: icon || null,
         video: video || null,
         user_id: user_id, // The user updating the project
-        link_uuid: link_uuid,
         updated_by:updatedBy,
         updated_at: new Date(),
         project_meta_details: {

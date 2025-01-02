@@ -157,7 +157,6 @@ model MetaData {
 
 model PropertyDetails {
   id                                                                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  link_uuid                                                         String?               @db.Uuid
   price                                                             Int
   district_id                                                       String                @db.Uuid
   latitude                                                          String                @db.VarChar
@@ -200,7 +199,6 @@ model PropertyDetails {
 
 model ProjectDetails {
   id                            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  link_uuid                     String               @db.VarChar
   state_id                      String               @db.Uuid
   city_id                       String               @db.Uuid
   district_id                   String               @db.Uuid
