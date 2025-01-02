@@ -7,7 +7,7 @@ const router = express.Router();
 
 // Route to create Property Type
 router.post('/create',authorize, createPropertyType);
-router.post('/', authorize,getPropertyTypes);
+router.post('/',getPropertyTypes);
 router.put('/:id',authorize, updatePropertyType);
 router.delete('/:id',authorize, deletePropertyType );
 router.post('/statusUpdate',authorize, statusUpdatePropertyType );
