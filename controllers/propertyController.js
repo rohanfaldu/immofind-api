@@ -6,6 +6,7 @@ const prisma = new PrismaClient();
 
 // Get all property type listing
 
+
 export const getAgentDeveloperProperty = async (req, res) => {
   try {
     const userInfo = await commonFunction.getLoginUser(req.user.id);

@@ -109,8 +109,8 @@ model Neighborhoods {
   updated_by      String?           @db.Uuid
   district        Districts         @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "district_foreign_key")
   langTranslation LangTranslations? @relation(fields: [lang_id], references: [id])
-  propertyDetails PropertyDetails[] @relation("PropertyNeighborhoods")
   projectDetails  ProjectDetails[]  @relation("ProjectNeighborhoods")
+  propertyDetails PropertyDetails[] @relation("PropertyNeighborhoods")
 
   @@map("neighborhoods")
 }
@@ -159,12 +159,9 @@ model PropertyDetails {
   id                                                                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   price                                                             Int
   district_id                                                       String                @db.Uuid
-  latitude                                                          Float?                
-  longitude                                                         Float?                
-  currency_id                                                       String?               @db.Uuid
-  neighborhoods_id                                                  String?               @db.Uuid
+  latitude                                                          String                @db.VarChar
+  longitude                                                         String                @db.VarChar
   vr_link                                                           String?               @db.VarChar
-  address                                                           String?               @db.VarChar
   video                                                             String?               @db.VarChar
   status                                                            Boolean               @default(false)
   user_id                                                           String                @db.Uuid
@@ -182,16 +179,19 @@ model PropertyDetails {
   title                                                             String                @db.Uuid
   project_id                                                        String?               @db.Uuid
   picture                                                           String[]
+  currency_id                                                       String?               @db.Uuid
+  address                                                           String?               @db.VarChar
+  neighborhoods_id                                                  String?               @db.Uuid
   cities                                                            Cities?               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
   districts                                                         Districts             @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
   property_details                                                  ProjectDetails?       @relation("property_detailsToproperty_details", fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_id_foreign_key")
   lang_translations_property_details_descriptionTolang_translations LangTranslations      @relation("property_details_descriptionTolang_translations", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_descriptioj_foreign_key")
+  currency                                                          Currency?             @relation("PropertyCurrency", fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  neighborhoods                                                     Neighborhoods?        @relation("PropertyNeighborhoods", fields: [neighborhoods_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations                                                 LangTranslations      @relation("property_details_titleTolang_translations", fields: [title], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_title_foreign_key")
   property_types                                                    PropertyTypes         @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_type_foreign_key")
   users                                                             Users                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_user_foreign_key")
   states                                                            States?               @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
-  currency                                                          Currency?             @relation("PropertyCurrency", fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  neighborhoods                                                     Neighborhoods?        @relation("PropertyNeighborhoods", fields: [neighborhoods_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   property_meta_details                                             PropertyMetaDetails[]
 
   @@map("property_details")
@@ -224,10 +224,10 @@ model ProjectDetails {
   cities                        Cities               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_project_foreign_key")
   districts                     Districts            @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_project_foreign_key")
   lang_translations_description LangTranslations     @relation("project_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  neighborhoods                 Neighborhoods?       @relation("ProjectNeighborhoods", fields: [neighborhoods_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_title       LangTranslations     @relation("project_title_translation", fields: [title], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                         Users                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_user_foreign_key")
   states                        States               @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_project_foreign_key")
-  neighborhoods                 Neighborhoods?       @relation("ProjectNeighborhoods", fields: [neighborhoods_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   currency                      Currency?            @relation("ProjectCurrency", fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   project_meta_details          ProjectMetaDetails[]
   other_property_details        PropertyDetails[]    @relation("property_detailsToproperty_details")
@@ -263,9 +263,10 @@ model ProjectTypeListings {
   type                 String?              @db.VarChar
   key                  String?              @db.VarChar
   category             BigInt
+  status               Boolean              @default(false)
   project_meta_details ProjectMetaDetails[]
   lang_translations    LangTranslations     @relation(fields: [name], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_listing_name_foreign_key")
-  status               Boolean              @default(false)
+
   @@map("project_type_listings")
 }
 
@@ -297,9 +298,9 @@ model PropertyTypeListings {
   type                  String?               @db.VarChar
   key                   String?               @db.VarChar
   category              BigInt
+  status                Boolean               @default(false)
   property_meta_details PropertyMetaDetails[]
   lang_translations     LangTranslations      @relation(fields: [name], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_listing_name_foreign_key")
-  status                Boolean               @default(false)
 
   @@map("property_type_listings")
 }
@@ -312,9 +313,10 @@ model PropertyTypes {
   created_by        String?           @db.Uuid
   updated_by        String?           @db.Uuid
   title             String?           @db.Uuid
+  status            Boolean           @default(false)
   property_details  PropertyDetails[]
   lang_translations LangTranslations? @relation(fields: [title], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_type_foreign_key")
-  status            Boolean           @default(false)
+
   @@map("property_types")
 }
 
@@ -381,10 +383,10 @@ model Users {
   status               Boolean?          @default(true)
   mobile_number        BigInt?
   social_id            String?           @db.VarChar
+  country_code         String?           @db.VarChar
   project_details      ProjectDetails[]
   property_details     PropertyDetails[]
   roles                Roles             @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_foreign_key")
-  country_code         String?           @db.VarChar
 
   @@map("users")
 }
@@ -429,7 +431,6 @@ model Developers {
   updated_by         String?          @db.Uuid
   agencyPackageId    String?          @map("agency_package_id")
   credit             String?          @db.VarChar
-  country_code       String?          @db.VarChar
   agencyPackages     AgencyPackages[] @relation("DevelopersToAgencyPackages")
 
   @@map("developers")
