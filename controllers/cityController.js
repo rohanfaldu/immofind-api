@@ -31,82 +31,65 @@ export const createCity = async (req, res) => {
     if (!stateExists) {
       return await response.error(
         res,
-        res.__('messages.invalidStateId') // Use a custom error message for invalid state_id
+        res.__('messages.invalidStateId')
       );
     }
 
-    // Check if a city with the same name already exists in the same state
-    const existingLangTranslation = await prisma.langTranslations.findFirst({
-      where: {
-        OR: [
-          { en_string: en_name },
-          { fr_string: fr_name },
-        ],
-      },
-    });
-
-    if (existingLangTranslation) {
-      const existingCity = await prisma.cities.findFirst({
+    let langTranslation;
+    if (en_name || fr_name) {
+      const existingTranslation = await prisma.cities.findFirst({
         where: {
-          state_id, // Ensure it's within the same state
-          lang_id: existingLangTranslation.id, // Match the LangTranslation ID
-          is_deleted: false, // Exclude soft-deleted entries
+          OR: [
+            { lang: { en_string: en_name } },
+            { lang: { fr_string: fr_name } },
+          ],
         },
       });
 
-      if (existingCity) {
-        return await response.error(
-          res,
-          res.__('messages.cityAlreadyExists'), // Use a custom error message
-          { existingCity }
-        );
+      if (existingTranslation) {
+        return response.error(res, res.__('messages.translationAlreadyExists'), {
+          en_string: existingTranslation.en_string,
+          fr_string: existingTranslation.fr_string,
+        });
       }
+
+      langTranslation = await prisma.langTranslations.create({
+        data: {
+          en_string: en_name,
+          fr_string: fr_name,
+        },
+      });
     }
 
-    // Create a new LangTranslation entry if no matching translation exists
-    const langTranslation = existingLangTranslation
-      ? existingLangTranslation
-      : await prisma.langTranslations.create({
-          data: {
-            en_string: en_name,
-            fr_string: fr_name,
-          },
-        });
-
-    // Get user ID from the token
     const authHeader = req.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return await response.error(res, res.__('messages.authTokenRequired')); // Error if token is missing
+      return await response.error(res, res.__('messages.authTokenRequired'));
     }
 
     const token = authHeader.split(' ')[1];
     let userId;
 
-    // Verify the token to get the user ID
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET); // Use your JWT secret
-      userId = decoded.id; // Adjust based on your token structure
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.id; 
     } catch (error) {
-      return await response.error(res, res.__('messages.invalidToken')); // Error if token is invalid
+      return await response.error(res, res.__('messages.invalidToken'));
     }
 
-    // Create the city with the langTranslation reference and created_by field
     const city = await prisma.cities.create({
       data: {
-        state_id, // Link to the state
-        lang_id: langTranslation.id, // Link to LangTranslations ID
-        latitude: latitude, // Optional latitude
-        longitude: longitude, // Optional longitude
-        created_by: userId, // Set created_by to the ID of the user who created it
+        state_id,
+        lang_id: langTranslation.id,
+        latitude: latitude,
+        longitude: longitude,
+        created_by: userId,
       },
     });
 
-    // Fetch the state name from langTranslations
     const stateTranslation = await prisma.langTranslations.findUnique({
       where: { id: stateExists.lang_id },
     });
 
-    // Merge the additional fields with state and city names
     const lang = res.getLocale();
     const responseData = {
       id: city.id,
@@ -125,14 +108,14 @@ export const createCity = async (req, res) => {
       res,
       res.__('messages.cityCreatedSuccessfully'),
       responseData
-    ); // Success message with updated response
+    );
   } catch (error) {
     console.error(error);
     return await response.error(
       res,
       res.__('messages.internalServerError'),
       { message: error.message }
-    ); // Server error
+    );
   }
 };
 
@@ -534,6 +517,7 @@ export const getCityById = async (req, res) => {
           },
         },
         latitude: true,
+        state_id: true,
         longitude: true,
         created_at: true,
         updated_at: true,
@@ -549,6 +533,7 @@ export const getCityById = async (req, res) => {
       en_name: city.lang?.en_string || 'Unknown',
       fr_name: city.lang?.fr_string || 'Inconnu',
       latitude: city.latitude,
+      state_id: city.state_id,
       longitude: city.longitude,
       created_at: city.created_at,
       updated_at: city.updated_at,
@@ -609,23 +594,30 @@ export const updateCity = async (req, res) => {
     // Handle language translation
     let langTranslation;
     if (en_name || fr_name) {
-      langTranslation = await prisma.langTranslations.findFirst({
+      // Check if the translation already exists
+      const existingTranslation = await prisma.cities.findFirst({
         where: {
           OR: [
-            { en_string: en_name },
-            { fr_string: fr_name },
+            { lang: { en_string: en_name } },
+            { lang: { fr_string: fr_name } },
           ],
         },
       });
 
-      if (!langTranslation) {
-        langTranslation = await prisma.langTranslations.create({
-          data: {
-            en_string: en_name,
-            fr_string: fr_name,
-          },
+      if (existingTranslation) {
+        return response.error(res, res.__('messages.translationAlreadyExists'), {
+          en_string: existingTranslation.en_string,
+          fr_string: existingTranslation.fr_string,
         });
       }
+
+      // Create a new translation if it doesn't exist
+      langTranslation = await prisma.langTranslations.create({
+        data: {
+          en_string: en_name,
+          fr_string: fr_name,
+        },
+      });
     }
 
     // Update the city with new data

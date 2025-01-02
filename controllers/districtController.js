@@ -7,13 +7,7 @@ const prisma = new PrismaClient();
 // Create District
 export const createDistrict = async (req, res) => {
   try {
-    const {
-      city_id,
-      en_name,
-      fr_name,
-      latitude,
-      longitude,
-    } = req.body;
+    const { city_id, en_name, fr_name, latitude, longitude } = req.body;
 
     // Validate required fields
     if (!city_id || (!en_name && !fr_name)) {
@@ -23,94 +17,67 @@ export const createDistrict = async (req, res) => {
       );
     }
 
-    // Validate `city_id` format
+    // Validate `city_id` format and existence
     if (!isUuid(city_id)) {
-      return response.error(
-        res,
-        res.__('messages.invalidCityIdFormat')
-      );
+      return response.error(res, res.__('messages.invalidCityIdFormat'));
     }
 
-    const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return await response.error(res, res.__('messages.authTokenRequired')); // Error if token is missing
+    const cityExists = await prisma.cities.findUnique({ where: { id: city_id } });
+    if (!cityExists) {
+      return response.error(res, res.__('messages.invalidCityId'));
     }
-    
+
+    // Authenticate user
+    const authHeader = req.headers['authorization'];
+    if (!authHeader?.startsWith('Bearer ')) {
+      return response.error(res, res.__('messages.authTokenRequired'));
+    }
+
     const token = authHeader.split(' ')[1];
     let userId;
-
-    // Verify and decode the token to get user ID
     try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET); // Use your JWT secret
-      userId = decoded.id; // Adjust based on your token structure
-    } catch (error) {
-      return await response.error(res, res.__('messages.invalidToken')); // Error if token is invalid
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.id;
+    } catch {
+      return response.error(res, res.__('messages.invalidToken'));
     }
 
-
-    // Verify `city_id` exists in Cities table
-    const cityExists = await prisma.cities.findUnique({
-      where: { id: city_id },
-    });
-
-    if (!cityExists) {
-      return response.error(
-        res,
-        res.__('messages.invalidCityId')
-      );
-    }
-
-    // Check if a language translation exists for the given names
-    let langTranslation = await prisma.langTranslations.findFirst({
+    // Check for existing translation
+    const existingTranslation = await prisma.districts.findFirst({
       where: {
         OR: [
-          { en_string: en_name },
-          { fr_string: fr_name },
+          { langTranslation: { en_string: en_name } },
+          { langTranslation: { fr_string: fr_name } },
         ],
       },
     });
 
-    // If no existing translation, create a new one
-    if (!langTranslation) {
-      langTranslation = await prisma.langTranslations.create({
-        data: {
-          en_string: en_name,
-          fr_string: fr_name,
-        },
-      });
+    if (existingTranslation) {
+      return response.error(res, res.__('messages.translationAlreadyExists'));
     }
 
-    // Check if a district with the same city_id and lang_id already exists
-    const existingDistrict = await prisma.districts.findFirst({
-      where: {
-        city_id,
-        lang_id: langTranslation.id,
-      },
+    // Create new language translation
+    const langTranslation = await prisma.langTranslations.create({
+      data: { en_string: en_name, fr_string: fr_name },
     });
 
-    if (existingDistrict) {
-      return response.error(
-        res,
-        res.__('messages.districtAlreadyExists')
-      );
-    }
 
-    // Create the district if it doesn't exist
+    // Create new district
     const district = await prisma.districts.create({
       data: {
         city_id,
         lang_id: langTranslation.id,
         latitude,
         longitude,
-        created_by: userId, // Assuming `req.user` contains user information
+        created_by: userId,
       },
     });
 
+    // Prepare and send response
     const cityTranslation = await prisma.langTranslations.findUnique({
       where: { id: cityExists.lang_id },
     });
 
-    // Customizing the response
     const lang = res.getLocale();
     const responseData = {
       id: district.id,
@@ -125,20 +92,13 @@ export const createDistrict = async (req, res) => {
       updated_by: district.updated_by,
     };
 
-    return response.success(
-      res,
-      res.__('messages.districtCreatedSuccessfully'),
-      responseData
-    );
+    return response.success(res, res.__('messages.districtCreatedSuccessfully'), responseData);
   } catch (error) {
     console.error('Error creating district:', error);
-    return response.error(
-      res,
-      res.__('messages.internalServerError'),
-      { message: error.message }
-    );
+    return response.error(res, res.__('messages.internalServerError'), { message: error.message });
   }
 };
+
 
 
 
@@ -268,6 +228,7 @@ export const getDistrictById = async (req, res) => {
             en_string: !isFrench,
           },
         },
+        city_id: true,
         latitude: true,
         longitude: true,
         created_at: true,
@@ -284,6 +245,7 @@ export const getDistrictById = async (req, res) => {
       en_name: district.langTranslation?.en_string || 'Unknown',
       fr_name: district.langTranslation?.fr_string || 'Unknown',
       latitude: district.latitude,
+      city_id: district.city_id,
       longitude: district.longitude,
       created_at: district.created_at,
       updated_at: district.updated_at,
@@ -471,27 +433,33 @@ export const updateDistrict = async (req, res) => {
       }
     }
 
-    // Handle language translation
     let langTranslation;
     if (en_name || fr_name) {
-      langTranslation = await prisma.langTranslations.findFirst({
+      const existingTranslation = await prisma.districts.findFirst({
         where: {
           OR: [
-            { en_string: en_name },
-            { fr_string: fr_name },
+            { langTranslation: { en_string: en_name } },
+            { langTranslation: { fr_string: fr_name } },
           ],
         },
       });
 
-      if (!langTranslation) {
-        langTranslation = await prisma.langTranslations.create({
-          data: {
-            en_string: en_name,
-            fr_string: fr_name,
-          },
+      if (existingTranslation) {
+        return response.error(res, res.__('messages.translationAlreadyExists'), {
+          en_string: existingTranslation.en_string,
+          fr_string: existingTranslation.fr_string,
         });
       }
+
+      langTranslation = await prisma.langTranslations.create({
+        data: {
+          en_string: en_name,
+          fr_string: fr_name,
+        },
+      });
     }
+
+
 
     const updatedDistrict = await prisma.districts.update({
       where: { id: district.id },

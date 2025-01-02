@@ -1,6 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import response from "../components/utils/response.js";
 import { validate as isUuid } from 'uuid';
+import jwt from 'jsonwebtoken';
+
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
@@ -26,9 +28,27 @@ export const createNeighborhood = async (req, res) => {
       );
     }
 
+
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return await response.error(res, res.__('messages.authTokenRequired'));
+    }
+
+    const token = authHeader.split(' ')[1];
+    let userId;
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.id; 
+    } catch (error) {
+      return await response.error(res, res.__('messages.invalidToken'));
+    }
+
+    
     // Verify `district_id` exists in Districts table
     const districtExists = await prisma.districts.findUnique({
       where: { id: district_id },
+      include: { langTranslation: true }, // Include langTranslation
     });
 
     if (!districtExists) {
@@ -38,18 +58,25 @@ export const createNeighborhood = async (req, res) => {
       );
     }
 
-    // Check if a language translation exists for the given names
-    let langTranslation = await prisma.langTranslations.findFirst({
-      where: {
-        OR: [
-          { en_string: en_name },
-          { fr_string: fr_name },
-        ],
-      },
-    });
+    // Check if `en_name` or `fr_name` already exists
+    let langTranslation;
+    if (en_name || fr_name) {
+      const existingTranslation = await prisma.neighborhoods.findFirst({
+        where: {
+          OR: [
+            { langTranslation: { en_string: en_name } },
+            { langTranslation: { fr_string: fr_name } },
+          ],
+        },
+      });
 
-    // If no existing translation, create a new one
-    if (!langTranslation) {
+      if (existingTranslation) {
+        return response.error(res, res.__('messages.translationAlreadyExists'), {
+          en_string: existingTranslation.en_string,
+          fr_string: existingTranslation.fr_string,
+        });
+      }
+
       langTranslation = await prisma.langTranslations.create({
         data: {
           en_string: en_name,
@@ -62,52 +89,36 @@ export const createNeighborhood = async (req, res) => {
     const neighborhood = await prisma.neighborhoods.create({
       data: {
         district_id,
-        lang_id: langTranslation.id, // Use the generated or existing lang_id
+        lang_id: langTranslation.id,
         latitude,
         longitude,
+        created_by: userId,
+        updated_by: userId,
       },
     });
 
-    // Fetch the neighborhood with the translated names based on the requested language
-    const createdNeighborhood = await prisma.neighborhoods.findUnique({
-      where: { id: neighborhood.id },
-      include: {
-        langTranslation: true, // Include langTranslation data to fetch the actual name
-      },
+    // Fetch the created neighborhood with translations
+    const stateTranslation = await prisma.langTranslations.findUnique({
+      where: { id: districtExists.langTranslation.id }, // Access the correct id
     });
 
-    // Prepare the response based on the selected language
-    let neighborhoodName;
-    if (lang === 'en') {
-      neighborhoodName = createdNeighborhood.langTranslation.en_string;
-    } else if (lang === 'fr') {
-      neighborhoodName = createdNeighborhood.langTranslation.fr_string;
-    } else {
-      return response.error(res, res.__('messages.invalidLanguage')); // Error if language is invalid
-    }
 
     return response.success(
       res,
       res.__('messages.neighborhoodCreatedSuccessfully'),
       {
-        id: createdNeighborhood.id,
-        district_id: createdNeighborhood.district_id,
-        neighborhood_name: neighborhoodName, // Return the correct name based on the language
-        latitude: createdNeighborhood.latitude,
-        longitude: createdNeighborhood.longitude,
-        is_deleted: createdNeighborhood.is_deleted,
-        created_at: createdNeighborhood.created_at,
-        updated_at: createdNeighborhood.updated_at,
-        created_by: createdNeighborhood.created_by,
-        updated_by: createdNeighborhood.updated_by
+        id: neighborhood.id,
+        district_id: neighborhood.district_id,
+        neighborhood_name: lang === 'fr' ? stateTranslation.fr_string : stateTranslation.en_string,
+        latitude: neighborhood.latitude,
+        longitude: neighborhood.longitude,
+        is_deleted: neighborhood.is_deleted,
+        created_at: neighborhood.created_at,
+        updated_at: neighborhood.updated_at,
+        created_by: neighborhood.created_by,
+        updated_by: neighborhood.updated_by,
       }
     );
-
-    // return response.success(
-    //   res,
-    //   res.__('messages.neighborhoodCreatedSuccessfully'),
-    //   neighborhood
-    // );
   } catch (error) {
     console.error('Error creating neighborhood:', error);
     return response.error(
@@ -117,6 +128,7 @@ export const createNeighborhood = async (req, res) => {
     );
   }
 };
+
 
 export const getAllNeighborhoods = async (req, res) => {
   try {
@@ -310,6 +322,7 @@ export const getNeighborhoodById = async (req, res) => {
             en_string: true,
           },
         },
+        district_id: true,
         latitude: true,
         longitude: true,
         created_at: true,
@@ -326,6 +339,7 @@ export const getNeighborhoodById = async (req, res) => {
       en_name: neighborhood.langTranslation?.en_string,
       fr_name: neighborhood.langTranslation?.fr_string,
       latitude: neighborhood.latitude,
+      district_id: neighborhood.district_id,
       longitude: neighborhood.longitude,
       created_at: neighborhood.created_at,
       updated_at: neighborhood.updated_at,
@@ -342,10 +356,25 @@ export const getNeighborhoodById = async (req, res) => {
 export const updateNeighborhood = async (req, res) => {
   try {
     const { id } = req.params;
-    const { en_name, fr_name, latitude, longitude, lang } = req.body;
+    const { en_name, fr_name, latitude, longitude, district_id, lang } = req.body;
 
     if (!id) {
       return response.error(res, res.__('messages.neighborhoodIdRequired'));
+    }
+
+    const authHeader = req.headers['authorization'];
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return response.error(res, res.__('messages.authTokenRequired'));
+    }
+
+    const token = authHeader.split(' ')[1];
+    let userId;
+
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      userId = decoded.id; // Extract user ID from the token
+    } catch (error) {
+      return response.error(res, res.__('messages.invalidToken'));
     }
 
     // Fetch the existing neighborhood with lang_id
@@ -361,13 +390,33 @@ export const updateNeighborhood = async (req, res) => {
     }
 
     // Update language translations
-    await prisma.langTranslations.update({
-      where: { id: neighborhood.lang_id },
-      data: {
-        en_string: en_name,
-        fr_string: fr_name,
-      },
-    });
+    let langTranslation;
+    if (en_name || fr_name) {
+      // Check if the translation already exists
+      const existingTranslation = await prisma.neighborhoods.findFirst({
+        where: {
+          OR: [
+            { langTranslation: { en_string: en_name } },
+            { langTranslation: { fr_string: fr_name } },
+          ],
+        },
+      });
+
+      if (existingTranslation) {
+        return response.error(res, res.__('messages.translationAlreadyExists'), {
+          en_string: existingTranslation.en_string,
+          fr_string: existingTranslation.fr_string,
+        });
+      }
+
+      // Create a new translation if it doesn't exist
+      langTranslation = await prisma.langTranslations.create({
+        data: {
+          en_string: en_name,
+          fr_string: fr_name,
+        },
+      });
+    }
 
     // Update neighborhood details
     const updatedNeighborhood = await prisma.neighborhoods.update({
@@ -375,6 +424,10 @@ export const updateNeighborhood = async (req, res) => {
       data: {
         latitude,
         longitude,
+        district_id,
+        lang_id: langTranslation ? langTranslation.id : neighborhood.lang_id, // Update lang_id if translation exists
+        updated_by: userId, // Track who updated
+        updated_at: new Date(),
       },
       include: {
         langTranslation: true, // Include language translations in response
@@ -397,6 +450,7 @@ export const updateNeighborhood = async (req, res) => {
       is_deleted: updatedNeighborhood.is_deleted,
       created_at: updatedNeighborhood.created_at,
       updated_at: updatedNeighborhood.updated_at,
+      updated_by: updatedNeighborhood.updated_by, // Include updated_by in response
     };
 
     return response.success(res, res.__('messages.neighborhoodUpdatedSuccessfully'), responseData);
