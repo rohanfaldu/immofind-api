@@ -439,7 +439,10 @@ export const getAllProperty = async (req, res) => {
         meta_details: metaDetails,
         currency: property.currency?.symbol || null,
         neighborhood,
-        type,
+        type_details: [{
+          id: property.property_types?.id || null,
+          title: type,
+        }],
       };
     });
 

@@ -10,12 +10,14 @@ const prisma = new PrismaClient();
 // Create a developer
 export const createDeveloper = async (req, res) => {
   const userId = req.user.id;
+  const lang = req.getLocale(); // Assuming you have a method to get the user's locale
 
   // Destructure request body
   const {
     user_id,
     credit,
-    description,
+    description_en,
+    description_fr,
     facebook_link,
     twitter_link,
     youtube_link,
@@ -23,7 +25,8 @@ export const createDeveloper = async (req, res) => {
     linkedin_link,
     instagram_link,
     whatsappPhone,
-    service_area,
+    service_area_en,
+    service_area_fr,
     tax_number,
     country_code,
     license_number,
@@ -53,6 +56,14 @@ export const createDeveloper = async (req, res) => {
       );
     }
 
+    const descriptionTranslation = await prisma.langTranslations.create({
+      data: { en_string: description_en, fr_string: description_fr },
+    });
+
+    const serviceAreaTranslation = await prisma.langTranslations.create({
+      data: { en_string: service_area_en, fr_string: service_area_fr },
+    });
+
     // Check if a developer profile already exists for this user
     const existingDeveloper = await prisma.developers.findUnique({
       where: { user_id },
@@ -68,9 +79,9 @@ export const createDeveloper = async (req, res) => {
 
     // Prepare developer data for creation
     const developerData = {
-      user_id: existingUser.id, // Use the ID from the authenticated user
+      user_id: existingUser.id,
       credit,
-      description,
+      description: descriptionTranslation.id,
       facebookLink: facebook_link,
       twitterLink: twitter_link,
       youtubeLink: youtube_link,
@@ -78,7 +89,7 @@ export const createDeveloper = async (req, res) => {
       linkedinLink: linkedin_link,
       instagramLink: instagram_link,
       whatsappPhone,
-      serviceArea: service_area,
+      serviceArea: serviceAreaTranslation.id,
       taxNumber: tax_number,
       country_code:country_code,
       licenseNumber: license_number,
@@ -90,9 +101,39 @@ export const createDeveloper = async (req, res) => {
       data: developerData,
     });
 
+    const descriptionTranslationData = await prisma.langTranslations.findUnique({
+      where: { id: developer.description },
+    });
+
+    const serviceAreaTranslationData = await prisma.langTranslations.findUnique({
+      where: { id: developer.serviceArea },
+    });
+
+    // Determine which language to return
+    const description = lang === 'fr' ? descriptionTranslationData.fr_string : descriptionTranslationData.en_string;
+    const service_area = lang === 'fr' ? serviceAreaTranslationData.fr_string : serviceAreaTranslationData.en_string;
+
+    const responseData = {
+      id: developer.id,
+      user_id: developer.user_id,
+      credit: developer.credit,
+      description: description,
+      facebook_link: developer.facebookLink,
+      twitter_link: developer.twitterLink,
+      youtube_link: developer.youtubeLink,
+      pinterest_link: developer.pinterestLink,
+      linkedin_link: developer.linkedinLink,
+      instagram_link: developer.instagramLink,
+      whatsapp_phone: developer.whatsappPhone,
+      service_area: service_area,
+      tax_number: developer.taxNumber,
+      country_code: developer.country_code,
+      license_number: developer.licenseNumber,
+    };
+
     // Convert BigInt fields to string for response (if applicable)
     const safeDeveloper = JSON.parse(
-      JSON.stringify(developer, (_, value) =>
+      JSON.stringify(responseData, (_, value) =>
         typeof value === "bigint" ? value.toString() : value
       )
     );
@@ -114,10 +155,12 @@ export const createDeveloper = async (req, res) => {
 };
 
 
+
 // Get all developers
 
 export const getAllDevelopers = async (req, res) => {
   const user_id = req.user.id; // Get the logged-in user's ID from the auth token
+  console.log('user_id: ', user_id);
 
   try {
     // Fetch the developer details for the logged-in user

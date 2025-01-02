@@ -138,7 +138,8 @@ export const updateState = async (req, res) => {
 
     let langTranslation;
     if (en_name || fr_name) {
-      langTranslation = await prisma.langTranslations.findFirst({
+      // Check if the translation already exists
+      const existingTranslation = await prisma.langTranslations.findFirst({
         where: {
           OR: [
             { en_string: en_name },
@@ -147,16 +148,13 @@ export const updateState = async (req, res) => {
         },
       });
 
-      if (!langTranslation) {
-        langTranslation = await prisma.langTranslations.create({
-          data: {
-            en_string: en_name,
-            fr_string: fr_name,
-          },
+      if (existingTranslation) {
+        return response.error(res, res.__('messages.stateAlreadyExists'), {
+          en_string: existingTranslation.en_string,
+          fr_string: existingTranslation.fr_string,
         });
       }
     }
-
     const updatedState = await prisma.states.update({
       where: { id: state.id },
       data: {

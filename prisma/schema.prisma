@@ -11,7 +11,7 @@ model Agencies {
   id                                                        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   user_id                                                   String          @unique @db.Uuid
   credit                                                    String?         @db.VarChar
-  description                                               String?
+  description                                               String?         @db.Uuid
   facebook_link                                             String?         @db.VarChar
   twitter_link                                              String?         @db.VarChar
   youtube_link                                              String?         @db.VarChar
@@ -19,7 +19,7 @@ model Agencies {
   linkedin_link                                             String?         @db.VarChar
   instagram_link                                            String?         @db.VarChar
   whatsup_number                                            String?         @db.VarChar
-  service_area                                              String?
+  service_area                                              String?         @db.Uuid
   tax_number                                                String?         @db.VarChar
   license_number                                            String?         @db.VarChar
   agency_packages                                           String?         @db.Uuid
@@ -35,10 +35,14 @@ model Agencies {
   sub_user_id                                               String?         @db.Uuid
   country_code                                              String?         @db.VarChar
   agency_packages_agencies_agency_packagesToagency_packages AgencyPackages? @relation("agencies_agency_packagesToagency_packages", fields: [agency_packages], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lang_translations_description                             LangTranslations? @relation("agency_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lang_translations_service_area                            LangTranslations? @relation("agency_service_area_translation", fields: [service_area], references: [id], onDelete: NoAction, onUpdate: NoAction)
   meta_data                                                 MetaData?       @relation(fields: [meta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("agencies")
 }
+
+
 
 model AgencyPackages {
   id                                                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -130,6 +134,10 @@ model LangTranslations {
   neighborhoods                                                    Neighborhoods[]
   project_details_description_translation                          ProjectDetails[]       @relation("project_description_translation")
   project_details                                                  ProjectDetails[]       @relation("project_title_translation")
+  agency_description_translation                                   Agencies[]             @relation("agency_description_translation")
+  agency_service_area_translation                                  Agencies[]             @relation("agency_service_area_translation")
+  developer_description_translation                                   Developers[]           @relation("developer_description_translation")
+  developer_service_area_translation                                  Developers[]           @relation("developer_service_area_translation")
   project_type_listings                                            ProjectTypeListings[]
   property_details_property_details_descriptionTolang_translations PropertyDetails[]      @relation("property_details_descriptionTolang_translations")
   property_details_property_details_titleTolang_translations       PropertyDetails[]      @relation("property_details_titleTolang_translations")
@@ -139,6 +147,7 @@ model LangTranslations {
 
   @@map("lang_translations")
 }
+
 
 model MetaData {
   id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -403,37 +412,40 @@ model Currency {
 }
 
 model Developers {
-  id                 String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id            String           @unique @db.Uuid
-  name               String?
-  email              String?          @db.VarChar
-  phone              String?          @db.VarChar
-  address            String?
-  password           String?
-  description        String?
-  facebookLink       String?          @db.VarChar
-  twitterLink        String?          @db.VarChar
-  youtubeLink        String?          @db.VarChar
-  pinterestLink      String?          @db.VarChar
-  linkedinLink       String?          @db.VarChar
-  instagramLink      String?          @db.VarChar
-  whatsappPhone      String?          @db.VarChar
-  serviceArea        String?          @db.VarChar
-  taxNumber          String?          @db.VarChar
-  licenseNumber      String?          @db.VarChar
-  publishingStatusId BigInt?          @default(1)
-  is_deleted         Boolean          @default(false)
-  created_at         DateTime?        @default(now()) @db.Timestamp(6)
-  updated_at         DateTime?        @default(now()) @db.Timestamp(6)
-  created_by         String?          @db.Uuid
-  updated_by         String?          @db.Uuid
-  agencyPackageId    String?          @map("agency_package_id")
-  credit             String?          @db.VarChar
-  country_code       String?          @db.VarChar
-  agencyPackages     AgencyPackages[] @relation("DevelopersToAgencyPackages")
+  id                                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                             String            @unique @db.Uuid
+  name                                String? 
+  email                               String?           @db.VarChar
+  phone                               String?           @db.VarChar
+  address                             String? 
+  password                            String?           
+  description                         String?           @db.Uuid
+  facebookLink                        String?           @db.VarChar
+  twitterLink                         String?           @db.VarChar
+  youtubeLink                         String?           @db.VarChar
+  pinterestLink                       String?           @db.VarChar
+  linkedinLink                        String?           @db.VarChar
+  instagramLink                       String?           @db.VarChar
+  whatsappPhone                       String?           @db.VarChar
+  serviceArea                         String?           @db.Uuid
+  taxNumber                           String?           @db.VarChar
+  licenseNumber                       String?           @db.VarChar
+  publishingStatusId                  BigInt?           @default(1)
+  is_deleted                          Boolean           @default(false)
+  created_at                          DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at                          DateTime?         @default(now()) @db.Timestamp(6)
+  created_by                          String?           @db.Uuid
+  updated_by                          String?           @db.Uuid
+  agencyPackageId                     String?           @map("agency_package_id")
+  credit                              String?           @db.VarChar
+  country_code                        String?           @db.VarChar
+  agencyPackages                      AgencyPackages[]  @relation("DevelopersToAgencyPackages")
+  lang_translations_description       LangTranslations? @relation("developer_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lang_translations_service_area      LangTranslations? @relation("developer_service_area_translation", fields: [serviceArea], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
   @@map("developers")
 }
+
 
 enum AgencyType {
   BASIC
