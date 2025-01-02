@@ -183,6 +183,7 @@
 		"cityFetchedSuccessfully": "city Fetched Successfully",
 		"checkDeviceTypeRole": "check Device TypeRole",
 		"agencyPackageFetchedSuccessfully": "agency Package Fetched Successfully",
-		"projectTypeFetchedSuccessfully": "project Type Fetched Successfully"
+		"projectTypeFetchedSuccessfully": "project Type Fetched Successfully",
+		"neighborhoodNotFound": "messages.neighborhoodNotFound"
 	}
 }
