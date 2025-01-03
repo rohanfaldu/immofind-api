@@ -137,6 +137,7 @@ export const getAllProjects = async (req, res) => {
           select: {
             id: true,
             symbol: true,
+            name: true,
           },
         },
         neighborhoods: {
@@ -184,7 +185,7 @@ export const getAllProjects = async (req, res) => {
       district: lang === 'fr' ? project.districts?.langTranslation?.fr_string : project.districts?.langTranslation?.en_string,
       neighborhood: lang === 'fr' ? project.neighborhoods?.langTranslation?.fr_string : project.neighborhoods?.langTranslation?.en_string,
       latitude: project.latitude,
-      currency: project.currency?.symbol || null,
+      currency: project.currency?.name || null,
       longitude: project.longitude,
       address: project.address,
       vr_link: project.vr_link,
@@ -497,7 +498,7 @@ export const getProjectsById = async (req, res) => {
           ? property.districts.langTranslation.fr_string
           : property.districts.langTranslation.en_string),
         images: property.images_data,
-        currency: property.currency?.symbol || null,
+        currency: property.currency?.name || null,
         neighborhood,
         type_details: [{
           id: property.property_types?.id || null,
