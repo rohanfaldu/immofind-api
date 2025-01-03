@@ -769,7 +769,206 @@ export const getPropertyById = async (req, res) => {
   }
 };
 
+export const getPropertyByIdWithId = async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) {
+      return response.error(res, res.__('messages.invalidPropertyId'));
+    }
 
+    const property = await prisma.propertyDetails.findUnique({
+      where: { id: id },
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            id: true,
+            image: true,
+            email_address: true,
+          },
+        },
+        lang_translations_property_details_descriptionTolang_translations: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        lang_translations: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        districts: {
+          select: {
+            id: true,
+            langTranslation: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        cities: {
+          select: {
+            id: true,
+            lang: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        states:{
+          select: {
+            id: true,
+            lang: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        property_meta_details: {
+          select: {
+            value: true,
+            property_type_listings: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                icon: true,
+                key: true,
+                lang_translations: {
+                  select: {
+                    en_string: true,
+                    fr_string: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        currency: {
+          select: {
+            name: true,
+            symbol: true,
+            status: true,
+          },
+        },
+        neighborhoods: {
+          select: {
+            id: true,
+            langTranslation: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        property_types: {
+          select: {
+            id: true,
+            title: true,
+            lang_translations: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Handle case where property is not found
+    if (!property) {
+      return response.error(res, res.__('messages.propertyNotFound'));
+    }
+
+    console.log(property)
+
+    // Prepare response based on language
+    const lang = res.getLocale();
+    const description =
+      lang === 'fr'
+        ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
+        : property.lang_translations_property_details_descriptionTolang_translations.en_string;
+    const title =
+      lang === 'fr'
+        ? property.lang_translations.fr_string
+        : property.lang_translations.en_string;
+    const neighborhood =
+      lang === 'fr'
+        ? property.neighborhoods?.langTranslation?.fr_string
+        : property.neighborhoods?.langTranslation?.en_string;
+
+    const metaDetails = property.property_meta_details.map((meta) => {
+      const langObj =
+        lang === 'fr'
+          ? meta.property_type_listings?.lang_translations?.fr_string
+          : meta.property_type_listings?.lang_translations?.en_string;
+
+      return {
+        id: meta.property_type_listings?.id || null,
+        type: meta.property_type_listings?.type || null,
+        key: meta.property_type_listings?.key || null,
+        icon: meta.property_type_listings?.icon || null,
+        name: langObj,
+        value: meta.value,
+      };
+    });
+
+    const responsePayload = {
+      id: property.id,
+      user: property.users?.id || null,
+      email_address: property.users?.email_address || null,
+      description_en: property.lang_translations_property_details_descriptionTolang_translations.en_string,
+      description_fr: property.lang_translations_property_details_descriptionTolang_translations.fr_string,
+      title_en: property.lang_translations.en_string,
+      title_fr: property.lang_translations.fr_string,
+      transaction_type: property.transaction,
+      picture: property.picture,
+      video: property.video,
+      latitude: property.latitude,
+      longitude: property.longitude,
+      address: property.address,
+      size: property.size,
+      price: property.price,
+      created_at: property.created_at,
+      district: property.districts?.id || null,
+      city:property.cities?.id || null,
+      state: property.states?.id || null,
+      images: property.images_data,
+      meta_details: metaDetails,
+      currency: property.currency?.name || null,
+      neighborhood: property.neighborhoods?.id || null,
+      type_details: [{
+        id: property.property_types?.id || null,
+        title: lang === 'fr' ? property.property_types?.lang_translations?.fr_string : property.property_types?.lang_translations?.en_string,
+      }],
+    };
+
+    // Send response
+    return response.success(
+      res,
+      res.__('messages.propertyFetchSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error('Error fetching property by ID:', error);
+
+    // Return error response
+    return response.error(
+      res,
+      res.__('messages.errorFetchingProperties')
+    );
+  }
+};
 
 
 export const createProperty = async (req, res) => {
