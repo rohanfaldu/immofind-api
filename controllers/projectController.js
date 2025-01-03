@@ -832,7 +832,7 @@ export const getProjectsByIdWithId = async (req, res) => {
       neighborhood: project.neighborhoods?.id || null,
       latitude: project.latitude,
       longitude: project.longitude,
-      currency: project.currency?.symbol || null,
+      currency: project.currency?.id || null,
       address: project.address,
       price: project.price,
       icon: project.icon,

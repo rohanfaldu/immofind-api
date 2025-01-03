@@ -854,6 +854,7 @@ export const getPropertyByIdWithId = async (req, res) => {
         },
         currency: {
           select: {
+            id: true,
             name: true,
             symbol: true,
             status: true,
@@ -945,7 +946,7 @@ export const getPropertyByIdWithId = async (req, res) => {
       state: property.states?.id || null,
       images: property.images_data,
       meta_details: metaDetails,
-      currency: property.currency?.name || null,
+      currency: property.currency?.id || null,
       neighborhood: property.neighborhoods?.id || null,
       type_details: [{
         id: property.property_types?.id || null,
