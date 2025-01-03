@@ -189,6 +189,7 @@ model PropertyDetails {
   project_id                                                        String?               @db.Uuid
   picture                                                           String[]
   currency_id                                                       String?               @db.Uuid
+  slug                                                              String?               @unique
   address                                                           String?               @db.VarChar
   neighborhoods_id                                                  String?               @db.Uuid
   cities                                                            Cities?               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
@@ -219,6 +220,7 @@ model ProjectDetails {
   vr_link                       String?              @db.VarChar
   picture                       String[]
   icon                          String?              @db.VarChar
+  slug                          String?              @unique
   video                         String?              @db.VarChar
   status                        Boolean              @default(false)
   user_id                       String               @db.Uuid

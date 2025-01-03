@@ -345,6 +345,26 @@ export const getAllProperty = async (req, res) => {
               status: true
           }
         },
+        cities: {
+          select: {
+            lang: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        states:{
+          select: {
+            lang: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
         neighborhoods: {
           select: {
               langTranslation: {
@@ -464,6 +484,18 @@ export const getAllProperty = async (req, res) => {
             (lang === "fr"
               ? property.districts.langTranslation.fr_string
               : property.districts.langTranslation.en_string),
+          state:
+          (lang === "fr"
+            ? property.states?.lang?.fr_string
+            : property.states?.lang?.en_string),
+          city:
+            lang === "fr"
+              ? property.cities?.lang?.fr_string
+              : property.cities?.lang?.en_string,
+          neighborhood: 
+            lang === "fr"
+              ? property.neighborhoods?.lang?.fr_string
+              : property.neighborhoods?.lang?.en_string,
           images: property.images_data,
           meta_details: metaDetails,
           currency: property.currency?.name || null,
@@ -653,14 +685,14 @@ export const getPropertyById = async (req, res) => {
         },
         neighborhoods: {
           select: {
-            langTranslation: {
+              langTranslation: {
               select: {
-                en_string: true,
-                fr_string: true,
+                  en_string: true,
+                  fr_string: true,
               },
-            },
+              },
           },
-        },
+          },
         property_types: {
           select: {
             id: true,
@@ -683,19 +715,6 @@ export const getPropertyById = async (req, res) => {
 
     // Prepare response based on language
     const lang = res.getLocale();
-    const description =
-      lang === 'fr'
-        ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
-        : property.lang_translations_property_details_descriptionTolang_translations.en_string;
-    const title =
-      lang === 'fr'
-        ? property.lang_translations.fr_string
-        : property.lang_translations.en_string;
-    const neighborhood =
-      lang === 'fr'
-        ? property.neighborhoods?.langTranslation?.fr_string
-        : property.neighborhoods?.langTranslation?.en_string;
-
     const metaDetails = property.property_meta_details.map((meta) => {
       const langObj =
         lang === 'fr'
@@ -742,10 +761,15 @@ export const getPropertyById = async (req, res) => {
         lang === "fr"
           ? property.states?.lang?.fr_string
           : property.states?.lang?.en_string,
+      neighborhood: 
+        lang === "fr"
+          ? property.neighborhoods?.langTranslation?.fr_string
+          : property.neighborhoods?.langTranslation?.en_string,
+        
       images: property.images_data,
       meta_details: metaDetails,
       currency: property.currency?.name || null,
-      neighborhood,
+      
       type_details: {
         id: property.property_types?.id || null,
         title: lang === 'fr' ? property.property_types?.lang_translations?.fr_string : property.property_types?.lang_translations?.en_string,
