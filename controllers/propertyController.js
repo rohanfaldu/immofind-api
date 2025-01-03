@@ -468,10 +468,10 @@ export const getAllProperty = async (req, res) => {
           meta_details: metaDetails,
           currency: property.currency?.name || null,
           neighborhood,
-          type_details: [{
+          type_details: {
             id: property.property_types?.id || null,
             title: type,
-          }],
+          },
           project_details: responseProjectData,
         };
       })
@@ -746,10 +746,10 @@ export const getPropertyById = async (req, res) => {
       meta_details: metaDetails,
       currency: property.currency?.name || null,
       neighborhood,
-      type_details: [{
+      type_details: {
         id: property.property_types?.id || null,
         title: lang === 'fr' ? property.property_types?.lang_translations?.fr_string : property.property_types?.lang_translations?.en_string,
-      }],
+      },
     };
 
     // Send response
@@ -948,10 +948,10 @@ export const getPropertyByIdWithId = async (req, res) => {
       meta_details: metaDetails,
       currency: property.currency?.id || null,
       neighborhood: property.neighborhoods?.id || null,
-      type_details: [{
+      type_details: {
         id: property.property_types?.id || null,
         title: lang === 'fr' ? property.property_types?.lang_translations?.fr_string : property.property_types?.lang_translations?.en_string,
-      }],
+      },
     };
 
     // Send response
