@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import response from '../components/utils/response.js';
 import commonFunction from "../components/utils/commonFunction.js";
-
+import slugify from 'slugify';
 const prisma = new PrismaClient();
 
 const serializeBigInt = (data) => {
@@ -10,6 +10,15 @@ const serializeBigInt = (data) => {
       typeof value === 'bigint' ? value.toString() : value
     )
   );
+};
+
+const generateUniqueSlug = async (baseSlug, attempt = 0) => {
+  const slug = attempt > 0 ? `${baseSlug}_${attempt}` : baseSlug;
+  const existingSlug = await prisma.projectDetails.findUnique({
+    where: { slug: slug || undefined }, // Handle null or undefined slugs
+  });
+  
+  return existingSlug ? generateUniqueSlug(baseSlug, attempt + 1) : slug;
 };
 
 
@@ -282,6 +291,7 @@ export const getAllProjects = async (req, res) => {
       icon: project.icon,
       video: project.video,
       price: project.price,
+      slug: project.slug,
       created_at: project.created_at,
       updated_at: project.updated_at,
       created_by: project.created_by,
@@ -347,15 +357,15 @@ export const getAllProjects = async (req, res) => {
 export const getProjectsById = async (req, res) => {
   try {
     // Step 1: Validate `project_id`
-    const { project_id } = req.body;
+    const { project_slug } = req.body;
 
-    if (!project_id) {
+    if (!project_slug) {
       return response.error(res, res.__('messages.projectIdRequired'));
     }
 
     // Step 2: Fetch project details
     const project = await prisma.projectDetails.findUnique({
-      where: { id: project_id },
+      where: { slug: project_slug },
       include: {
         users: {
           select: {
@@ -438,7 +448,7 @@ export const getProjectsById = async (req, res) => {
     const lang = res.getLocale();
 
       const properties = await prisma.propertyDetails.findMany({
-      where: { project_id },
+      where: { project_id: project.id },
       orderBy: { created_at: 'desc' },
       take: 5,
       include: {
@@ -652,15 +662,15 @@ export const getProjectsById = async (req, res) => {
 export const getProjectsByIdWithId = async (req, res) => {
   try {
     // Step 1: Validate `project_id`
-    const { project_id } = req.body;
+    const { project_slug } = req.body;
 
-    if (!project_id) {
+    if (!project_slug) {
       return response.error(res, res.__('messages.projectIdRequired'));
     }
 
     // Step 2: Fetch project details
     const project = await prisma.projectDetails.findUnique({
-      where: { id: project_id },
+      where: { slug: project_slug },
       include: {
         users: {
           select: {
@@ -747,7 +757,7 @@ export const getProjectsByIdWithId = async (req, res) => {
     const lang = res.getLocale();
 
       const properties = await prisma.propertyDetails.findMany({
-      where: { project_id },
+      where: { project_id: project.id },
       orderBy: { created_at: 'desc' },
       take: 5,
       include: {
@@ -1165,6 +1175,9 @@ export const createProject = async (req, res) => {
       }
     }
     
+
+    const baseSlug = slugify(title_en, { lower: true, replacement: '_', strict: true });
+    const uniqueSlug = await generateUniqueSlug(baseSlug);
     // // Step 1: Create translations for title and description
     const titleTranslation = await prisma.langTranslations.create({
       data: {
@@ -1196,6 +1209,7 @@ export const createProject = async (req, res) => {
         longitude: longitude,
         currency_id: currency_id,
         address: address,
+        slug: uniqueSlug,
         vr_link: vr_link || null,
         picture: picture || null,
         icon: icon || null,
