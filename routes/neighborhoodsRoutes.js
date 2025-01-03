@@ -15,7 +15,7 @@ const router = express.Router();
 router.post("/create", authorize, createNeighborhood);
 
 // Get neighborhoods by district
-router.post("/id", authorize, getNeighborhoodsByDistrict);
+router.post("/id", getNeighborhoodsByDistrict);
 
 router.post("/", authorize, getAllNeighborhoods);
 

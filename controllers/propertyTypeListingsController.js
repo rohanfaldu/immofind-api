@@ -264,7 +264,7 @@ export const updatePropertyTypeListing = async (req, res) => {
         data: {
           en_string: en_string || existingPropertyTypeListing.lang_translations.en_string,
           fr_string: fr_string || existingPropertyTypeListing.lang_translations.fr_string,
-          updated_by: Date.now(),  // Assuming you track the updater
+          updated_by: req.user.id,  // Assuming you track the updater
         },
       });
     }
@@ -276,7 +276,7 @@ export const updatePropertyTypeListing = async (req, res) => {
         icon: icon || existingPropertyTypeListing.icon,
         type: type || existingPropertyTypeListing.type,
         category: category || existingPropertyTypeListing.category,
-        updated_by: Date.now(),
+        updated_by: req.user.id,
         lang_translations: {
           connect: {
             id: updatedLangTranslation.id,  // Link to the possibly updated LangTranslation
