@@ -457,6 +457,37 @@ export const getAllProperty = async (req, res) => {
       },
     });
 
+      const propertyTypes = await prisma.propertyTypes.findMany({
+        include: {
+          lang_translations: true,
+        },
+      });
+
+
+      const simplifiedTypeProperties = await Promise.all(
+        propertyTypes.map(async (property) => {
+          const user = property.created_by
+            ? await prisma.users.findUnique({
+                where: { id: property.created_by },
+                select: { user_name: true },
+              })
+            : null;
+  
+          return {
+            id: property.id,
+            title:
+              property.lang_translations
+                ? lang === 'fr'
+                  ? property.lang_translations.fr_string
+                  : property.lang_translations.en_string
+                : 'No title available',
+            created_by: user ? user.user_name : 'Unknown User', // Use the user name or fallback
+            createdAt: property.created_at,
+          };
+        })
+      );
+
+
     // Map the results and apply language selection
     const simplifiedListings = listings.map((listing) => ({
       id: listing.id,
@@ -477,6 +508,7 @@ export const getAllProperty = async (req, res) => {
     const responsePayload = {
       list: simplifiedProperties,
       property_meta_details: simplifiedListings,
+      property_types: simplifiedTypeProperties,
       maxPriceSliderRange,
       totalCount,
       totalPages: Math.ceil(totalCount / validLimit),
@@ -500,6 +532,214 @@ export const getAllProperty = async (req, res) => {
     );
   }
 };
+
+
+export const getPropertyById = async (req, res) => {
+  try {
+    const { id } = req.body;
+    if (!id) {
+      return response.error(res, res.__('messages.invalidPropertyId'));
+    }
+
+    const property = await prisma.propertyDetails.findUnique({
+      where: { id: id },
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+            email_address: true,
+          },
+        },
+        lang_translations_property_details_descriptionTolang_translations: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        lang_translations: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        districts: {
+          select: {
+            langTranslation: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        cities: {
+          select: {
+            lang: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        states:{
+          select: {
+            lang: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        property_meta_details: {
+          select: {
+            value: true,
+            property_type_listings: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                icon: true,
+                key: true,
+                lang_translations: {
+                  select: {
+                    en_string: true,
+                    fr_string: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+        currency: {
+          select: {
+            name: true,
+            symbol: true,
+            status: true,
+          },
+        },
+        neighborhoods: {
+          select: {
+            langTranslation: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        property_types: {
+          select: {
+            id: true,
+            title: true,
+            lang_translations: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Handle case where property is not found
+    if (!property) {
+      return response.error(res, res.__('messages.propertyNotFound'));
+    }
+
+    // Prepare response based on language
+    const lang = res.getLocale();
+    const description =
+      lang === 'fr'
+        ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
+        : property.lang_translations_property_details_descriptionTolang_translations.en_string;
+    const title =
+      lang === 'fr'
+        ? property.lang_translations.fr_string
+        : property.lang_translations.en_string;
+    const neighborhood =
+      lang === 'fr'
+        ? property.neighborhoods?.langTranslation?.fr_string
+        : property.neighborhoods?.langTranslation?.en_string;
+
+    const metaDetails = property.property_meta_details.map((meta) => {
+      const langObj =
+        lang === 'fr'
+          ? meta.property_type_listings?.lang_translations?.fr_string
+          : meta.property_type_listings?.lang_translations?.en_string;
+
+      return {
+        id: meta.property_type_listings?.id || null,
+        type: meta.property_type_listings?.type || null,
+        key: meta.property_type_listings?.key || null,
+        icon: meta.property_type_listings?.icon || null,
+        name: langObj,
+        value: meta.value,
+      };
+    });
+
+    const responsePayload = {
+      id: property.id,
+      user_name: property.users?.full_name || null,
+      user_image: property.users?.image || null,
+      email_address: property.users?.email_address || null,
+      description_en: property.lang_translations_property_details_descriptionTolang_translations.en_string,
+      description_fr: property.lang_translations_property_details_descriptionTolang_translations.fr_string,
+      title_en: property.lang_translations.en_string,
+      title_fr: property.lang_translations.fr_string,
+      transaction_type: property.transaction,
+      picture: property.picture,
+      video: property.video,
+      latitude: property.latitude,
+      longitude: property.longitude,
+      address: property.address,
+      size: property.size,
+      price: property.price,
+      created_at: property.created_at,
+      district:
+        lang === "fr"
+          ? property.districts?.langTranslation?.fr_string
+          : property.districts?.langTranslation?.en_string,
+      city:
+        lang === "fr"
+          ? property.cities?.lang?.fr_string
+          : property.cities?.lang?.en_string,
+      state:
+        lang === "fr"
+          ? property.states?.lang?.fr_string
+          : property.states?.lang?.en_string,
+      images: property.images_data,
+      meta_details: metaDetails,
+      currency: property.currency?.symbol || null,
+      neighborhood,
+      type_details: [{
+        id: property.property_types?.id || null,
+        title: lang === 'fr' ? property.property_types?.lang_translations?.fr_string : property.property_types?.lang_translations?.en_string,
+      }],
+    };
+
+    // Send response
+    return response.success(
+      res,
+      res.__('messages.propertyFetchSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error('Error fetching property by ID:', error);
+
+    // Return error response
+    return response.error(
+      res,
+      res.__('messages.errorFetchingProperties')
+    );
+  }
+};
+
+
+
 
 export const createProperty = async (req, res) => {
     try {
@@ -529,6 +769,9 @@ export const createProperty = async (req, res) => {
             size,
             meta_details
         } = req.body;
+
+
+
 
         const user = await prisma.users.findFirst({
           where: {
@@ -783,6 +1026,8 @@ export const updateProperty = async (req, res) => {
     currency_id,
     neighborhoods_id,
     district_id,
+    city_id,
+    state_id,
     latitude,
     longitude,
     address,
@@ -843,6 +1088,8 @@ export const updateProperty = async (req, res) => {
     const updateData = {
       price: price !== undefined ? price : existingProperty.price,
       district_id: district_id !== undefined ? district_id : existingProperty.district_id,
+      city_id: city_id !== undefined ? city_id : existingProperty.city_id,
+      state_id: state_id !== undefined ? state_id : existingProperty.state_id,
       latitude: latitude !== undefined ? latitude : existingProperty.latitude,
       address: address !== undefined ? address : existingProperty.address,
       currency_id: currency_id !== undefined ? currency_id : existingProperty.currency_id,
@@ -897,6 +1144,20 @@ export const updateProperty = async (req, res) => {
         districts: {
           select: {
             langTranslation: {
+              select: { en_string: true, fr_string: true },
+            },
+          },
+        },
+        cities: {
+          select: {
+            lang: {
+              select: { en_string: true, fr_string: true },
+            },
+          },
+        },
+        states: {
+          select: {
+            lang: {
               select: { en_string: true, fr_string: true },
             },
           },
@@ -979,6 +1240,14 @@ export const updateProperty = async (req, res) => {
         (lang === "fr"
           ? updatedPropertyDetails.districts.langTranslation.fr_string
           : updatedPropertyDetails.districts.langTranslation.en_string),
+      city:
+      (lang === "fr"
+        ? updatedPropertyDetails.cities.lang.fr_string
+        : updatedPropertyDetails.cities.lang.en_string),
+      state:
+      (lang === "fr"
+        ? updatedPropertyDetails.states?.lang?.fr_string
+        : updatedPropertyDetails.states?.lang?.en_string),
       neighborhood:
         updatedPropertyDetails.neighborhoods?.langTranslation &&
         (lang === "fr"

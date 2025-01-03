@@ -11,21 +11,24 @@ const prisma = new PrismaClient(); // Assuming response utility is in place
 // Create an agency
 export const createAgency = async (req, res) => {
   try {
+    // Extract and validate Authorization token
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return response.error(res, 'Authorization token missing or invalid', null, 401);
     }
 
     const token = authHeader.split(' ')[1];
-    let user_id;
+    let createdUserId;
     try {
       const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-      user_id = decodedToken.id;
+      createdUserId = decodedToken.id;
     } catch (err) {
       return response.error(res, 'Invalid or expired token', null, 401);
     }
 
+    // Destructure request body
     const {
+      user_id,
       credit,
       description_en,
       description_fr,
@@ -46,31 +49,22 @@ export const createAgency = async (req, res) => {
       agency_packages,
     } = req.body;
 
-    const existingUser = await prisma.users.findUnique({
-      where: { id: user_id },
-      include: { roles: true },
-    });
 
-    if (!existingUser || !existingUser.roles || existingUser.roles.name.toLowerCase() !== 'agency') {
-      return response.error(res, res.__('messages.userNotRightsTocreateAgency'), null);
-    }
-
-    const existingAgency = await prisma.agencies.findUnique({
-      where: { user_id },
-    });
-
+    // Check if the user already has an agency
+    const existingAgency = await prisma.agencies.findUnique({ where: { user_id } });
     if (existingAgency) {
       return response.error(res, res.__('messages.agencyAlreadyExists'), null);
     }
 
+    // Create language translations
     const descriptionTranslation = await prisma.langTranslations.create({
       data: { en_string: description_en, fr_string: description_fr },
     });
-
     const serviceAreaTranslation = await prisma.langTranslations.create({
       data: { en_string: service_area_en, fr_string: service_area_fr },
     });
 
+    // Validate agency package if provided
     let agencyPackagesName = null;
     if (agency_packages) {
       const agencyPackage = await prisma.agencyPackages.findUnique({
@@ -93,73 +87,64 @@ export const createAgency = async (req, res) => {
       agencyPackagesName = agencyPackageDetails;
     }
 
-    const lang = res.getLocale();
-    const agencyData = {
-      user_id,
-      created_by: user_id,
-      credit,
-      description: descriptionTranslation.id,
-      facebook_link,
-      twitter_link,
-      youtube_link,
-      pinterest_link,
-      linkedin_link,
-      instagram_link,
-      whatsup_number,
-      country_code,
-      service_area: serviceAreaTranslation.id,
-      tax_number,
-      license_number,
-      picture,
-      cover,
-      agency_packages,
-    };
-
+    // Create the agency
     const newAgency = await prisma.agencies.create({
-      data: agencyData,
+      data: {
+        user_id,
+        created_by: createdUserId,
+        credit,
+        description: descriptionTranslation.id,
+        facebook_link,
+        twitter_link,
+        youtube_link,
+        pinterest_link,
+        linkedin_link,
+        instagram_link,
+        whatsup_number,
+        country_code,
+        service_area: serviceAreaTranslation.id,
+        tax_number,
+        license_number,
+        picture,
+        cover,
+        agency_packages,
+      },
     });
 
-    const descriptionTranslationData = await prisma.langTranslations.findUnique({
+    // Fetch translation data for response
+    const descriptionData = await prisma.langTranslations.findUnique({
       where: { id: newAgency.description },
     });
-    
-    const serviceAreaTranslationData = await prisma.langTranslations.findUnique({
+    const serviceAreaData = await prisma.langTranslations.findUnique({
       where: { id: newAgency.service_area },
     });
-    
-    // Determine which language to return
-    const description = lang === 'fr' ? descriptionTranslationData.fr_string : descriptionTranslationData.en_string;
-    const service_area = lang === 'fr' ? serviceAreaTranslationData.fr_string : serviceAreaTranslationData.en_string;
 
-
+    const lang = res.getLocale();
     const responseData = {
-    id: newAgency.id,
-    user_id: newAgency.user_id,
-    credit: newAgency.credit,
-    description,
-    facebook_link: newAgency.facebook_link,
-    twitter_link: newAgency.twitter_link,
-    youtube_link: newAgency.youtube_link,
-    pinterest_link: newAgency.pinterest_link,
-    linkedin_link: newAgency.linkedin_link,
-    instagram_link: newAgency.instagram_link,
-    whatsup_number: newAgency.whatsup_number,
-    service_area,
-    tax_number: newAgency.tax_number,
-    license_number: newAgency.license_number,
-    picture: newAgency.picture,
-    cover: newAgency.cover,
-    agency_packages: newAgency.agency_packages,
-    country_code: newAgency.country_code,
-  };
+      id: newAgency.id,
+      user_id: newAgency.user_id,
+      credit: newAgency.credit,
+      description: lang === 'fr' ? descriptionData.fr_string : descriptionData.en_string,
+      facebook_link: newAgency.facebook_link,
+      twitter_link: newAgency.twitter_link,
+      youtube_link: newAgency.youtube_link,
+      pinterest_link: newAgency.pinterest_link,
+      linkedin_link: newAgency.linkedin_link,
+      instagram_link: newAgency.instagram_link,
+      whatsup_number: newAgency.whatsup_number,
+      service_area: lang === 'fr' ? serviceAreaData.fr_string : serviceAreaData.en_string,
+      tax_number: newAgency.tax_number,
+      license_number: newAgency.license_number,
+      picture: newAgency.picture,
+      cover: newAgency.cover,
+      agency_packages: newAgency.agency_packages,
+      country_code: newAgency.country_code,
+    };
 
-    if (newAgency) {
-      return response.success(res, res.__('messages.agencyCreatedSuccessfully'), {
-        agency: responseData,
-      });
-    } else {
-      return response.error(res, res.__('messages.agencyNotCreated'), null);
-    }
+    // Return success response
+    return response.success(res, res.__('messages.agencyCreatedSuccessfully'), {
+      agency: responseData,
+    });
   } catch (err) {
     console.error('Error creating agency:', err.message);
     return response.serverError(
@@ -169,6 +154,7 @@ export const createAgency = async (req, res) => {
     );
   }
 };
+
 
 
 
@@ -378,7 +364,6 @@ export const getAgencyById = async (req, res) => {
 // Update an agency
 export const updateAgency = async (req, res) => {
   try {
-    // Extract Bearer token from the Authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({
@@ -388,34 +373,29 @@ export const updateAgency = async (req, res) => {
     }
 
     const token = authHeader.split(' ')[1];
-
-    // Decode the token to get the user ID (assuming JWT)
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
-    const user_id = decodedToken.id; // Adjust based on your token structure
-
-    if (!user_id) {
+    let user_id;
+    try {
+      const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+      user_id = decodedToken.id;
+    } catch (err) {
       return res.status(401).json({
         status: false,
-        message: 'User ID is missing',
+        message: 'Invalid or expired token',
       });
     }
 
-    // Fetch the agency by ID
-    const agency = await prisma.agencies.findUnique({
-      where: {
-        id: req.params.id,
-      },
-    });
+    if (!req.params.id) {
+      return res.status(400).json({ status: false, message: 'Agency ID is required' });
+    }
 
+    const agency = await prisma.agencies.findUnique({ where: { id: req.params.id } });
     if (!agency) {
       return res.status(404).json({
         status: false,
         message: res.__('messages.agencyNotFound'),
-        data: null,
       });
     }
 
-    // Prepare updates for the agency
     const {
       credit,
       description_en,
@@ -435,11 +415,8 @@ export const updateAgency = async (req, res) => {
       cover,
     } = req.body;
 
-    // Update the agency with the new data
     const updatedAgency = await prisma.agencies.update({
-      where: {
-        id: req.params.id,
-      },
+      where: { id: req.params.id },
       data: {
         credit,
         facebook_link,
@@ -458,23 +435,41 @@ export const updateAgency = async (req, res) => {
       },
     });
 
-    const lang = res.getLocale();
+    if (description_en || description_fr) {
+      const descriptionId = agency.description;
+      await prisma.langTranslations.update({
+        where: { id: descriptionId },
+        data: {
+          ...(description_en && { en_string: description_en }),
+          ...(description_fr && { fr_string: description_fr }),
+        },
+      });
+    }
+
+    if (service_area_en || service_area_fr) {
+      const serviceAreaId = agency.service_area;
+      await prisma.langTranslations.update({
+        where: { id: serviceAreaId },
+        data: {
+          ...(service_area_en && { en_string: service_area_en }),
+          ...(service_area_fr && { fr_string: service_area_fr }),
+        },
+      });
+    }
+
     const descriptionTranslationData = await prisma.langTranslations.findUnique({
       where: { id: agency.description },
     });
-
     const serviceAreaTranslationData = await prisma.langTranslations.findUnique({
       where: { id: agency.service_area },
     });
 
-    const description = lang === 'fr' ? descriptionTranslationData.fr_string : descriptionTranslationData.en_string;
-    const service_area = lang === 'fr' ? serviceAreaTranslationData.fr_string : serviceAreaTranslationData.en_string;
-
+    const lang = res.getLocale();
     const responseData = {
       id: updatedAgency.id,
       user_id: updatedAgency.user_id,
       credit: updatedAgency.credit,
-      description: description,
+      description: lang === 'fr' ? descriptionTranslationData?.fr_string : descriptionTranslationData?.en_string,
       facebook_link: updatedAgency.facebook_link,
       twitter_link: updatedAgency.twitter_link,
       youtube_link: updatedAgency.youtube_link,
@@ -482,37 +477,12 @@ export const updateAgency = async (req, res) => {
       linkedin_link: updatedAgency.linkedin_link,
       instagram_link: updatedAgency.instagram_link,
       whatsup_number: updatedAgency.whatsup_number,
-      service_area: service_area,
+      service_area: lang === 'fr' ? serviceAreaTranslationData?.fr_string : serviceAreaTranslationData?.en_string,
       tax_number: updatedAgency.tax_number,
       license_number: updatedAgency.license_number,
-      agency_packages: updatedAgency.agency_packages,
       picture: updatedAgency.picture,
       cover: updatedAgency.cover,
-      meta_id: updatedAgency.meta_id,
-    }
-
-    // Update translations if provided
-    if (description_en || description_fr) {
-      const descriptionId = agency.description; // Assuming agency.description holds the translation ID
-      await prisma.langTranslations.update({
-        where: { id: descriptionId },
-        data: {
-          en_string: description_en || undefined, // Only update if provided
-          fr_string: description_fr || undefined, // Only update if provided
-        },
-      });
-    }
-
-    if (service_area_en || service_area_fr) {
-      const serviceAreaId = agency.service_area; // Assuming agency.service_area holds the translation ID
-      await prisma.langTranslations.update({
-        where: { id: serviceAreaId },
-        data: {
-          en_string: service_area_en || undefined, // Only update if provided
-          fr_string: service_area_fr || undefined, // Only update if provided
-        },
-      });
-    }
+    };
 
     return res.status(200).json({
       status: true,
@@ -528,6 +498,7 @@ export const updateAgency = async (req, res) => {
     });
   }
 };
+
 
 
 
