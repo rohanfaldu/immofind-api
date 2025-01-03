@@ -81,10 +81,22 @@ export const getAllProjects = async (req, res) => {
         }
       : undefined;
       console.log(amenitiesCondition);
+
+      const cityCondition = {
+        city_id: req.body.city_id,
+      };
+
+      const districtCondition = {
+        district_id: req.body.district_id,
+      };
+
+      const stateCondition = {
+        state_id: req.body.state_id,
+      };
       
     // Get the total count of projects
     const combinedCondition = {
-      AND: [titleCondition, descriptionCondition, priceCondition, amenitiesCondition].filter(Boolean),
+      AND: [titleCondition, descriptionCondition, priceCondition, amenitiesCondition, cityCondition, districtCondition, stateCondition].filter(Boolean),
     };
     
     const totalCount = await prisma.projectDetails.count({
@@ -172,6 +184,83 @@ export const getAllProjects = async (req, res) => {
       },
     });
 
+
+
+    const isFrench = lang === 'fr'; 
+    const cities = await prisma.cities.findMany({
+      where: {
+        is_deleted: false,
+      },
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+        created_at: true,
+        lang: {
+          select: {
+            fr_string: isFrench,
+            en_string: !isFrench,
+          },
+        },
+        states: {
+          select: {
+            id: true,
+            lang: {
+              select: {
+                fr_string: isFrench,
+                en_string: !isFrench,
+              },
+            },
+            latitude: true,
+            longitude: true,
+          },
+        },
+        districts: {
+          select: {
+            id: true,
+            langTranslation: {
+              select: {
+                fr_string: isFrench,
+                en_string: !isFrench,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!cities.length) {
+      return response.error(res, res.__('messages.noCitiesFound')); // Error if no cities are found
+    }
+
+    console.log(cities);
+    // Transform the results to include only the necessary language strings
+    const transformedCities = cities.map((city) => ({
+      id: city.id,
+      city_name: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
+      latitude: city.latitude, // Include latitude
+      longitude: city.longitude, // Include longitude
+      created_at: city.created_at, 
+      state: city.states.id
+      // state: {
+      //   id: city.states.id,
+      //   state_name: isFrench && city.states.lang ? city.states.lang.fr_string : city.states.lang?.en_string, // State name in the requested language
+      //   latitude: city.states.latitude,
+      //   longitude: city.states.longitude,
+      // },
+      // districts: city.districts.map((district) => ({
+      //   id: district.id,
+      //   district_name: isFrench && district.langTranslation ? district.langTranslation.fr_string : district.langTranslation
+      //     ? (isFrench
+      //         ? district.langTranslation.fr_string
+      //         : district.langTranslation.en_string)
+      //     : null,
+      // })),
+    }));
+
+
+
+
     console.log(projects);
     // Format the response
     const simplifiedProjects = projects.map((project) => ({
@@ -235,11 +324,13 @@ export const getAllProjects = async (req, res) => {
     }));
 
 
+
     // Return the response
     return await response.success(res, res.__('messages.projectsFetchedSuccessfully'),
     { 
       projects: simplifiedProjects,
       project_meta_details: simplifiedListings,
+      cities: transformedCities,
       maxPriceSliderRange,
       totalCount,
       totalPages: Math.ceil(totalCount / validLimit),
@@ -302,6 +393,7 @@ export const getProjectsById = async (req, res) => {
         currency: {  // Include the currency relation
           select: {
             id: true,
+            name: true,
             symbol: true,  // Adjust this field name based on your Currency model definition
           },
         },
@@ -523,7 +615,7 @@ export const getProjectsById = async (req, res) => {
       neighborhood: lang === 'fr' ? project.neighborhoods?.langTranslation?.fr_string : project.neighborhoods?.langTranslation?.en_string,
       latitude: project.latitude,
       longitude: project.longitude,
-      currency: project.currency?.symbol || null,
+      currency: project.currency?.name || null,
       address: project.address,
       price: project.price,
       icon: project.icon,

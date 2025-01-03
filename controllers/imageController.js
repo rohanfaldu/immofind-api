@@ -71,7 +71,7 @@ export const uploadMultipleImage = (req, res) => {
 
 
 export const uploadSingleImage = (req, res) => {
-    upload.array('image', 5)(req, res, (err) => {
+    upload.array('image', 20)(req, res, (err) => {
         if (err) {
             console.error('Multer Error:', err);
             return response.success(res, res.__('messages.internalServerError'), err.message);

@@ -7,7 +7,7 @@ const router = express.Router();
 router.post("/create", authorize, createDistrict);
 
 // Get districts by city
-router.post("/getbycity", authorize, getDistrictsByCity);
+router.post("/getbycity", getDistrictsByCity);
 
 // Get district by ID
 router.post("/getbydistrict", authorize, getDistrictById);
