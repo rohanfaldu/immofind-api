@@ -75,27 +75,78 @@ export const getAllPropertyTypeListings = async (req, res) => {
 };
 
 
-// Get a single property type listing by ID
+
 export const getPropertyTypeListingById = async (req, res) => {
+  const { id } = req.body; // Extract ID and language from the request body
+
   try {
-    const { id } = req.params;
+    // Validate the ID
     if (!id) {
-      return response.error(res, res.__('messages.stateIdRequired'), 400);
+      return response.error(res, res.__('messages.invalidPropertyId'));
     }
 
+    // Fetch the property type listing by ID
     const listing = await prisma.propertyTypeListings.findUnique({
-      where: { id },
+      where: { id: id }, // Ensure the ID is an integer
+      include: {
+        lang_translations: true, // Include the related LangTranslations
+      },
     });
 
+    // Handle case where listing is not found
     if (!listing) {
-      return response.notFound(res, res.__('messages.listingNotFound'));
+      return response.error(res, res.__('messages.propertyTypeNotFound'));
     }
 
-    response.success(res, res.__('messages.listingFetchedSuccessfully'), listing);
+    // Prepare response with language-specific name
+    const responsePayload = {
+      id: listing.id,
+      icon: listing.icon,
+      en_name:listing.lang_translations.en_string,
+      fr_name:listing.lang_translations.fr_string,
+      type: listing.type,
+      key: listing.key,
+      category: listing.category?.toString() || null, // Serialize BigInt to string
+      created_at: listing.created_at,
+      updated_at: listing.updated_at,
+    };
+
+    return response.success(
+      res,
+      res.__('messages.listingFetchedSuccessfully'),
+      responsePayload
+    );
   } catch (error) {
-    response.serverError(res, error);
+    console.error('Error fetching property type listing by ID:', error);
+    return response.serverError(res, error);
   }
 };
+
+
+
+
+
+// Get a single property type listing by ID
+// export const getPropertyTypeListingById = async (req, res) => {
+//   try {
+//     const { id } = req.params;
+//     if (!id) {
+//       return response.error(res, res.__('messages.stateIdRequired'), 400);
+//     }
+
+//     const listing = await prisma.propertyTypeListings.findUnique({
+//       where: { id },
+//     });
+
+//     if (!listing) {
+//       return response.notFound(res, res.__('messages.listingNotFound'));
+//     }
+
+//     response.success(res, res.__('messages.listingFetchedSuccessfully'), listing);
+//   } catch (error) {
+//     response.serverError(res, error);
+//   }
+// };
 
 export const checkProjectTypeListing = async (req, res) => {
   try {
@@ -184,10 +235,10 @@ export const createPropertyTypeListing = async (req, res) => {
 
 
 export const updatePropertyTypeListing = async (req, res) => {
-  const { id, en_string, fr_string, icon, type, category, updated_by, lang, key } = req.body;
+  const { id, en_string, fr_string, icon, type, category, lang, key } = req.body;
 
   // Ensure the required fields are provided
-  if (!id || !updated_by || !lang || !key) {
+  if (!id || !lang || !key) {
     return response.error(res, res.__('messages.allFieldsRequired'), null, 400);
   }
 
@@ -213,7 +264,7 @@ export const updatePropertyTypeListing = async (req, res) => {
         data: {
           en_string: en_string || existingPropertyTypeListing.lang_translations.en_string,
           fr_string: fr_string || existingPropertyTypeListing.lang_translations.fr_string,
-          updated_by: updated_by,  // Assuming you track the updater
+          updated_by: Date.now(),  // Assuming you track the updater
         },
       });
     }
@@ -225,7 +276,7 @@ export const updatePropertyTypeListing = async (req, res) => {
         icon: icon || existingPropertyTypeListing.icon,
         type: type || existingPropertyTypeListing.type,
         category: category || existingPropertyTypeListing.category,
-        updated_by: updated_by,
+        updated_by: Date.now(),
         lang_translations: {
           connect: {
             id: updatedLangTranslation.id,  // Link to the possibly updated LangTranslation

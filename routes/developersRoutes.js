@@ -4,6 +4,7 @@ import {
   createDeveloper,
   updateDeveloper,
   deleteDeveloper,
+  getDeveloperById
 } from '../controllers/developersController.js';
 import { authorize } from '../middleware/authorization.js'; // Adjust the path as needed
 
@@ -12,6 +13,8 @@ const router = express.Router();
 // --- Developer Routes ---
 // Get all developers (protected)
 router.post('/', authorize, getAllDevelopers);
+
+router.post('/getbyid', authorize, getDeveloperById);
 
 // Create a developer (protected)
 router.post('/create', authorize, createDeveloper);

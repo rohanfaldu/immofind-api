@@ -63,6 +63,61 @@ export const getPropertyTypes = async (req, res) => {
   }
 };
 
+
+
+export const getPropertyTypesById = async (req, res) => {
+  const { id, lang } = req.body; // Extract ID and language from the request body
+
+  try {
+    // Validate the ID
+    if (!id) {
+      return response.error(res, res.__('messages.invalidPropertyId'));
+    }
+
+    // Fetch the property type by ID
+    const propertyType = await prisma.propertyTypes.findUnique({
+      where: { id: id }, // Ensure ID is an integer
+      include: {
+        lang_translations: true, // Include the related LangTranslations data
+      },
+    });
+
+    // Handle case where property type is not found
+    if (!propertyType) {
+      return response.error(res, res.__('messages.propertyTypeNotFound'));
+    }
+
+    // Fetch the user who created this property type
+    const user = propertyType.created_by
+      ? await prisma.users.findUnique({
+          where: { id: propertyType.created_by },
+          select: { user_name: true },
+        })
+      : null;
+
+    // Construct the response payload
+    const responsePayload = {
+      id: propertyType.id,
+      en_string: propertyType.lang_translations.en_string,
+      fr_string: propertyType.lang_translations.fr_string,
+      created_by: user ? user.user_name : 'Unknown User', // User name or fallback
+      createdAt: propertyType.created_at,
+    };
+
+    return response.success(
+      res,
+      res.__('messages.propertyTypeFetchedSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error('Error fetching property type by ID:', error);
+
+    return response.error(res, res.__('messages.errorFetchingPropertyType'));
+  }
+};
+
+
+
 export const createPropertyType = async (req, res) => {
   const { en_string, fr_string, created_by } = req.body;
 
