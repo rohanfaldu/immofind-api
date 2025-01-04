@@ -936,6 +936,7 @@ export const getProjectsByIdWithId = async (req, res) => {
       id: project.neighborhoods?.id || null,
       name: project.neighborhoods?.langTranslation?.[lang === 'fr' ? 'fr_string' : 'en_string'] || null,
     };
+
     
     // Step 4: Format the project data for the response
     const simplifiedProject = {
