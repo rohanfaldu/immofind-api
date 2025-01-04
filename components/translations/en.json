@@ -184,6 +184,10 @@
 		"checkDeviceTypeRole": "check Device TypeRole",
 		"agencyPackageFetchedSuccessfully": "agency Package Fetched Successfully",
 		"projectTypeFetchedSuccessfully": "project Type Fetched Successfully",
-		"neighborhoodNotFound": "messages.neighborhoodNotFound"
+		"neighborhoodNotFound": "messages.neighborhoodNotFound",
+		"neighborhoodsRetrievedSuccessfully": "messages.neighborhoodsRetrievedSuccessfully",
+		"noStatesFound": "messages.noStatesFound",
+		"noNeighborhoodsFoundForDistrict": "messages.noNeighborhoodsFoundForDistrict",
+		"stateDeletedSuccessfully": "messages.stateDeletedSuccessfully"
 	}
 }

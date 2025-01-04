@@ -862,6 +862,8 @@ export const getProjectsByIdWithId = async (req, res) => {
           ? property.neighborhoods?.langTranslation?.fr_string
           : property.neighborhoods?.langTranslation?.en_string;
 
+    
+
       const metaDetails = property.property_meta_details.map((meta) => {
         const langObj =
           lang === 'fr'
@@ -918,7 +920,23 @@ export const getProjectsByIdWithId = async (req, res) => {
       };
     });
 
-
+    const stateObj = {
+      id: project.states?.id || null,
+      name: project.states?.lang?.[lang === 'fr' ? 'fr_string' : 'en_string'] || null,
+    };
+    const citiesObj = {
+      id: project.cities?.id || null,
+      name: project.cities?.lang?.[lang === 'fr' ? 'fr_string' : 'en_string'] || null,
+    };
+    const districtsObj = {
+      id: project.districts?.id || null,
+      name: project.districts?.langTranslation?.[lang === 'fr' ? 'fr_string' : 'en_string'] || null,
+    };
+    const neighborhoodsObj = {
+      id: project.neighborhoods?.id || null,
+      name: project.neighborhoods?.langTranslation?.[lang === 'fr' ? 'fr_string' : 'en_string'] || null,
+    };
+    
     // Step 4: Format the project data for the response
     const simplifiedProject = {
       id: project.id,
@@ -928,10 +946,10 @@ export const getProjectsByIdWithId = async (req, res) => {
       title_fr: project.lang_translations_title?.fr_string,
       description_fr: project.lang_translations_description?.fr_string,
       description_en: project.lang_translations_description?.en_string,
-      state:  project.states?.id || null,
-      city: project.cities?.id || null,
-      district: project.districts?.id || null,
-      neighborhood: project.neighborhoods?.id || null,
+      state:  stateObj || null,
+      city: citiesObj || null,
+      district: districtsObj || null,
+      neighborhood: neighborhoodsObj || null,
       latitude: project.latitude,
       longitude: project.longitude,
       currency: project.currency?.id || null,
@@ -1070,6 +1088,7 @@ export const getAgentDeveloperProjects = async (req, res) => {
       video: createdProject.video,
       created_at: createdProject.created_at,
       status: createdProject.status,
+      slug: createdProject.slug,
       meta_details: createdProject.project_meta_details.map((meta) => {
         const langObj = lang === 'en'
           ? meta.project_type_listing?.lang_translations?.en_string

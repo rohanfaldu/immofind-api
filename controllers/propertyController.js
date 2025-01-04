@@ -54,6 +54,13 @@ export const getAgentDeveloperProperty = async (req, res) => {
             fr_string: true,
           },
         },
+        currency: {
+          select: {
+              name: true,
+              symbol: true,
+              status: true
+          }
+        },
         districts: {
         select: {
             langTranslation: {
@@ -152,6 +159,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
         price: property.price,
         created_at: property.created_at,
         bathRooms,
+        currency: property.currency?.name || null,
         bedRooms,
         district: property.districts?.name || null,
         meta_details: metaDetails,
