@@ -176,9 +176,7 @@ export const getAllAgencies = async (req, res) => {
     }
 
     // Fetch agencies associated with the specific user_id
-    const agencies = await prisma.agencies.findMany({
-      where: { user_id },
-    });
+    const agencies = await prisma.agencies.findMany();
 
     // If no agencies found
     if (!agencies || agencies.length === 0) {

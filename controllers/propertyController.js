@@ -158,6 +158,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
         user_image: property.users?.image || null,
         description,
         title,
+        slug: property.slug,
         transaction: propertyType,
         transaction_type: property.transaction,
         picture: property.picture,
@@ -406,7 +407,7 @@ export const getAllProperty = async (req, res) => {
         },
       },
     });
-
+    
     // Simplify and process the property details
     const simplifiedProperties = await Promise.all(
       properties.map(async (property) => {
@@ -452,30 +453,34 @@ export const getAllProperty = async (req, res) => {
           metaDetails.find((meta) => meta.key === 'rooms')?.value || "0";
         
         const propertyType = res.__('messages.propertyType') + " " + property.transaction;
-    
+        let responseProjectData = null;
         // Fetch project details asynchronously
-        const projectDetail = await prisma.projectDetails.findUnique({
-          where: { id: property.project_id }, // Ensure property_id is correct
-        });
-    
-        const descriptionData = await prisma.langTranslations.findUnique({
-          where: { id: projectDetail.description }, // Assuming description is the ID field
-        });
-    
-        const titleData = await prisma.langTranslations.findUnique({
-          where: { id: projectDetail.title }, // Assuming title is the ID field
-        });
-
-        console.log(projectDetail);
-        console.log(descriptionData); // Log description data
-        console.log(titleData); // Log title data
-
-        const responseProjectData = {
-          id: projectDetail.id,
-          icon: projectDetail.icon,
-          title: lang === 'fr' ? titleData.fr_string : titleData.en_string,
-          description: lang === 'fr' ? descriptionData.fr_string : descriptionData.en_string,
+        if(property.project_id !== null){
+          const projectDetail = await prisma.projectDetails.findUnique({
+            where: { id: property.project_id }, // Ensure property_id is correct
+          });
+      
+          const descriptionData = await prisma.langTranslations.findUnique({
+            where: { id: projectDetail.description }, // Assuming description is the ID field
+          });
+      
+          const titleData = await prisma.langTranslations.findUnique({
+            where: { id: projectDetail.title }, // Assuming title is the ID field
+          });
+  
+          console.log(projectDetail);
+          console.log(descriptionData); // Log description data
+          console.log(titleData); // Log title data
+  
+          responseProjectData = {
+            id: projectDetail.id,
+            icon: projectDetail.icon,
+            slug: projectDetail.slug,
+            title: lang === 'fr' ? titleData.fr_string : titleData.en_string,
+            description: lang === 'fr' ? descriptionData.fr_string : descriptionData.en_string,
+          }
         }
+        
     
         return {
           id: property.id,
@@ -484,6 +489,7 @@ export const getAllProperty = async (req, res) => {
           email_address: property.users?.email_address || null,
           description,
           title,
+          slug: property.slug,
           transaction: propertyType,
           transaction_type: property.transaction,
           picture: property.picture,

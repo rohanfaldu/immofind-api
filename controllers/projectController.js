@@ -508,6 +508,26 @@ export const getProjectsById = async (req, res) => {
               status: true
           }
         },
+        cities: {
+          select: {
+            lang: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        states:{
+          select: {
+            lang: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
         neighborhoods: {
           select: {
               langTranslation: {
@@ -592,6 +612,7 @@ export const getProjectsById = async (req, res) => {
         size: property.size,
         price: property.price,
         created_at: property.created_at,
+        slug: property.slug,
         bathRooms,
         bedRooms,
         district: 
@@ -602,6 +623,8 @@ export const getProjectsById = async (req, res) => {
         images: property.images_data,
         currency: property.currency?.name || null,
         neighborhood,
+        city: lang === 'fr' ? property.cities?.lang?.fr_string : property.cities?.lang?.en_string,
+        state: lang === 'fr' ? property.states?.lang?.fr_string : property.states?.lang?.en_string,
         type_details: [{
           id: property.property_types?.id || null,
           title: type,
