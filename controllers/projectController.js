@@ -13,7 +13,7 @@ const serializeBigInt = (data) => {
 };
 
 const generateUniqueSlug = async (baseSlug, attempt = 0) => {
-  const slug = attempt > 0 ? `${baseSlug}_${attempt}` : baseSlug;
+  const slug = attempt > 0 ? `${baseSlug}-${attempt}` : baseSlug;
   const existingSlug = await prisma.projectDetails.findUnique({
     where: { slug: slug || undefined }, // Handle null or undefined slugs
   });
