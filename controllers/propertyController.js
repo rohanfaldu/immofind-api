@@ -3,9 +3,18 @@ import response from '../components/utils/response.js';
 import { validate as isUUID } from "uuid";
 import commonFunction from "../components/utils/commonFunction.js";
 const prisma = new PrismaClient();
+import slugify from 'slugify';
+
 
 // Get all property type listing
-
+const generateUniqueSlug = async (baseSlug, attempt = 0) => {
+  const slug = attempt > 0 ? `${baseSlug}-${attempt}` : baseSlug;
+  const existingSlug = await prisma.projectDetails.findUnique({
+    where: { slug: slug || undefined }, // Handle null or undefined slugs
+  });
+  
+  return existingSlug ? generateUniqueSlug(baseSlug, attempt + 1) : slug;
+};
 
 export const getAgentDeveloperProperty = async (req, res) => {
   try {
@@ -599,13 +608,13 @@ export const getAllProperty = async (req, res) => {
 
 export const getPropertyById = async (req, res) => {
   try {
-    const { id } = req.body;
-    if (!id) {
+    const { property_slug } = req.body;
+    if (!property_slug) {
       return response.error(res, res.__('messages.invalidPropertyId'));
     }
 
     const property = await prisma.propertyDetails.findUnique({
-      where: { id: id },
+      where: { slug: property_slug },
       include: {
         users: {
           select: {
@@ -795,13 +804,13 @@ export const getPropertyById = async (req, res) => {
 
 export const getPropertyByIdWithId = async (req, res) => {
   try {
-    const { id } = req.body;
-    if (!id) {
+    const { property_slug } = req.body;
+    if (!property_slug) {
       return response.error(res, res.__('messages.invalidPropertyId'));
     }
 
     const property = await prisma.propertyDetails.findUnique({
-      where: { id: id },
+      where: { slug: property_slug },
       include: {
         users: {
           select: {
@@ -1056,6 +1065,9 @@ export const createProperty = async (req, res) => {
           return response.error(res, res.__('messages.propertyExists'), null, 400);
         }
         
+
+        const baseSlug = slugify(title_en, { lower: true, replacement: '_', strict: true });
+        const uniqueSlug = await generateUniqueSlug(baseSlug);
         // Create lang translations for title and description
         const titleTranslation = await prisma.langTranslations.create({
             data: {
@@ -1078,6 +1090,7 @@ export const createProperty = async (req, res) => {
                 title: titleTranslation.id, // Linking the title translation
                 description: descriptionTranslation.id, // Linking the description translation
                 price: price,
+                slug: uniqueSlug,
                 currency_id: currency_id,
                 neighborhoods_id: neighborhoods_id,
                 district_id: district_id,
