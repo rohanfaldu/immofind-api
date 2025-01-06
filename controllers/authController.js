@@ -354,74 +354,46 @@ export const checkUserExists = async (req, res) => {
 
 export const loginUser = async (req, res) => {
     try {
-        const { email_address, phone_number, code } = req.body;
-
-        if (!email_address && !phone_number) {
-            return await response.error(res, res.__('messages.fieldError'));
-        }
-
-        if (email_address && !phone_number) {
-            const checkUser = await UserModel.getUser(email_address, '');
-            if (!checkUser) {
-                return await response.error(res, res.__('messages.userNotFound'));
-            }
-
-            if (!code) {
-                return await response.error(res, res.__('messages.fieldError'));
-            }
-
-            if (checkUser.email_password_code !== parseInt(code, 10)) {
-                return await response.error(res, res.__('messages.userCheckEmailCode'));
-            }
-
-            const CreateToken = await jwtGenerator.generateToken(checkUser.id, checkUser.email_address);
-            const responseData = {
-                user_information: !!checkUser.mobile_number,
-                userProfile: checkUser,
-                token: CreateToken
-            };
-
-            // Invalidate OTP
-            await UserModel.updateUser({ id: checkUser.id }, { email_password_code: null });
-
-            return await response.success(res, res.__('messages.loginSuccessfully'), responseData);
-        } else if (!email_address && phone_number) {
-            const checkPhoneNumber = await commonFunction.checkPhonember(phone_number);
-            if (!checkPhoneNumber) {
-                return response.error(res, "Please enter a valid phone number.", null);
-            }
-
-            const checkUser = await UserModel.getUser('', phone_number);
-            if (!checkUser) {
-                return await response.error(res, res.__('messages.userNotFound'));
-            }
-
-            if (!code) {
-                return await response.error(res, res.__('messages.fieldError'));
-            }
-
-            if (checkUser.phone_password_code !== parseInt(code, 10)) {
-                return await response.error(res, res.__('messages.passwordDostMatch'));
-            }
-
-            const CreateToken = await jwtGenerator.generateToken(checkUser.id, checkUser.email_address);
-            const responseData = {
-                user_information: !!checkUser.email_address,
-                userProfile: checkUser,
-                token: CreateToken
-            };
-
-            // Invalidate OTP
-            await UserModel.updateUser({ id: checkUser.id }, { phone_password_code: null });
-
-            return await response.success(res, res.__('messages.loginSuccessfully'), responseData);
-        } else {
-            return await response.error(res, res.__('messages.userNotFound'));
-        }
+      const { email_address, code } = req.body;
+  
+      // Check if email address is provided
+      if (!email_address) {
+        return response.error(res, res.__('messages.fieldError'));
+      }
+  
+      // Check for user with the provided email address
+      const checkUser = await UserModel.getUser(email_address, '');
+      if (!checkUser) {
+        return response.error(res, res.__('messages.userNotFound'));
+      }
+  
+      // Validate the code
+      if (!code) {
+        return response.error(res, res.__('messages.fieldError'));
+      }
+  
+      if (checkUser.email_password_code !== parseInt(code, 10)) {
+        return response.error(res, res.__('messages.userCheckEmailCode'));
+      }
+  
+      // Generate token for the user
+      const CreateToken = await jwtGenerator.generateToken(checkUser.id, checkUser.email_address);
+      const responseData = {
+        user_information: !!checkUser.mobile_number,
+        userProfile: checkUser,
+        token: CreateToken,
+      };
+  
+      // Invalidate OTP
+      await UserModel.updateUser({ id: checkUser.id }, { email_password_code: null });
+  
+      return response.success(res, res.__('messages.loginSuccessfully'), responseData);
     } catch (error) {
-        return await response.serverError(res, res.__('messages.internalServerError'));
+      console.error(error); // Log the error for debugging
+      return response.serverError(res, res.__('messages.internalServerError'));
     }
-};
+  };
+  
 
 
 export const loginWithPassword = async (req, res) => {
@@ -494,9 +466,9 @@ export const loginWithPassword = async (req, res) => {
     }    
 }
 
-export const sendOtp = async (req, res) => {
-    try {
-        const { email_address, phone_number, type, user_login_type, device_type } = req.body;
+    export const sendOtp = async (req, res) => {
+        try {
+        const { email_address, type, user_login_type, device_type } = req.body;
     
         // Validate device type
         if (!device_type) {
@@ -508,82 +480,58 @@ export const sendOtp = async (req, res) => {
             return await response.error(res, res.__('messages.checkDeviceType'));
         }
     
-        let userDetails = null;
-        let verificationCode = null;
-    
-        // Email verification case
-        if (email_address !== '') {
-            const checkEmail = await UserModel.getUser(email_address, '');
-            if (checkEmail && checkEmail.roles.name !== 'user') {
-                return await response.error(res, res.__('messages.checkDeviceTypeRole'));
-            }
-    
-            verificationCode = crypto.randomInt(100000, 999999); // Generate a random 6-digit code
-            const subject = "Verify Account";
-            const text = `
-                <div style="font-family: Arial, sans-serif; color: #333;">
-                    <h2 style="color: #007BFF;">Account Verification</h2>
-                    <p>Dear User,</p>
-                    <p>Your verification code is: <strong>${verificationCode}</strong>.</p>
-                    <p>Please enter this code to verify your account.</p>
-                    <p>If you didn’t request this, please ignore this message or contact our support team immediately.</p>
-                    <br>
-                    <p>Thank you,</p>
-                    <p>The Immofind Team</p>
-                </div>`;
-    
-            // Send email
-            const emailData = await sendmail.gmail(email_address, subject, text);
-            if (!emailData) {
-                return response.error(res, res.__('messages.emailSendFailed'));
-            }
-    
-            const data = { email_password_code: verificationCode };
-            userDetails = checkEmail ? { ...checkEmail, ...data } : { email_address, email_password_code: verificationCode, roles: { connect: { name: type, status: true } }, user_login_type };
-    
-        // Phone verification case
-        } else if (phone_number !== '') {
-            const isValidPhone = await commonFunction.checkPhonember(phone_number);
-            if (!isValidPhone) {
-                return response.error(res, "Please enter a valid phone number.");
-            }
-    
-            const checkMobileNumber = await UserModel.getUser('', phone_number);
-            if (checkMobileNumber && checkMobileNumber.roles.name !== 'user') {
-                return await response.serverError(res, res.__('messages.checkDeviceTypeRole'));
-            }
-    
-            const sendOTP = await OTPGenerat.send(process.env.COUNTRY_CODE + phone_number);
-            if (!sendOTP) {
-                return response.error(res, res.__('messages.otpFailed'));
-            }
-    
-            verificationCode = parseInt(sendOTP.otp, 10);
-            const data = { phone_password_code: verificationCode };
-    
-            userDetails = checkMobileNumber 
-                ? { id: checkMobileNumber.id, ...data } 
-                : { mobile_number: BigInt(phone_number), roles: { connect: { name: 'user', status: true } }, user_login_type: "NONE", ...data };
+        // Validate email address
+        if (!email_address) {
+            return await response.error(res, res.__('messages.fieldError'));
         }
+    
+        const checkEmail = await UserModel.getUser(email_address, '');
+        if (checkEmail && checkEmail.roles.name !== 'user') {
+            return await response.error(res, res.__('messages.checkDeviceTypeRole'));
+        }
+    
+        // Generate a random 6-digit verification code
+        const verificationCode = crypto.randomInt(100000, 999999);
+        const subject = "Verify Account";
+        const text = `
+            <div style="font-family: Arial, sans-serif; color: #333;">
+            <h2 style="color: #007BFF;">Account Verification</h2>
+            <p>Dear User,</p>
+            <p>Your verification code is: <strong>${verificationCode}</strong>.</p>
+            <p>Please enter this code to verify your account.</p>
+            <p>If you didn’t request this, please ignore this message or contact our support team immediately.</p>
+            <br>
+            <p>Thank you,</p>
+            <p>The Immofind Team</p>
+            </div>`;
+    
+        // Send email
+        const emailData = await sendmail.gmail(email_address, subject, text);
+        if (!emailData) {
+            return response.error(res, res.__('messages.emailSendFailed'));
+        }
+    
+        const data = { email_password_code: verificationCode };
+        const userDetails = checkEmail
+            ? { ...checkEmail, ...data }
+            : { email_address, email_password_code: verificationCode, roles: { connect: { name: type, status: true } }, user_login_type };
     
         // Handle user creation or update
-        if (userDetails) {
-            const userOperation = userDetails.id 
-                ? await UserModel.updateUser({ id: userDetails.id }, { email_password_code: userDetails.email_password_code, phone_password_code: userDetails.phone_password_code })
-                : await UserModel.createUser(userDetails);
+        const userOperation = userDetails.id
+            ? await UserModel.updateUser({ id: userDetails.id }, { email_password_code: userDetails.email_password_code })
+            : await UserModel.createUser(userDetails);
     
-            if (!userOperation) {
-                return response.error(res, res.__('messages.userDataNotUpdated'));
-            }
-    
-            return response.success(res, res.__('messages.userSendEmail'), { code: verificationCode });
+        if (!userOperation) {
+            return response.error(res, res.__('messages.userDataNotUpdated'));
         }
     
-        return response.error(res, res.__('messages.fieldError'));
-    } catch (error) {
+        return response.success(res, res.__('messages.userSendEmail'), { code: verificationCode });
+        } catch (error) {
+        console.error(error); // Log the error for debugging
         return await response.serverError(res, res.__('messages.internalServerError'));
-    }    
-}
+        }
+    };
+  
 export const updatePassword = async (req, res) => {
     try {
         const { email_address, code, password } = req.body;

@@ -172,10 +172,11 @@ export const createPropertyType = async (req, res) => {
 
 
 export const updatePropertyType = async (req, res) => {
-  const { id, en_string, fr_string, updated_by } = req.body;
+  const { id, en_string, fr_string } = req.body;
 
+  const updated_by = req.user.id;
   // Validate required fields
-  if (!id || !updated_by) {
+  if (!id) {
     return response.error( res, res.__('messages.missingRequiredFields') );
   }
 

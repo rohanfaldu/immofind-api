@@ -15,15 +15,18 @@ export const createCity = async (req, res) => {
       return await response.error(res, res.__('messages.fieldError')); // Error when required fields are missing
     }
 
-    // Validate state_id format
-    if (!isUuid(state_id)) {
+    const isValidLatitude = typeof latitude === 'number' && latitude >= -90 && latitude <= 90;
+    const isValidLongitude = typeof longitude === 'number' && longitude >= -180 && longitude <= 180;
+
+    if (!isValidLatitude || !isValidLongitude) {
       return await response.error(
         res,
-        res.__('messages.invalidStateIdFormat') // Custom error message for invalid UUID format
+        res.__('messages.invalidCoordinates'),
+        { latitude, longitude }
       );
     }
 
-    // Check if state_id exists in the states table
+
     const stateExists = await prisma.states.findUnique({
       where: { id: state_id },
     });
@@ -46,6 +49,7 @@ export const createCity = async (req, res) => {
         },
       });
 
+      console.log(existingTranslation,"existingTranslation");
       if (existingTranslation) {
         return response.error(res, res.__('messages.translationAlreadyExists'), {
           en_string: existingTranslation.en_string,
@@ -604,7 +608,7 @@ export const updateCity = async (req, res) => {
         },
       });
 
-      if (existingTranslation) {
+      if (existingTranslation && existingTranslation.id !== city.id) {
         return response.error(res, res.__('messages.translationAlreadyExists'), {
           en_string: existingTranslation.en_string,
           fr_string: existingTranslation.fr_string,
