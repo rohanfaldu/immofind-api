@@ -183,6 +183,23 @@
 		"cityFetchedSuccessfully": "ville récupérée avec succès",
 		"checkDeviceTypeRole": "vérifier le type de périphériqueRôle",
 		"agencyPackageFetchedSuccessfully": "Package d'agence récupéré avec succès",
-		"projectTypeFetchedSuccessfully": "Type de projet récupéré avec succès"
+		"projectTypeFetchedSuccessfully": "Type de projet récupéré avec succès",
+		"neighborhoodNotFound": "Quartier non trouvé.",
+		"stateUpdatedSuccessfully": "État mis à jour avec succès.",
+		"translationAlreadyExists": "La traduction existe déjà.",
+		"stateDeletedSuccessfully": "État supprimé avec succès.",
+		"stateNotDeleteDueToCities": "L'état ne peut pas être supprimé en raison des villes existantes.",
+		"noCitiesFound": "Aucune ville trouvée.",
+		"propertyTypeFetchedSuccessfully": "Type de propriété récupéré avec succès.",
+		"noNeighborhoodsFoundForDistrict": "Aucun quartier trouvé pour ce district.",
+		"noNeighborhoodsFound": "Aucun quartier trouvé.",
+		"neighborhoodsRetrievedSuccessfully": "Quartiers récupérés avec succès.",
+		"invalidCoordinates": "Coordonnées invalides.",
+		"cityNotDeleteDueToDistricts": "La ville ne peut pas être supprimée en raison des districts existants.",
+		"districtNotDeleteDueToneighborhood": "Le district ne peut pas être supprimé en raison des quartiers existants."
+		
+
+
+
 	}
 }

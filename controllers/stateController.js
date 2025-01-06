@@ -10,8 +10,21 @@ export const createState = async (req, res) => {
   try {
     const { en_name, fr_name, latitude, longitude } = req.body;
 
+    // Validate required fields
     if (!en_name || !fr_name) {
       return await response.error(res, res.__('messages.fieldError')); // Error when required fields are missing
+    }
+
+    // Validate latitude and longitude as numbers and within valid range
+    const isValidLatitude = typeof latitude === 'number' && latitude >= -90 && latitude <= 90;
+    const isValidLongitude = typeof longitude === 'number' && longitude >= -180 && longitude <= 180;
+
+    if (!isValidLatitude || !isValidLongitude) {
+      return await response.error(
+        res,
+        res.__('messages.invalidCoordinates'),
+        { latitude, longitude }
+      ); // Error if coordinates are invalid
     }
 
     // Extract token from Authorization header
@@ -19,7 +32,7 @@ export const createState = async (req, res) => {
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return await response.error(res, res.__('messages.authTokenRequired')); // Error if token is missing
     }
-    
+
     const token = authHeader.split(' ')[1];
     let userId;
 
@@ -105,6 +118,7 @@ export const createState = async (req, res) => {
 
 
 
+
 export const updateState = async (req, res) => {
   try {
     const { state_id, en_name, fr_name, latitude, longitude } = req.body;
@@ -113,20 +127,18 @@ export const updateState = async (req, res) => {
       return response.error(res, res.__('messages.fieldError'));
     }
 
-    const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return response.error(res, res.__('messages.authTokenRequired'));
+    const isValidLatitude = typeof latitude === 'number' && latitude >= -90 && latitude <= 90;
+    const isValidLongitude = typeof longitude === 'number' && longitude >= -180 && longitude <= 180;
+
+    if (!isValidLatitude || !isValidLongitude) {
+      return await response.error(
+        res,
+        res.__('messages.invalidCoordinates'),
+        { latitude, longitude }
+      ); // Error if coordinates are invalid
     }
 
-    const token = authHeader.split(' ')[1];
-    let userId;
-
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      userId = decoded.id;
-    } catch (error) {
-      return response.error(res, res.__('messages.invalidToken'));
-    }
+    const userId = req.user.id;
 
     const state = await prisma.states.findUnique({
       where: { id: state_id, is_deleted: false },
@@ -139,22 +151,33 @@ export const updateState = async (req, res) => {
     let langTranslation;
     if (en_name || fr_name) {
       // Check if the translation already exists
-      const existingTranslation = await prisma.langTranslations.findFirst({
+      const existingTranslation = await prisma.states.findFirst({
         where: {
-          OR: [
-            { en_string: en_name },
-            { fr_string: fr_name },
-          ],
+          lang: {
+            OR: [
+              { en_string: en_name },
+              { fr_string: fr_name },
+            ],
+          },
         },
       });
 
-      if (existingTranslation) {
+      
+      if (existingTranslation && existingTranslation.id !== state.id) {
         return response.error(res, res.__('messages.stateAlreadyExists'), {
           en_string: existingTranslation.en_string,
           fr_string: existingTranslation.fr_string,
         });
       }
+
+      langTranslation = await prisma.langTranslations.create({
+        data: {
+          en_string: en_name,
+          fr_string: fr_name,
+        },
+      });
     }
+
     const updatedState = await prisma.states.update({
       where: { id: state.id },
       data: {

@@ -42,6 +42,17 @@ export const createDistrict = async (req, res) => {
       return response.error(res, res.__('messages.invalidToken'));
     }
 
+    const isValidLatitude = typeof latitude === 'number' && latitude >= -90 && latitude <= 90;
+    const isValidLongitude = typeof longitude === 'number' && longitude >= -180 && longitude <= 180;
+
+    if (!isValidLatitude || !isValidLongitude) {
+      return await response.error(
+        res,
+        res.__('messages.invalidCoordinates'),
+        { latitude, longitude }
+      ); // Error if coordinates are invalid
+    }
+
     // Check for existing translation
     const existingTranslation = await prisma.districts.findFirst({
       where: {
@@ -190,7 +201,7 @@ export const getDistrictsByCity = async (req, res) => {
 // Get District by ID
 export const getDistrictById = async (req, res) => {
   try {
-    const { id, lang } = req.body; // Extract id and lang from the request body
+    const { id } = req.body; // Extract id and lang from the request body
 
     // Validate ID
     if (!id) {
@@ -215,7 +226,6 @@ export const getDistrictById = async (req, res) => {
     //     res.__('messages.invalidCityId') // Error if city_id does not exist
     //   );
     // }
-    const isFrench = lang === 'fr'; // Determine if the language is French
 
     // Fetch district by ID with language-specific translations
     const district = await prisma.districts.findUnique({
@@ -224,8 +234,8 @@ export const getDistrictById = async (req, res) => {
         id: true,
         langTranslation: {
           select: {
-            fr_string: isFrench,
-            en_string: !isFrench,
+            fr_string: true,
+            en_string: true,
           },
         },
         city_id: true,
@@ -239,7 +249,7 @@ export const getDistrictById = async (req, res) => {
       return response.error(res, res.__('messages.districtNotFound')); // Error if not found
     }
 
-    // Transform response to include only the relevant language string
+
     const transformedDistrict = {
       id: district.id,
       en_name: district.langTranslation?.en_string || 'Unknown',
@@ -444,7 +454,7 @@ export const updateDistrict = async (req, res) => {
         },
       });
 
-      if (existingTranslation) {
+      if (existingTranslation && existingTranslation.id !== district.id) {
         return response.error(res, res.__('messages.translationAlreadyExists'), {
           en_string: existingTranslation.en_string,
           fr_string: existingTranslation.fr_string,
@@ -526,7 +536,6 @@ export const updateDistrict = async (req, res) => {
 
 
 export const deleteDistrict = async (req, res) => {
-  console.log("hhh")
   try {
     const { district_id } = req.body;
 

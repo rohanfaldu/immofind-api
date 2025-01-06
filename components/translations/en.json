@@ -184,6 +184,18 @@
 		"checkDeviceTypeRole": "check Device TypeRole",
 		"agencyPackageFetchedSuccessfully": "agency Package Fetched Successfully",
 		"projectTypeFetchedSuccessfully": "project Type Fetched Successfully",
-		"neighborhoodNotFound": "messages.neighborhoodNotFound"
+		"neighborhoodNotFound": "Neighborhood not found.",
+		"stateUpdatedSuccessfully": "State updated successfully.",
+		"translationAlreadyExists": "Translation already exists.",
+		"stateDeletedSuccessfully": "State deleted successfully.",
+		"stateNotDeleteDueToCities": "State cannot be deleted due to existing cities.",
+		"noCitiesFound": "No cities found.",
+		"propertyTypeFetchedSuccessfully": "Property type fetched successfully.",
+		"noNeighborhoodsFoundForDistrict": "No neighborhoods found for this district.",
+		"noNeighborhoodsFound": "No neighborhoods found.",
+		"neighborhoodsRetrievedSuccessfully": "Neighborhoods retrieved successfully.",
+		"invalidCoordinates": "Invalid coordinates.",
+		"cityNotDeleteDueToDistricts": "City cannot be deleted due to existing districts.",
+		"districtNotDeleteDueToneighborhood": "District cannot be deleted due to existing neighborhoods."
 	}
 }

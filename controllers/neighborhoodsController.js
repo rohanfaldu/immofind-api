@@ -44,7 +44,17 @@ export const createNeighborhood = async (req, res) => {
       return await response.error(res, res.__('messages.invalidToken'));
     }
 
-    
+    const isValidLatitude = typeof latitude === 'number' && latitude >= -90 && latitude <= 90;
+    const isValidLongitude = typeof longitude === 'number' && longitude >= -180 && longitude <= 180;
+
+    if (!isValidLatitude || !isValidLongitude) {
+      return await response.error(
+        res,
+        res.__('messages.invalidCoordinates'),
+        { latitude, longitude }
+      ); // Error if coordinates are invalid
+    }
+
     // Verify `district_id` exists in Districts table
     const districtExists = await prisma.districts.findUnique({
       where: { id: district_id },
@@ -402,7 +412,7 @@ export const updateNeighborhood = async (req, res) => {
         },
       });
 
-      if (existingTranslation) {
+      if (existingTranslation && existingTranslation.id !== id) {
         return response.error(res, res.__('messages.translationAlreadyExists'), {
           en_string: existingTranslation.en_string,
           fr_string: existingTranslation.fr_string,
