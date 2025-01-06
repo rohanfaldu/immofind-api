@@ -168,17 +168,15 @@ export const getAllAgencies = async (req, res) => {
     // Extract user_id from the authenticated user
     const { user_id } = req.body;
 
-    if (!user_id) {
-      return res.status(400).json({
-        status: false,
-        message: res.__('messages.userIdMissing'),
-      });
-    }
+    // if (!user_id) {
+    //   return res.status(400).json({
+    //     status: false,
+    //     message: res.__('messages.userIdMissing'),
+    //   });
+    // }
 
     // Fetch agencies associated with the specific user_id
-    const agencies = await prisma.agencies.findMany({
-      where: { user_id },
-    });
+    const agencies = await prisma.agencies.findMany();
 
     // If no agencies found
     if (!agencies || agencies.length === 0) {
