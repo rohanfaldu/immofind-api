@@ -196,8 +196,8 @@
 		"neighborhoodsRetrievedSuccessfully": "Quartiers récupérés avec succès.",
 		"invalidCoordinates": "Coordonnées invalides.",
 		"cityNotDeleteDueToDistricts": "La ville ne peut pas être supprimée en raison des districts existants.",
-		"districtNotDeleteDueToneighborhood": "Le district ne peut pas être supprimé en raison des quartiers existants."
-		
+		"districtNotDeleteDueToneighborhood": "Le district ne peut pas être supprimé en raison des quartiers existants.",
+		"neighborhoodInUse": "Le quartier est utilisé par une autre table."
 
 
 

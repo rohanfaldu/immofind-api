@@ -196,6 +196,7 @@
 		"neighborhoodsRetrievedSuccessfully": "Neighborhoods retrieved successfully.",
 		"invalidCoordinates": "Invalid coordinates.",
 		"cityNotDeleteDueToDistricts": "City cannot be deleted due to existing districts.",
-		"districtNotDeleteDueToneighborhood": "District cannot be deleted due to existing neighborhoods."
+		"districtNotDeleteDueToneighborhood": "District cannot be deleted due to existing neighborhoods.",
+		"neighborhoodInUse": "The neighborhood is in use by another table."
 	}
 }

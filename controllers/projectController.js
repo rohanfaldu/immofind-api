@@ -1140,7 +1140,8 @@ export const createProject = async (req, res) => {
       !latitude ||
       !longitude ||
       !user_id ||
-      !neighborhoods_id
+      !neighborhoods_id||
+      !icon
     ) {
       return response.error(res, res.__('messages.allFieldsRequired'), null, 400);
     }
