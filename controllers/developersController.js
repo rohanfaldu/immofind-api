@@ -195,7 +195,7 @@ export const getAllDevelopers = async (req, res) => {
     const developers = await prisma.developers.findMany({skip,
       take: validLimit,
       include: {
-        users: true,
+        users_data: true,
         lang_translations_description: true, 
         lang_translations_service_area: true,
       },});
@@ -247,10 +247,10 @@ export const getAllDevelopers = async (req, res) => {
         publishing_status_id: developer.publishingStatusId,
         sub_user_id: developer.sub_user_id,
         country_code: developer.country_code,
-        user_name: developer.users.user_name,
-        full_name: developer.users.full_name,
-        image: developer.users.image,
-        user_email_adress: developer.users.email_address,
+        user_name: developer.users_data.user_name,
+        full_name: developer.users_data.full_name,
+        image: developer.users_data.image,
+        user_email_adress: developer.users_data.email_address,
       }))
     );
 

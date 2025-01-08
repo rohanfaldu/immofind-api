@@ -187,7 +187,7 @@ export const getAllAgencies = async (req, res) => {
     const agencies = await prisma.agencies.findMany({skip,
       take: validLimit,
       include: {
-        users: true,
+        users_data: true,
         lang_translations_description: true, 
         lang_translations_service_area: true,
       },});
@@ -237,10 +237,10 @@ export const getAllAgencies = async (req, res) => {
         publishing_status_id: agency.publishing_status_id,
         sub_user_id: agency.sub_user_id,
         country_code: agency.country_code,
-        user_name: agency.users.user_name,
-        full_name: agency.users.full_name,
-        image: agency.users.image,
-        user_email_adress: agency.users.email_address,
+        user_name: agency.users_data.user_name,
+        full_name: agency.users_data.full_name,
+        image: agency.users_data.image,
+        user_email_adress: agency.users_data.email_address,
       }))
     );
 
