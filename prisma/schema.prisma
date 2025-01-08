@@ -8,41 +8,40 @@ datasource db {
 }
 
 model Agencies {
-  id                                                        String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id                                                   String          @unique @db.Uuid
-  credit                                                    String?         @db.VarChar
-  description                                               String?         @db.Uuid
-  facebook_link                                             String?         @db.VarChar
-  twitter_link                                              String?         @db.VarChar
-  youtube_link                                              String?         @db.VarChar
-  pinterest_link                                            String?         @db.VarChar
-  linkedin_link                                             String?         @db.VarChar
-  instagram_link                                            String?         @db.VarChar
-  whatsup_number                                            String?         @db.VarChar
-  service_area                                              String?         @db.Uuid
-  tax_number                                                String?         @db.VarChar
-  license_number                                            String?         @db.VarChar
-  agency_packages                                           String?         @db.Uuid
-  picture                                                   String?         @db.VarChar
-  cover                                                     String?         @db.VarChar
-  meta_id                                                   String?         @db.Uuid
-  is_deleted                                                Boolean         @default(false)
-  created_at                                                DateTime?       @default(now()) @db.Timestamp(6)
-  updated_at                                                DateTime?       @default(now()) @db.Timestamp(6)
-  created_by                                                String?         @db.Uuid
-  updated_by                                                String?         @db.Uuid
-  publishing_status_id                                      Int             @default(1)
-  sub_user_id                                               String?         @db.Uuid
-  country_code                                              String?         @db.VarChar
-  agency_packages_agencies_agency_packagesToagency_packages AgencyPackages? @relation("agencies_agency_packagesToagency_packages", fields: [agency_packages], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                                                        String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                                                   String            @unique @db.Uuid
+  credit                                                    String?           @db.VarChar
+  facebook_link                                             String?           @db.VarChar
+  twitter_link                                              String?           @db.VarChar
+  youtube_link                                              String?           @db.VarChar
+  pinterest_link                                            String?           @db.VarChar
+  linkedin_link                                             String?           @db.VarChar
+  instagram_link                                            String?           @db.VarChar
+  whatsup_number                                            String?           @db.VarChar
+  tax_number                                                String?           @db.VarChar
+  license_number                                            String?           @db.VarChar
+  agency_packages                                           String?           @db.Uuid
+  picture                                                   String?           @db.VarChar
+  cover                                                     String?           @db.VarChar
+  meta_id                                                   String?           @db.Uuid
+  is_deleted                                                Boolean           @default(false)
+  created_at                                                DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at                                                DateTime?         @default(now()) @db.Timestamp(6)
+  created_by                                                String?           @db.Uuid
+  updated_by                                                String?           @db.Uuid
+  publishing_status_id                                      Int               @default(1)
+  sub_user_id                                               String?           @db.Uuid
+  country_code                                              String?           @db.VarChar
+  description                                               String?           @db.Uuid
+  service_area                                              String?           @db.Uuid
+  agency_packages_agencies_agency_packagesToagency_packages AgencyPackages?   @relation("agencies_agency_packagesToagency_packages", fields: [agency_packages], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_description                             LangTranslations? @relation("agency_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  meta_data                                                 MetaData?         @relation(fields: [meta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_service_area                            LangTranslations? @relation("agency_service_area_translation", fields: [service_area], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  meta_data                                                 MetaData?       @relation(fields: [meta_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                                                     Users             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "agencies_users_fkey")
 
   @@map("agencies")
 }
-
-
 
 model AgencyPackages {
   id                                                 String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -63,12 +62,12 @@ model AgencyPackages {
 model Cities {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   state_id         String            @db.Uuid
-  lang_id          String?           @db.Uuid
   is_deleted       Boolean           @default(false)
   created_at       DateTime?         @default(now()) @db.Timestamp(6)
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
   created_by       String?           @db.Uuid
   updated_by       String?           @db.Uuid
+  lang_id          String?           @db.Uuid
   latitude         Float?
   longitude        Float?
   lang             LangTranslations? @relation(fields: [lang_id], references: [id])
@@ -83,14 +82,14 @@ model Cities {
 model Districts {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   city_id          String            @db.Uuid
-  lang_id          String?           @db.Uuid
-  latitude         Float?
-  longitude        Float?
   is_deleted       Boolean           @default(false)
   created_at       DateTime?         @default(now()) @db.Timestamp(6)
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
   created_by       String?           @db.Uuid
   updated_by       String?           @db.Uuid
+  lang_id          String?           @db.Uuid
+  latitude         Float?
+  longitude        Float?
   cities           Cities            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
   langTranslation  LangTranslations? @relation(fields: [lang_id], references: [id])
   neighborhoods    Neighborhoods[]
@@ -128,16 +127,16 @@ model LangTranslations {
   updated_at                                                       DateTime?              @default(now()) @db.Timestamp(6)
   created_by                                                       String?                @db.Uuid
   updated_by                                                       String?                @db.Uuid
+  agency_description_translation                                   Agencies[]             @relation("agency_description_translation")
+  agency_service_area_translation                                  Agencies[]             @relation("agency_service_area_translation")
   agencyPackages                                                   AgencyPackages[]
   cities                                                           Cities[]
+  developer_description_translation                                Developers[]           @relation("developer_description_translation")
+  developer_service_area_translation                               Developers[]           @relation("developer_service_area_translation")
   districts                                                        Districts[]
   neighborhoods                                                    Neighborhoods[]
   project_details_description_translation                          ProjectDetails[]       @relation("project_description_translation")
   project_details                                                  ProjectDetails[]       @relation("project_title_translation")
-  agency_description_translation                                   Agencies[]             @relation("agency_description_translation")
-  agency_service_area_translation                                  Agencies[]             @relation("agency_service_area_translation")
-  developer_description_translation                                   Developers[]           @relation("developer_description_translation")
-  developer_service_area_translation                                  Developers[]           @relation("developer_service_area_translation")
   project_type_listings                                            ProjectTypeListings[]
   property_details_property_details_descriptionTolang_translations PropertyDetails[]      @relation("property_details_descriptionTolang_translations")
   property_details_property_details_titleTolang_translations       PropertyDetails[]      @relation("property_details_titleTolang_translations")
@@ -147,7 +146,6 @@ model LangTranslations {
 
   @@map("lang_translations")
 }
-
 
 model MetaData {
   id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -167,9 +165,9 @@ model MetaData {
 model PropertyDetails {
   id                                                                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   price                                                             Int
+  state_id                                                          String?               @db.Uuid
+  city_id                                                           String?               @db.Uuid
   district_id                                                       String                @db.Uuid
-  latitude                                                          String                @db.VarChar
-  longitude                                                         String                @db.VarChar
   vr_link                                                           String?               @db.VarChar
   video                                                             String?               @db.VarChar
   status                                                            Boolean               @default(false)
@@ -179,19 +177,19 @@ model PropertyDetails {
   updated_at                                                        DateTime?             @default(now()) @db.Timestamp(6)
   created_by                                                        String?               @db.Uuid
   updated_by                                                        String?               @db.Uuid
-  type                                                              String                @db.Uuid
-  transaction                                                       String                @db.VarChar
-  description                                                       String                @db.Uuid
-  size                                                              Int?
-  city_id                                                           String?               @db.Uuid
-  state_id                                                          String?               @db.Uuid
-  title                                                             String                @db.Uuid
   project_id                                                        String?               @db.Uuid
+  size                                                              Int?
+  transaction                                                       String                @db.VarChar
+  type                                                              String                @db.Uuid
+  title                                                             String                @db.Uuid
+  description                                                       String                @db.Uuid
   picture                                                           String[]
   currency_id                                                       String?               @db.Uuid
-  slug                                                              String?               @unique
-  address                                                           String?               @db.VarChar
   neighborhoods_id                                                  String?               @db.Uuid
+  address                                                           String?               @db.VarChar
+  latitude                                                          String                @db.VarChar
+  longitude                                                         String                @db.VarChar
+  slug                                                              String?               @unique
   cities                                                            Cities?               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
   districts                                                         Districts             @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
   property_details                                                  ProjectDetails?       @relation("property_detailsToproperty_details", fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_id_foreign_key")
@@ -212,19 +210,10 @@ model ProjectDetails {
   state_id                      String               @db.Uuid
   city_id                       String               @db.Uuid
   district_id                   String               @db.Uuid
-  neighborhoods_id              String?              @db.Uuid
-  currency_id                   String?              @db.Uuid
-  latitude                      Float?               
-  longitude                     Float?               
-  address                       String?              @db.VarChar
   vr_link                       String?              @db.VarChar
-  picture                       String[]
-  icon                          String?              @db.VarChar
-  slug                          String?              @unique
   video                         String?              @db.VarChar
   status                        Boolean              @default(false)
   user_id                       String               @db.Uuid
-  price                         Int
   is_deleted                    Boolean              @default(false)
   created_at                    DateTime?            @default(now()) @db.Timestamp(6)
   updated_at                    DateTime?            @default(now()) @db.Timestamp(6)
@@ -232,14 +221,23 @@ model ProjectDetails {
   updated_by                    String?              @db.Uuid
   title                         String               @db.Uuid
   description                   String               @db.Uuid
+  neighborhoods_id              String?              @db.Uuid
+  address                       String?              @db.VarChar
+  latitude                      Float?
+  longitude                     Float?
+  currency_id                   String?              @db.Uuid
+  price                         Int
+  icon                          String?              @db.VarChar
+  picture                       String[]
+  slug                          String?              @unique
   cities                        Cities               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_project_foreign_key")
   districts                     Districts            @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_project_foreign_key")
+  currency                      Currency?            @relation("ProjectCurrency", fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_description LangTranslations     @relation("project_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
   neighborhoods                 Neighborhoods?       @relation("ProjectNeighborhoods", fields: [neighborhoods_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_title       LangTranslations     @relation("project_title_translation", fields: [title], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users                         Users                @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_user_foreign_key")
   states                        States               @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_project_foreign_key")
-  currency                      Currency?            @relation("ProjectCurrency", fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   project_meta_details          ProjectMetaDetails[]
   other_property_details        PropertyDetails[]    @relation("property_detailsToproperty_details")
 
@@ -305,10 +303,10 @@ model PropertyTypeListings {
   updated_at            DateTime?             @default(now()) @db.Timestamp(6)
   created_by            String?               @db.Uuid
   updated_by            String?               @db.Uuid
-  name                  String                @db.Uuid
-  type                  String?               @db.VarChar
-  key                   String?               @db.VarChar
   category              BigInt
+  key                   String?               @db.VarChar
+  type                  String?               @db.VarChar
+  name                  String                @db.Uuid
   status                Boolean               @default(false)
   property_meta_details PropertyMetaDetails[]
   lang_translations     LangTranslations      @relation(fields: [name], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_listing_name_foreign_key")
@@ -358,12 +356,12 @@ model Settings {
 
 model States {
   id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  lang_id          String?           @unique @db.Uuid
   is_deleted       Boolean           @default(false)
   created_at       DateTime?         @default(now()) @db.Timestamp(6)
   updated_at       DateTime?         @default(now()) @db.Timestamp(6)
   created_by       String?           @db.Uuid
   updated_by       String?           @db.Uuid
+  lang_id          String?           @unique @db.Uuid
   latitude         Float?
   longitude        Float?
   cities           Cities[]
@@ -383,8 +381,6 @@ model Users {
   email_address        String?           @unique @db.VarChar
   address              String?
   reset_password_token Int?
-  email_password_code  Int?
-  phone_password_code  Int?
   image                String?           @db.VarChar
   user_login_type      LoginType
   is_deleted           Boolean           @default(false)
@@ -392,9 +388,13 @@ model Users {
   updated_at           DateTime?         @default(now()) @db.Timestamp(6)
   role_id              String            @db.Uuid
   status               Boolean?          @default(true)
-  mobile_number        BigInt?
-  social_id            String?           @db.VarChar
   country_code         String?           @db.VarChar
+  email_password_code  Int?
+  phone_password_code  Int?
+  social_id            String?           @db.VarChar
+  mobile_number        BigInt?
+  agencies             Agencies?
+  developers           Developers?
   project_details      ProjectDetails[]
   property_details     PropertyDetails[]
   roles                Roles             @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_foreign_key")
@@ -403,53 +403,53 @@ model Users {
 }
 
 model Currency {
-  id              String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  symbol          String         @unique @db.VarChar // Currency symbol (e.g., $, €)
-  name            String         @db.VarChar // Currency name (e.g., US Dollar, Euro)
-  status          Boolean        @default(true) // Status to indicate if the currency is active
-  createdAt       DateTime       @default(now()) // Timestamp when the currency was created
-  updatedAt       DateTime       @updatedAt // Timestamp when the currency was last updated
-  propertyDetails PropertyDetails[] @relation("PropertyCurrency")
+  id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  symbol          String            @unique @db.VarChar
+  name            String            @db.VarChar
+  status          Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   projectDetails  ProjectDetails[]  @relation("ProjectCurrency")
+  propertyDetails PropertyDetails[] @relation("PropertyCurrency")
 
   @@map("currency")
 }
 
 model Developers {
-  id                                  String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  user_id                             String            @unique @db.Uuid
-  name                                String? 
-  email                               String?           @db.VarChar
-  phone                               String?           @db.VarChar
-  address                             String? 
-  password                            String?           
-  description                         String?           @db.Uuid
-  facebookLink                        String?           @db.VarChar
-  twitterLink                         String?           @db.VarChar
-  youtubeLink                         String?           @db.VarChar
-  pinterestLink                       String?           @db.VarChar
-  linkedinLink                        String?           @db.VarChar
-  instagramLink                       String?           @db.VarChar
-  whatsappPhone                       String?           @db.VarChar
-  serviceArea                         String?           @db.Uuid
-  taxNumber                           String?           @db.VarChar
-  licenseNumber                       String?           @db.VarChar
-  publishingStatusId                  BigInt?           @default(1)
-  is_deleted                          Boolean           @default(false)
-  created_at                          DateTime?         @default(now()) @db.Timestamp(6)
-  updated_at                          DateTime?         @default(now()) @db.Timestamp(6)
-  created_by                          String?           @db.Uuid
-  updated_by                          String?           @db.Uuid
-  agencyPackageId                     String?           @map("agency_package_id")
-  credit                              String?           @db.VarChar
-  country_code                        String?           @db.VarChar
-  agencyPackages                      AgencyPackages[]  @relation("DevelopersToAgencyPackages")
-  lang_translations_description       LangTranslations? @relation("developer_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
-  lang_translations_service_area      LangTranslations? @relation("developer_service_area_translation", fields: [serviceArea], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  id                             String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                        String            @unique @db.Uuid
+  name                           String?
+  email                          String?           @db.VarChar
+  phone                          String?           @db.VarChar
+  address                        String?
+  password                       String?
+  facebookLink                   String?           @db.VarChar
+  twitterLink                    String?           @db.VarChar
+  youtubeLink                    String?           @db.VarChar
+  pinterestLink                  String?           @db.VarChar
+  linkedinLink                   String?           @db.VarChar
+  instagramLink                  String?           @db.VarChar
+  whatsappPhone                  String?           @db.VarChar
+  taxNumber                      String?           @db.VarChar
+  licenseNumber                  String?           @db.VarChar
+  publishingStatusId             BigInt?           @default(1)
+  is_deleted                     Boolean           @default(false)
+  created_at                     DateTime?         @default(now()) @db.Timestamp(6)
+  updated_at                     DateTime?         @default(now()) @db.Timestamp(6)
+  created_by                     String?           @db.Uuid
+  updated_by                     String?           @db.Uuid
+  agencyPackageId                String?           @map("agency_package_id")
+  credit                         String?           @db.VarChar
+  country_code                   String?           @db.VarChar
+  description                    String?           @db.Uuid
+  serviceArea                    String?           @db.Uuid
+  lang_translations_description  LangTranslations? @relation("developer_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  lang_translations_service_area LangTranslations? @relation("developer_service_area_translation", fields: [serviceArea], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  users                          Users             @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "developers_user_fkey")
+  agencyPackages                 AgencyPackages[]  @relation("DevelopersToAgencyPackages")
 
   @@map("developers")
 }
-
 
 enum AgencyType {
   BASIC

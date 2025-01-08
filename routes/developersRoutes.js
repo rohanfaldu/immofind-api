@@ -12,9 +12,9 @@ const router = express.Router();
 
 // --- Developer Routes ---
 // Get all developers (protected)
-router.post('/', authorize, getAllDevelopers);
+router.post('/', getAllDevelopers);
 
-router.post('/getbyid', authorize, getDeveloperById);
+router.post('/getbyid', getDeveloperById);
 
 // Create a developer (protected)
 router.post('/create', authorize, createDeveloper);

@@ -177,48 +177,122 @@ export const createDeveloper = async (req, res) => {
 
 export const getAllDevelopers = async (req, res) => {
   try {
-    // Fetch all developer details
-    const developers = await prisma.developers.findMany();
+    const { page = 1, limit = 10 } = req.body;
+    const lang = res.getLocale();
 
-    // Check if no developers were found
-    if (developers.length === 0) {
-      return response.error(
-        res,
-        res.__('messages.developerNotFound'), // Message if no developers exist
-        null,
-        404
-      );
+    const validPage = Math.max(1, parseInt(page, 10)); // Default to 1 if invalid
+    const validLimit = Math.max(1, parseInt(limit, 10)); // Default to 1 if invalid
+
+    // Calculate the offset (skip) for pagination
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch total count for properties
+    
+  
+    const totalCount = await prisma.developers.count();
+
+
+    const developers = await prisma.developers.findMany({skip,
+      take: validLimit,
+      include: {
+        users: true,
+        lang_translations_description: true, 
+        lang_translations_service_area: true,
+      },});
+      console.log(developers);
+
+    // If no agencies found
+    if (!developers || developers.length === 0) {
+      return res.status(404).json({
+        status: false,
+        message: res.__('messages.noDevelopersFound'),
+      });
     }
 
-    // Convert BigInt fields to string for response (if applicable)
-    const safeDevelopers = developers.map(developer =>
+    // Helper function to fetch translations
+    const fetchTranslation = async (id) => {
+      if (!id) return null;
+      const translation = await prisma.langTranslations.findUnique({ where: { id } });
+      return lang === 'fr' ? translation?.fr_string : translation?.en_string;
+    };
+
+    // Prepare the response data
+    console.log(developers)
+
+    const developerResponseData = await Promise.all(
+      developers.map(async (developer) => ({
+        id: developer.id,
+        user_id: developer.user_id,
+        credit: developer.credit,
+        description: await fetchTranslation(developer.description),
+        facebook_link: developer.facebookLink,
+        twitter_link: developer.twitterLink,
+        youtube_link: developer.youtubeLink,
+        pinterest_link: developer.pinterestLink,
+        linkedin_link: developer.linkedinLink,
+        instagram_link: developer.instagramLink,
+        whatsup_number: developer.whatsup_number,
+        service_area: await fetchTranslation(developer.serviceArea),
+        tax_number: developer.taxNumber,
+        license_number: developer.licenseNumber,
+        agency_packages: developer.agencyPackageId,
+        picture: developer.picture,
+        cover: developer.cover,
+        meta_id: developer.meta_id,
+        is_deleted: developer.is_deleted,
+        created_at: developer.created_at,
+        updated_at: developer.updated_at,
+        created_by: developer.created_by,
+        updated_by: developer.updated_by,
+        publishing_status_id: developer.publishingStatusId,
+        sub_user_id: developer.sub_user_id,
+        country_code: developer.country_code,
+        user_name: developer.users.user_name,
+        full_name: developer.users.full_name,
+        image: developer.users.image,
+        user_email_adress: developer.users.email_address,
+      }))
+    );
+
+    const safeDevelopers = developerResponseData.map(developer =>
       JSON.parse(
         JSON.stringify(developer, (_, value) =>
           typeof value === 'bigint' ? value.toString() : value
         )
-      )
-    );
+      ));
 
-    return response.success(
-      res,
-      res.__('messages.developersRetrievedSuccessfully'),
-      { developers: safeDevelopers }
-    );
+    const responseData = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      list: safeDevelopers,
+    };
+
+    
+    // Return success response with the agencies data
+    return res.status(200).json({
+      status: true,
+      message: res.__('messages.develoersRetrievedSuccessfully'),
+      data: responseData,
+    });
   } catch (err) {
-    console.error('Error retrieving developers:', err);
-    return response.serverError(
-      res,
-      res.__('messages.internalServerError'),
-      { error: err.message, stack: err.stack } // Include error stack for debugging
-    );
+    // Handle any errors that occur during the query
+    console.error('Error fetching agencies:', err);
+    return res.status(500).json({
+      status: false,
+      message: res.__('messages.internalServerError'),
+      error: err.message,
+    });
   }
 };
+
 
 
 export const getDeveloperById = async (req, res) => {
   try {
     const { developer_id } = req.body;
-
+    const lang = res.getLocale();
     if (!developer_id) {
       return response.error(
         res,
@@ -230,35 +304,50 @@ export const getDeveloperById = async (req, res) => {
 
     const developer = await prisma.developers.findUnique({
       where: { id: developer_id },
+      include: {
+        users: true,
+        lang_translations_description: true, 
+        lang_translations_service_area: true,
+      }
     });
 
-
-    const descriptionTranslationData = await prisma.langTranslations.findUnique({
-      where: { id: developer.description },
-    });
-    
-    const serviceAreaTranslationData = await prisma.langTranslations.findUnique({
-      where: { id: developer.serviceArea },
-    });
+    const fetchTranslation = async (id) => {
+      if (!id) return null;
+      const translation = await prisma.langTranslations.findUnique({ where: { id } });
+      return lang === 'fr' ? translation?.fr_string : translation?.en_string;
+    };
 
     const responseData = {
       id: developer.id,
-      user_id: developer.user_id,
-      credit: developer.credit,
-      description_en:descriptionTranslationData.en_string,
-      description_fr:descriptionTranslationData.fr_string,
-      facebook_link: developer.facebookLink,
-      twitter_link: developer.twitterLink,
-      youtube_link: developer.youtubeLink,
-      pinterest_link: developer.pinterestLink,
-      linkedin_link: developer.linkedinLink,
-      instagram_link: developer.instagramLink,
-      whatsapp_phone: developer.whatsappPhone,
-      service_area_en: serviceAreaTranslationData.en_string,
-      service_area_fr: serviceAreaTranslationData.fr_string,
-      tax_number: developer.taxNumber,
-      country_code: developer.country_code,
-      license_number: developer.licenseNumber,
+        user_id: developer.user_id,
+        credit: developer.credit,
+        description: await fetchTranslation(developer.description),
+        facebook_link: developer.facebookLink,
+        twitter_link: developer.twitterLink,
+        youtube_link: developer.youtubeLink,
+        pinterest_link: developer.pinterestLink,
+        linkedin_link: developer.linkedinLink,
+        instagram_link: developer.instagramLink,
+        whatsup_number: developer.whatsup_number,
+        service_area: await fetchTranslation(developer.serviceArea),
+        tax_number: developer.taxNumber,
+        license_number: developer.licenseNumber,
+        agency_packages: developer.agencyPackageId,
+        picture: developer.picture,
+        cover: developer.cover,
+        meta_id: developer.meta_id,
+        is_deleted: developer.is_deleted,
+        created_at: developer.created_at,
+        updated_at: developer.updated_at,
+        created_by: developer.created_by,
+        updated_by: developer.updated_by,
+        publishing_status_id: developer.publishingStatusId,
+        sub_user_id: developer.sub_user_id,
+        country_code: developer.country_code,
+        user_name: developer.users.user_name,
+        full_name: developer.users.full_name,
+        image: developer.users.image,
+        user_email_adress: developer.users.email_address,
     };
 
 
@@ -272,7 +361,7 @@ export const getDeveloperById = async (req, res) => {
     }
 
     const safeDeveloper = JSON.parse(
-      JSON.stringify(developer, (_, value) =>
+      JSON.stringify(responseData, (_, value) =>
         typeof value === 'bigint' ? value.toString() : value
       )
     );
@@ -280,7 +369,7 @@ export const getDeveloperById = async (req, res) => {
     return response.success(
       res,
       res.__('messages.developerRetrievedSuccessfully'),
-      { developer: responseData }
+      { developer: safeDeveloper }
     );
   } catch (err) {
     console.error('Error retrieving developer:', err);

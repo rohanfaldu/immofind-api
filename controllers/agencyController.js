@@ -168,15 +168,30 @@ export const getAllAgencies = async (req, res) => {
     // Extract user_id from the authenticated user
     const { user_id } = req.body;
 
-    // if (!user_id) {
-    //   return res.status(400).json({
-    //     status: false,
-    //     message: res.__('messages.userIdMissing'),
-    //   });
-    // }
+    const { page = 1, limit = 10 } = req.body;
+    const lang = res.getLocale();
 
-    // Fetch agencies associated with the specific user_id
-    const agencies = await prisma.agencies.findMany();
+    // Ensure page and limit are valid numbers
+    const validPage = Math.max(1, parseInt(page, 10)); // Default to 1 if invalid
+    const validLimit = Math.max(1, parseInt(limit, 10)); // Default to 1 if invalid
+
+    // Calculate the offset (skip) for pagination
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch total count for properties
+    
+  
+    const totalCount = await prisma.agencies.count();
+
+
+    const agencies = await prisma.agencies.findMany({skip,
+      take: validLimit,
+      include: {
+        users: true,
+        lang_translations_description: true, 
+        lang_translations_service_area: true,
+      },});
+      console.log(agencies);
 
     // If no agencies found
     if (!agencies || agencies.length === 0) {
@@ -186,8 +201,6 @@ export const getAllAgencies = async (req, res) => {
       });
     }
 
-    const lang = res.getLocale();
-
     // Helper function to fetch translations
     const fetchTranslation = async (id) => {
       if (!id) return null;
@@ -196,7 +209,7 @@ export const getAllAgencies = async (req, res) => {
     };
 
     // Prepare the response data
-    const responseData = await Promise.all(
+    const agencyResponseData = await Promise.all(
       agencies.map(async (agency) => ({
         id: agency.id,
         user_id: agency.user_id,
@@ -224,8 +237,20 @@ export const getAllAgencies = async (req, res) => {
         publishing_status_id: agency.publishing_status_id,
         sub_user_id: agency.sub_user_id,
         country_code: agency.country_code,
+        user_name: agency.users.user_name,
+        full_name: agency.users.full_name,
+        image: agency.users.image,
+        user_email_adress: agency.users.email_address,
       }))
     );
+
+    const responseData = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      list: agencyResponseData,
+    };
 
     // Return success response with the agencies data
     return res.status(200).json({
@@ -290,6 +315,16 @@ export const getAgencyById = async (req, res) => {
       where: {
         id: req.params.id,
       },
+      include: {
+        users: true,
+        lang_translations_description: true, 
+        lang_translations_service_area: true,
+        agency_packages_agencies_agency_packagesToagency_packages: {
+          include: {
+            language: true,
+          },
+        }
+      }
     });
 
     const lang = res.getLocale();
@@ -308,8 +343,9 @@ export const getAgencyById = async (req, res) => {
       id: agency.id,
       user_id: agency.user_id,
       credit: agency.credit,
-      description_en:  descriptionTranslationData?.en_string,
-      description_fr:  descriptionTranslationData?.fr_string,
+      description:  lang === 'fr' ? agency.lang_translations_description?.fr_string : agency.lang_translations_description?.en_string,
+      description_en:  lang === 'en' ? agency.lang_translations_description?.en_string : "",
+      description_fr:  lang === 'fr' ? agency.lang_translations_service_area?.fr_string : "",
       facebook_link: agency.facebook_link,
       twitter_link: agency.twitter_link,
       youtube_link: agency.youtube_link,
@@ -317,8 +353,9 @@ export const getAgencyById = async (req, res) => {
       linkedin_link: agency.linkedin_link,
       instagram_link: agency.instagram_link,
       whatsup_number: agency.whatsup_number,
-      service_area_en: serviceAreaTranslationData?.en_string,
-      service_area_fr: serviceAreaTranslationData?.fr_string,
+      service_area:  lang === 'fr' ? agency.lang_translations_service_area?.fr_string : agency.lang_translations_service_area?.en_string,
+      service_area_fr: lang === 'fr' ? agency.lang_translations_service_area?.fr_string : "", 
+      service_area_en: lang === 'en' ? agency.lang_translations_service_area?.en_string : "", 
       tax_number: agency.tax_number,
       license_number: agency.license_number,
       agency_packages: agency.agency_packages,
@@ -333,6 +370,13 @@ export const getAgencyById = async (req, res) => {
       publishing_status_id: agency.publishing_status_id,
       sub_user_id: agency.sub_user_id,
       country_code: agency.country_code,
+      user_name: agency.users?.user_name,
+      full_name: agency.users?.full_name,
+      image: agency.users?.image,
+      user_email_adress: agency.users?.email_address,
+      user_country_code: agency.users?.country_code,
+      user_mobile_number: agency.users?.mobile_number.toString(),
+      agency_name: lang === 'fr' ? agency.agency_packages_agencies_agency_packagesToagency_packages?.language?.fr_string : agency.agency_packages_agencies_agency_packagesToagency_packages?.language?.en_string,
     };
 
 

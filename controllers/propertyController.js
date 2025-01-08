@@ -995,6 +995,7 @@ export const getPropertyByIdWithId = async (req, res) => {
       meta_details: metaDetails,
       currency: property.currency?.id || null,
       neighborhood: property.neighborhoods?.id || null,
+      project_id: property.project_id,
       type_details: {
         id: property.property_types?.id || null,
         title: lang === 'fr' ? property.property_types?.lang_translations?.fr_string : property.property_types?.lang_translations?.en_string,

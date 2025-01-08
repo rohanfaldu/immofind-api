@@ -13,10 +13,10 @@ router.post('/create', authorize, createAgency);
 router.post('/sendmail', authorize, sendMail);
 
 // Get all agencies (protected)
-router.post('/', authorize, getAllAgencies);
+router.post('/', getAllAgencies);
 
 // Get an agency by ID (protected)
-router.post('/:id', authorize, getAgencyById);
+router.post('/:id', getAgencyById);
 
 // Update an agency (protected)
 router.put('/:id', authorize, updateAgency);
