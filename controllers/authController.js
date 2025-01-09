@@ -162,6 +162,89 @@ export const updateUser = async (req, res) => {
     }
 };
 
+
+export const updateAgnecyUserDeveloper = async (req, res) => {
+    try {
+        const { user_id, user_name, full_name, email_address, image_url, phone_number, country_code } = req.body;
+
+        if (!user_name || !full_name || !user_id) {
+            return await response.error(res, res.__('messages.fieldError'));
+        }
+
+        if (email_address === '' && phone_number === '') {
+            return await response.error(res, res.__('messages.fieldError'));
+        }
+
+        const checkPhonember = await commonFunction.checkPhonember(phone_number);
+        if (!checkPhonember) {
+            return await response.error(res, res.__('messages.validPhoneNumber'));
+        }
+
+        // Check for existing user by email, excluding the current user
+        const existingUserByEmail = await prisma.users.findFirst({
+            where: {
+                email_address,
+                NOT: { id: user_id } // Exclude the current user by ID
+            }
+        });
+
+        if (existingUserByEmail) {
+            return await response.error(res, res.__('messages.emailAlreadyExists'));
+        }
+
+        // Check for unique phone number across all users except the current user
+        const existingUserByPhone = await prisma.users.findFirst({
+            where: {
+                mobile_number: BigInt(phone_number),
+                NOT: { id: user_id } // Exclude the current user by ID
+            }
+        });
+
+        if (existingUserByPhone) {
+            return await response.error(res, res.__('messages.phoneNumberAlreadyExists'));
+        }
+
+        const data = {
+            full_name: full_name ? full_name : null,
+            user_name: user_name ? user_name : null,
+            image: image_url ? image_url : null,
+            email_address: email_address,
+            mobile_number: BigInt(phone_number),
+            country_code: country_code ? country_code : null,
+        };
+
+        const where = {
+            id: user_id,
+        };
+
+        const userUpdate = await UserModel.updateUser(where, data);
+        
+        if (!userUpdate) {
+            return await response.error(res, res.__('messages.userUpdateFailed'));
+        }
+
+        const CreateToken = await jwtGenerator.generateToken(userUpdate.id, userUpdate.email_address);
+
+        const responseData = {
+            user_information: true,
+            userProfile: userUpdate,
+            token: CreateToken,
+        };
+
+        const roleName = await commonFunction.getRole(userUpdate.roles.name);
+
+        return await response.success(res, res.__(`messages.${roleName}UpdatedSuccessfully`), responseData);
+        
+    } catch (error) {
+        console.error('Error updating agency user:', error);
+        return await response.serverError(res, res.__('messages.internalServerError'));
+    }
+};
+
+
+
+
+
 export const deleteUser = async (req, res) => {
     const { id, type } = req.body;
 

@@ -195,7 +195,6 @@ export const getAllDevelopers = async (req, res) => {
     const developers = await prisma.developers.findMany({skip,
       take: validLimit,
       include: {
-        users: true,
         lang_translations_description: true, 
         lang_translations_service_area: true,
       },});
@@ -220,38 +219,45 @@ export const getAllDevelopers = async (req, res) => {
     console.log(developers)
 
     const developerResponseData = await Promise.all(
-      developers.map(async (developer) => ({
-        id: developer.id,
-        user_id: developer.user_id,
-        credit: developer.credit,
-        description: await fetchTranslation(developer.description),
-        facebook_link: developer.facebookLink,
-        twitter_link: developer.twitterLink,
-        youtube_link: developer.youtubeLink,
-        pinterest_link: developer.pinterestLink,
-        linkedin_link: developer.linkedinLink,
-        instagram_link: developer.instagramLink,
-        whatsup_number: developer.whatsup_number,
-        service_area: await fetchTranslation(developer.serviceArea),
-        tax_number: developer.taxNumber,
-        license_number: developer.licenseNumber,
-        agency_packages: developer.agencyPackageId,
-        picture: developer.picture,
-        cover: developer.cover,
-        meta_id: developer.meta_id,
-        is_deleted: developer.is_deleted,
-        created_at: developer.created_at,
-        updated_at: developer.updated_at,
-        created_by: developer.created_by,
-        updated_by: developer.updated_by,
-        publishing_status_id: developer.publishingStatusId,
-        sub_user_id: developer.sub_user_id,
-        country_code: developer.country_code,
-        user_name: developer.users.user_name,
-        full_name: developer.users.full_name,
-        image: developer.users.image,
-        user_email_adress: developer.users.email_address,
-      }))
+      developers.map(async (developer) => {
+        const userInfo = await prisma.users.findUnique({
+          where: {
+            id: developer.user_id,
+          }
+        });
+        return{
+          id: developer.id,
+          user_id: developer.user_id,
+          credit: developer.credit,
+          description: await fetchTranslation(developer.description),
+          facebook_link: developer.facebookLink,
+          twitter_link: developer.twitterLink,
+          youtube_link: developer.youtubeLink,
+          pinterest_link: developer.pinterestLink,
+          linkedin_link: developer.linkedinLink,
+          instagram_link: developer.instagramLink,
+          whatsup_number: developer.whatsup_number,
+          service_area: await fetchTranslation(developer.serviceArea),
+          tax_number: developer.taxNumber,
+          license_number: developer.licenseNumber,
+          agency_packages: developer.agencyPackageId,
+          picture: developer.picture,
+          cover: developer.cover,
+          meta_id: developer.meta_id,
+          is_deleted: developer.is_deleted,
+          created_at: developer.created_at,
+          updated_at: developer.updated_at,
+          created_by: developer.created_by,
+          updated_by: developer.updated_by,
+          publishing_status_id: developer.publishingStatusId,
+          sub_user_id: developer.sub_user_id,
+          country_code: developer.country_code,
+          user_name: userInfo?.user_name,
+          full_name: userInfo?.full_name,
+          image: userInfo?.image,
+          user_email_adress: userInfo?.email_address,
+        }
+      })
     );
 
     const safeDevelopers = developerResponseData.map(developer =>
@@ -305,7 +311,6 @@ export const getDeveloperById = async (req, res) => {
     const developer = await prisma.developers.findUnique({
       where: { id: developer_id },
       include: {
-        users: true,
         lang_translations_description: true, 
         lang_translations_service_area: true,
       }
@@ -316,6 +321,13 @@ export const getDeveloperById = async (req, res) => {
       const translation = await prisma.langTranslations.findUnique({ where: { id } });
       return lang === 'fr' ? translation?.fr_string : translation?.en_string;
     };
+
+    const userInfo = await prisma.users.findUnique({
+      where: {
+        id: developer.user_id,
+      }
+    });
+
 
     const responseData = {
       id: developer.id,
@@ -344,10 +356,10 @@ export const getDeveloperById = async (req, res) => {
         publishing_status_id: developer.publishingStatusId,
         sub_user_id: developer.sub_user_id,
         country_code: developer.country_code,
-        user_name: developer.users.user_name,
-        full_name: developer.users.full_name,
-        image: developer.users.image,
-        user_email_adress: developer.users.email_address,
+        user_name: userInfo?.user_name,
+        full_name: userInfo?.full_name,
+        image: userInfo?.image,
+        user_email_adress: userInfo?.email_address,
     };
 
 
@@ -380,6 +392,106 @@ export const getDeveloperById = async (req, res) => {
     );
   }
 };
+
+
+
+export const getByUserId = async (req, res) => {
+  try {
+    // Extract user_id from the authenticated user
+    const { user_id } = req.body;
+
+    const usersData = await prisma.users.findUnique({
+      where: {
+        id: user_id,
+      },
+    })
+
+    const developerData = await prisma.developers.findUnique({
+      where: {
+        user_id: user_id,
+      },
+      select: { // Move select here
+        id: true,
+        country_code: true,
+        whatsappPhone: true,
+        taxNumber: true,
+        licenseNumber: true,
+        credit: true,
+        lang_translations_description: {
+          select: {
+            fr_string: true,
+            en_string: true,
+          },
+        },
+        lang_translations_service_area: {
+          select: {
+            fr_string: true,
+            en_string: true,
+          },
+        },
+        agencyPackageId:true,
+        facebookLink: true,
+        twitterLink: true,
+        youtubeLink: true,
+        pinterestLink: true,
+        linkedinLink: true,
+        instagramLink: true
+      },
+    });
+
+    const user = {
+      user_name: usersData?.user_name,
+      full_name: usersData?.full_name,
+      image: usersData?.image,
+      user_email_adress: usersData?.email_address,
+       mobile_number: usersData?.mobile_number?.toString(),
+      password:usersData?.password,
+      country_code:usersData?.country_code
+    }
+
+    const developer = {
+      id:developerData?.id,
+      description_en: developerData?.lang_translations_description?.en_string,
+      description_fr: developerData?.lang_translations_description?.fr_string,
+      whatsup_number: developerData?.whatsappPhone,
+      country_code: developerData?.country_code,
+      service_area_en: developerData?.lang_translations_service_area?.en_string,
+      service_area_fr: developerData?.lang_translations_service_area?.fr_string,
+      credit: developerData?.credit,
+      tax_number: developerData?.taxNumber,
+      license_number: developerData?.licenseNumber,
+      agency_packages: developerData?.agencyPackageId,
+      facebook_link: developerData?.facebookLink,
+      twitter_link: developerData?.twitterLink,
+      youtube_link: developerData?.youtubeLink,
+      pinterest_link: developerData?.pinterestLink,
+      linkedin_link: developerData?.linkedinLink,
+      instagram_link: developerData?.instagramLink
+    }
+
+    const responseData = {
+      user,
+      developer
+    }
+
+
+    // Return success response with the agencies data
+    return res.status(200).json({
+      status: true,
+      message: res.__('messages.agenciesRetrievedSuccessfully'),
+      data: responseData,
+    });
+  } catch (err) {
+    // Handle any errors that occur during the query
+    console.error('Error fetching agencies:', err);
+    return res.status(500).json({
+      status: false,
+      message: res.__('messages.internalServerError'),
+      error: err.message,
+    });
+  }
+};
+
 
 
 
@@ -419,6 +531,7 @@ export const updateDeveloper = async (req, res) => {
       country_code,
       tax_number,
       license_number,
+      agency_packages
     } = req.body;
 
     // Check if the developer exists
@@ -446,7 +559,8 @@ export const updateDeveloper = async (req, res) => {
         taxNumber: tax_number,
         licenseNumber: license_number,
         updated_by: user_id,
-        updated_at: new Date()
+        updated_at: new Date(),
+        agencyPackageId: agency_packages
       },
     });
 
@@ -498,6 +612,7 @@ export const updateDeveloper = async (req, res) => {
       tax_number: developer.taxNumber,
       country_code: developer.country_code,
       license_number: developer.licenseNumber,
+      agency_packages: developer.agencyPackageId
     };
 
     const safeResponse = transformBigIntToString(responseData);

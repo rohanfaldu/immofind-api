@@ -248,21 +248,6 @@ CREATE TABLE "developers" (
     CONSTRAINT "developers_pkey" PRIMARY KEY ("id")
 );
 
--- CreateTable
-CREATE TABLE "_DevelopersToAgencyPackages" (
-    "A" UUID NOT NULL,
-    "B" UUID NOT NULL
-);
-
--- CreateIndex
-CREATE UNIQUE INDEX "developers_user_id_key" ON "developers"("user_id");
-
--- CreateIndex
-CREATE UNIQUE INDEX "_DevelopersToAgencyPackages_AB_unique" ON "_DevelopersToAgencyPackages"("A", "B");
-
--- CreateIndex
-CREATE INDEX "_DevelopersToAgencyPackages_B_index" ON "_DevelopersToAgencyPackages"("B");
-
 -- CreateIndex
 CREATE UNIQUE INDEX "states_lang_id_key" ON "states"("lang_id");
 
@@ -328,9 +313,3 @@ ALTER TABLE "property_type_listings" ADD CONSTRAINT "property_listing_name_forei
 
 -- AddForeignKey
 ALTER TABLE "property_types" ADD CONSTRAINT "property_type_foreign_key" FOREIGN KEY ("title") REFERENCES "lang_translations"("id") ON DELETE NO ACTION ON UPDATE NO ACTION;
-
--- AddForeignKey
-ALTER TABLE "_DevelopersToAgencyPackages" ADD CONSTRAINT "_DevelopersToAgencyPackages_A_fkey" FOREIGN KEY ("A") REFERENCES "agency_packages"("id") ON DELETE CASCADE ON UPDATE CASCADE;
-
--- AddForeignKey
-ALTER TABLE "_DevelopersToAgencyPackages" ADD CONSTRAINT "_DevelopersToAgencyPackages_B_fkey" FOREIGN KEY ("B") REFERENCES "developers"("id") ON DELETE CASCADE ON UPDATE CASCADE;
