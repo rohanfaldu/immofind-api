@@ -269,6 +269,103 @@ export const getAllAgencies = async (req, res) => {
   }
 };
 
+export const getByUserId = async (req, res) => {
+  try {
+    // Extract user_id from the authenticated user
+    const { user_id } = req.body;
+
+    const usersData = await prisma.users.findUnique({
+      where: {
+        id: user_id,
+      },
+    })
+
+    const agencyData = await prisma.agencies.findUnique({
+      where: {
+        user_id: user_id,
+      },
+      select: { // Move select here
+        id: true,
+        country_code: true,
+        whatsup_number: true,
+        tax_number: true,
+        license_number: true,
+        credit: true,
+        lang_translations_description: {
+          select: {
+            fr_string: true,
+            en_string: true,
+          },
+        },
+        lang_translations_service_area: {
+          select: {
+            fr_string: true,
+            en_string: true,
+          },
+        },
+        agency_packages:true,
+        facebook_link: true,
+        twitter_link: true,
+        youtube_link: true,
+        pinterest_link: true,
+        linkedin_link: true,
+        instagram_link: true
+      },
+    });
+
+    const user = {
+      user_name: usersData?.user_name,
+      full_name: usersData?.full_name,
+      image: usersData?.image,
+      user_email_adress: usersData?.email_address,
+       mobile_number: usersData?.mobile_number?.toString(),
+      password:usersData?.password,
+      country_code:usersData?.country_code
+    }
+
+    const agency = {
+      id:agencyData?.id,
+      description_en: agencyData?.lang_translations_description?.en_string,
+      description_fr: agencyData?.lang_translations_description?.fr_string,
+      whatsup_number: agencyData?.whatsup_number,
+      country_code: agencyData?.country_code,
+      service_area_en: agencyData?.lang_translations_service_area?.en_string,
+      service_area_fr: agencyData?.lang_translations_service_area?.fr_string,
+      credit: agencyData?.credit,
+      tax_number: agencyData?.tax_number,
+      license_number: agencyData?.license_number,
+      agency_packages: agencyData?.agency_packages,
+      facebook_link: agencyData?.facebook_link,
+      twitter_link: agencyData?.twitter_link,
+      youtube_link: agencyData?.youtube_link,
+      pinterest_link: agencyData?.pinterest_link,
+      linkedin_link: agencyData?.linkedin_link,
+      instagram_link: agencyData?.instagram_link
+    }
+
+    const responseData = {
+      user,
+      agency
+    }
+
+
+    // Return success response with the agencies data
+    return res.status(200).json({
+      status: true,
+      message: res.__('messages.agenciesRetrievedSuccessfully'),
+      data: responseData,
+    });
+  } catch (err) {
+    // Handle any errors that occur during the query
+    console.error('Error fetching agencies:', err);
+    return res.status(500).json({
+      status: false,
+      message: res.__('messages.internalServerError'),
+      error: err.message,
+    });
+  }
+};
+
 
 
 // Send password reset email
@@ -455,6 +552,8 @@ export const updateAgency = async (req, res) => {
       license_number,
       picture,
       cover,
+      country_code,
+      agency_packages
     } = req.body;
 
     const updatedAgency = await prisma.agencies.update({
@@ -474,6 +573,8 @@ export const updateAgency = async (req, res) => {
         cover,
         updated_by: user_id,
         updated_at: new Date(),
+        country_code,
+        agency_packages
       },
     });
 
@@ -524,6 +625,8 @@ export const updateAgency = async (req, res) => {
       license_number: updatedAgency.license_number,
       picture: updatedAgency.picture,
       cover: updatedAgency.cover,
+      country_code: updatedAgency.country_code,
+      agency_packages: updatedAgency.agency_packages
     };
 
     return res.status(200).json({

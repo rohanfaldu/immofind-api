@@ -4,7 +4,8 @@ import {
   createDeveloper,
   updateDeveloper,
   deleteDeveloper,
-  getDeveloperById
+  getDeveloperById,
+  getByUserId
 } from '../controllers/developersController.js';
 import { authorize } from '../middleware/authorization.js'; // Adjust the path as needed
 
@@ -19,6 +20,7 @@ router.post('/getbyid', getDeveloperById);
 // Create a developer (protected)
 router.post('/create', authorize, createDeveloper);
 
+router.post('/getbyuserid', getByUserId);
 // Update a developer (protected)
 router.put('/:id', authorize, updateDeveloper);
 

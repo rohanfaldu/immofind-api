@@ -1,5 +1,5 @@
 import express from 'express';
-import { createAgency, sendMail, getAllAgencies, getAgencyById, updateAgency, deleteAgency }
+import { createAgency, sendMail, getAllAgencies, getAgencyById, updateAgency, deleteAgency, getByUserId }
  from '../controllers/agencyController.js';
 import { authorize } from '../middleware/authorization.js'; // Adjust the path as needed
 
@@ -14,6 +14,8 @@ router.post('/sendmail', authorize, sendMail);
 
 // Get all agencies (protected)
 router.post('/', getAllAgencies);
+
+router.post('/getbyuserid', getByUserId);
 
 // Get an agency by ID (protected)
 router.post('/:id', getAgencyById);

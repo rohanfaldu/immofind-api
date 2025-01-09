@@ -383,6 +383,106 @@ export const getDeveloperById = async (req, res) => {
 
 
 
+export const getByUserId = async (req, res) => {
+  try {
+    // Extract user_id from the authenticated user
+    const { user_id } = req.body;
+
+    const usersData = await prisma.users.findUnique({
+      where: {
+        id: user_id,
+      },
+    })
+
+    const developerData = await prisma.developers.findUnique({
+      where: {
+        user_id: user_id,
+      },
+      select: { // Move select here
+        id: true,
+        country_code: true,
+        whatsappPhone: true,
+        taxNumber: true,
+        licenseNumber: true,
+        credit: true,
+        lang_translations_description: {
+          select: {
+            fr_string: true,
+            en_string: true,
+          },
+        },
+        lang_translations_service_area: {
+          select: {
+            fr_string: true,
+            en_string: true,
+          },
+        },
+        agencyPackageId:true,
+        facebookLink: true,
+        twitterLink: true,
+        youtubeLink: true,
+        pinterestLink: true,
+        linkedinLink: true,
+        instagramLink: true
+      },
+    });
+
+    const user = {
+      user_name: usersData?.user_name,
+      full_name: usersData?.full_name,
+      image: usersData?.image,
+      user_email_adress: usersData?.email_address,
+       mobile_number: usersData?.mobile_number?.toString(),
+      password:usersData?.password,
+      country_code:usersData?.country_code
+    }
+
+    const developer = {
+      id:developerData?.id,
+      description_en: developerData?.lang_translations_description?.en_string,
+      description_fr: developerData?.lang_translations_description?.fr_string,
+      whatsup_number: developerData?.whatsappPhone,
+      country_code: developerData?.country_code,
+      service_area_en: developerData?.lang_translations_service_area?.en_string,
+      service_area_fr: developerData?.lang_translations_service_area?.fr_string,
+      credit: developerData?.credit,
+      tax_number: developerData?.taxNumber,
+      license_number: developerData?.licenseNumber,
+      agency_packages: developerData?.agencyPackageId,
+      facebook_link: developerData?.facebookLink,
+      twitter_link: developerData?.twitterLink,
+      youtube_link: developerData?.youtubeLink,
+      pinterest_link: developerData?.pinterestLink,
+      linkedin_link: developerData?.linkedinLink,
+      instagram_link: developerData?.instagramLink
+    }
+
+    const responseData = {
+      user,
+      developer
+    }
+
+
+    // Return success response with the agencies data
+    return res.status(200).json({
+      status: true,
+      message: res.__('messages.agenciesRetrievedSuccessfully'),
+      data: responseData,
+    });
+  } catch (err) {
+    // Handle any errors that occur during the query
+    console.error('Error fetching agencies:', err);
+    return res.status(500).json({
+      status: false,
+      message: res.__('messages.internalServerError'),
+      error: err.message,
+    });
+  }
+};
+
+
+
+
 const transformBigIntToString = (obj) => {
   return JSON.parse(
     JSON.stringify(obj, (key, value) =>
@@ -419,6 +519,7 @@ export const updateDeveloper = async (req, res) => {
       country_code,
       tax_number,
       license_number,
+      agency_packages
     } = req.body;
 
     // Check if the developer exists
@@ -446,7 +547,8 @@ export const updateDeveloper = async (req, res) => {
         taxNumber: tax_number,
         licenseNumber: license_number,
         updated_by: user_id,
-        updated_at: new Date()
+        updated_at: new Date(),
+        agencyPackageId: agency_packages
       },
     });
 
@@ -498,6 +600,7 @@ export const updateDeveloper = async (req, res) => {
       tax_number: developer.taxNumber,
       country_code: developer.country_code,
       license_number: developer.licenseNumber,
+      agency_packages: developer.agencyPackageId
     };
 
     const safeResponse = transformBigIntToString(responseData);
