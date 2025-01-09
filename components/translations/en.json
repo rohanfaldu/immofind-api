@@ -198,6 +198,7 @@
 		"cityNotDeleteDueToDistricts": "City cannot be deleted due to existing districts.",
 		"districtNotDeleteDueToneighborhood": "District cannot be deleted due to existing neighborhoods.",
 		"neighborhoodInUse": "The neighborhood is in use by another table.",
-		"develoersRetrievedSuccessfully": "messages.develoersRetrievedSuccessfully"
+		"develoersRetrievedSuccessfully": "messages.develoersRetrievedSuccessfully",
+		"developerRetrievedSuccessfully": "messages.developerRetrievedSuccessfully"
 	}
 }
