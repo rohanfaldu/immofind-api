@@ -195,7 +195,6 @@ export const getAllDevelopers = async (req, res) => {
     const developers = await prisma.developers.findMany({skip,
       take: validLimit,
       include: {
-        users: true,
         lang_translations_description: true, 
         lang_translations_service_area: true,
       },});
@@ -220,38 +219,45 @@ export const getAllDevelopers = async (req, res) => {
     console.log(developers)
 
     const developerResponseData = await Promise.all(
-      developers.map(async (developer) => ({
-        id: developer.id,
-        user_id: developer.user_id,
-        credit: developer.credit,
-        description: await fetchTranslation(developer.description),
-        facebook_link: developer.facebookLink,
-        twitter_link: developer.twitterLink,
-        youtube_link: developer.youtubeLink,
-        pinterest_link: developer.pinterestLink,
-        linkedin_link: developer.linkedinLink,
-        instagram_link: developer.instagramLink,
-        whatsup_number: developer.whatsup_number,
-        service_area: await fetchTranslation(developer.serviceArea),
-        tax_number: developer.taxNumber,
-        license_number: developer.licenseNumber,
-        agency_packages: developer.agencyPackageId,
-        picture: developer.picture,
-        cover: developer.cover,
-        meta_id: developer.meta_id,
-        is_deleted: developer.is_deleted,
-        created_at: developer.created_at,
-        updated_at: developer.updated_at,
-        created_by: developer.created_by,
-        updated_by: developer.updated_by,
-        publishing_status_id: developer.publishingStatusId,
-        sub_user_id: developer.sub_user_id,
-        country_code: developer.country_code,
-        user_name: developer.users.user_name,
-        full_name: developer.users.full_name,
-        image: developer.users.image,
-        user_email_adress: developer.users.email_address,
-      }))
+      developers.map(async (developer) => {
+        const userInfo = await prisma.users.findUnique({
+          where: {
+            id: developer.user_id,
+          }
+        });
+        return{
+          id: developer.id,
+          user_id: developer.user_id,
+          credit: developer.credit,
+          description: await fetchTranslation(developer.description),
+          facebook_link: developer.facebookLink,
+          twitter_link: developer.twitterLink,
+          youtube_link: developer.youtubeLink,
+          pinterest_link: developer.pinterestLink,
+          linkedin_link: developer.linkedinLink,
+          instagram_link: developer.instagramLink,
+          whatsup_number: developer.whatsup_number,
+          service_area: await fetchTranslation(developer.serviceArea),
+          tax_number: developer.taxNumber,
+          license_number: developer.licenseNumber,
+          agency_packages: developer.agencyPackageId,
+          picture: developer.picture,
+          cover: developer.cover,
+          meta_id: developer.meta_id,
+          is_deleted: developer.is_deleted,
+          created_at: developer.created_at,
+          updated_at: developer.updated_at,
+          created_by: developer.created_by,
+          updated_by: developer.updated_by,
+          publishing_status_id: developer.publishingStatusId,
+          sub_user_id: developer.sub_user_id,
+          country_code: developer.country_code,
+          user_name: userInfo?.user_name,
+          full_name: userInfo?.full_name,
+          image: userInfo?.image,
+          user_email_adress: userInfo?.email_address,
+        }
+      })
     );
 
     const safeDevelopers = developerResponseData.map(developer =>
@@ -305,7 +311,6 @@ export const getDeveloperById = async (req, res) => {
     const developer = await prisma.developers.findUnique({
       where: { id: developer_id },
       include: {
-        users: true,
         lang_translations_description: true, 
         lang_translations_service_area: true,
       }
@@ -316,6 +321,13 @@ export const getDeveloperById = async (req, res) => {
       const translation = await prisma.langTranslations.findUnique({ where: { id } });
       return lang === 'fr' ? translation?.fr_string : translation?.en_string;
     };
+
+    const userInfo = await prisma.users.findUnique({
+      where: {
+        id: developer.user_id,
+      }
+    });
+
 
     const responseData = {
       id: developer.id,
@@ -344,10 +356,10 @@ export const getDeveloperById = async (req, res) => {
         publishing_status_id: developer.publishingStatusId,
         sub_user_id: developer.sub_user_id,
         country_code: developer.country_code,
-        user_name: developer.users.user_name,
-        full_name: developer.users.full_name,
-        image: developer.users.image,
-        user_email_adress: developer.users.email_address,
+        user_name: userInfo?.user_name,
+        full_name: userInfo?.full_name,
+        image: userInfo?.image,
+        user_email_adress: userInfo?.email_address,
     };
 
 

@@ -187,7 +187,6 @@ export const getAllAgencies = async (req, res) => {
     const agencies = await prisma.agencies.findMany({skip,
       take: validLimit,
       include: {
-        users: true,
         lang_translations_description: true, 
         lang_translations_service_area: true,
       },});
@@ -210,38 +209,47 @@ export const getAllAgencies = async (req, res) => {
 
     // Prepare the response data
     const agencyResponseData = await Promise.all(
-      agencies.map(async (agency) => ({
-        id: agency.id,
-        user_id: agency.user_id,
-        credit: agency.credit,
-        description: await fetchTranslation(agency.description),
-        facebook_link: agency.facebook_link,
-        twitter_link: agency.twitter_link,
-        youtube_link: agency.youtube_link,
-        pinterest_link: agency.pinterest_link,
-        linkedin_link: agency.linkedin_link,
-        instagram_link: agency.instagram_link,
-        whatsup_number: agency.whatsup_number,
-        service_area: await fetchTranslation(agency.service_area),
-        tax_number: agency.tax_number,
-        license_number: agency.license_number,
-        agency_packages: agency.agency_packages,
-        picture: agency.picture,
-        cover: agency.cover,
-        meta_id: agency.meta_id,
-        is_deleted: agency.is_deleted,
-        created_at: agency.created_at,
-        updated_at: agency.updated_at,
-        created_by: agency.created_by,
-        updated_by: agency.updated_by,
-        publishing_status_id: agency.publishing_status_id,
-        sub_user_id: agency.sub_user_id,
-        country_code: agency.country_code,
-        user_name: agency.users.user_name,
-        full_name: agency.users.full_name,
-        image: agency.users.image,
-        user_email_adress: agency.users.email_address,
-      }))
+      agencies.map(async (agency) => {
+        const userInfo = await prisma.users.findUnique({
+          where: {
+            id: agency.user_id,
+          }
+        });
+
+        return{
+          id: agency.id,
+          user_id: agency.user_id,
+          credit: agency.credit,
+          description: await fetchTranslation(agency.description),
+          facebook_link: agency.facebook_link,
+          twitter_link: agency.twitter_link,
+          youtube_link: agency.youtube_link,
+          pinterest_link: agency.pinterest_link,
+          linkedin_link: agency.linkedin_link,
+          instagram_link: agency.instagram_link,
+          whatsup_number: agency.whatsup_number,
+          service_area: await fetchTranslation(agency.service_area),
+          tax_number: agency.tax_number,
+          license_number: agency.license_number,
+          agency_packages: agency.agency_packages,
+          picture: agency.picture,
+          cover: agency.cover,
+          meta_id: agency.meta_id,
+          is_deleted: agency.is_deleted,
+          created_at: agency.created_at,
+          updated_at: agency.updated_at,
+          created_by: agency.created_by,
+          updated_by: agency.updated_by,
+          publishing_status_id: agency.publishing_status_id,
+          sub_user_id: agency.sub_user_id,
+          country_code: agency.country_code,
+          user_name: userInfo?.user_name,
+          full_name: userInfo?.full_name,
+          image: userInfo?.image,
+          user_email_adress: userInfo?.email_address,
+        }
+        
+      })
     );
 
     const responseData = {
@@ -413,7 +421,6 @@ export const getAgencyById = async (req, res) => {
         id: req.params.id,
       },
       include: {
-        users: true,
         lang_translations_description: true, 
         lang_translations_service_area: true,
         agency_packages_agencies_agency_packagesToagency_packages: {
@@ -425,18 +432,16 @@ export const getAgencyById = async (req, res) => {
     });
 
     const lang = res.getLocale();
-    
-    const descriptionTranslationData = await prisma.langTranslations.findUnique({
-      where: { id: agency.description },
-    });
-    
-    const serviceAreaTranslationData = await prisma.langTranslations.findUnique({
-      where: { id: agency.service_area },
-    });
 
 
+    const userInfo = await prisma.users.findUnique({
+      where: {
+        id: agency.user_id,
+      }
+    });
 
     const responseData = {
+      
       id: agency.id,
       user_id: agency.user_id,
       credit: agency.credit,
@@ -467,12 +472,12 @@ export const getAgencyById = async (req, res) => {
       publishing_status_id: agency.publishing_status_id,
       sub_user_id: agency.sub_user_id,
       country_code: agency.country_code,
-      user_name: agency.users?.user_name,
-      full_name: agency.users?.full_name,
-      image: agency.users?.image,
-      user_email_adress: agency.users?.email_address,
-      user_country_code: agency.users?.country_code,
-      user_mobile_number: agency.users?.mobile_number.toString(),
+      user_name: userInfo?.user_name,
+      full_name: userInfo?.full_name,
+      image: userInfo?.image,
+      user_email_adress: userInfo?.email_address,
+      user_country_code: userInfo?.country_code,
+      user_mobile_number: userInfo?.mobile_number.toString(),
       agency_name: lang === 'fr' ? agency.agency_packages_agencies_agency_packagesToagency_packages?.language?.fr_string : agency.agency_packages_agencies_agency_packagesToagency_packages?.language?.en_string,
     };
 
