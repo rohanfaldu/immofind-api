@@ -1669,11 +1669,17 @@ export const deleteProject = async (req, res) => {
       where: { project_detail_id: id },
     });
 
+    await prisma.propertyDetails.deleteMany({
+      where: { project_id: id },
+    });
+
+    
     // Step 3: Delete the project
     await prisma.projectDetails.delete({
       where: { id: id },
     });
 
+    
     // Step 4: Return success response
     return await response.success(res, res.__('messages.projectDeletedSuccessfully'), null);
   } catch (error) {
