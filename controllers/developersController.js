@@ -41,12 +41,13 @@ export const createDeveloper = async (req, res) => {
     pinterest_link,
     linkedin_link,
     instagram_link,
-    whatsappPhone,
     service_area_en,
     service_area_fr,
     tax_number,
     country_code,
     license_number,
+    whatsup_number,
+    agency_packages
   } = req.body;
 
   try {
@@ -97,12 +98,15 @@ export const createDeveloper = async (req, res) => {
       pinterestLink: pinterest_link,
       linkedinLink: linkedin_link,
       instagramLink: instagram_link,
-      whatsappPhone,
+      whatsappPhone: whatsup_number,
+      agencyPackageId: agency_packages,
       serviceArea: serviceAreaTranslation.id,
       taxNumber: tax_number,
       country_code,
       licenseNumber: license_number,
       created_by: createdUserId, // Use createdUserId instead of userId
+
+      
     };
 
     // Create developer profile
@@ -145,6 +149,7 @@ export const createDeveloper = async (req, res) => {
       tax_number: developer.taxNumber,
       country_code: developer.country_code,
       license_number: developer.licenseNumber,
+      agency_packages: developer.agencyPackageId
     };
 
     // Convert BigInt fields to string for response
