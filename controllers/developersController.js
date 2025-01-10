@@ -935,41 +935,73 @@ export const updateDeveloper = async (req, res) => {
 
 
 
-// Delete a developer
+// // Delete a developer
+// export const deleteDeveloper = async (req, res) => {
+//     const { id } = req.params; // Assuming the developer ID is passed in the request params
+
+//     try {
+//         // Step 1: Fetch the developer by ID
+//         const developer = await prisma.developers.findUnique({
+//             where: { id: id },  // Look up the developer by the ID
+//         });
+
+//         if (!developer) {
+//             // Developer not found
+//             return response.error(res, res.__('messages.developerNotFound'), null);
+//         }
+
+//         // Step 2: Delete the developer using the `user_id`
+//         const deletedDeveloper = await prisma.developers.delete({
+//             where: { user_id: developer.user_id },  // Delete using the developer's `user_id`
+//         });
+
+//         // Step 3: Delete the associated user from the `users` table
+//         const deletedUser = await prisma.users.delete({
+//             where: { id: developer.user_id },  // Assuming `user_id` maps to the `users` table
+//         });
+
+//         // Send a success response with the details of deleted developer and user
+//         return response.success(
+//             res,
+//             res.__('messages.developerAndUserDeletedSuccessfully')
+//         );
+//     } catch (err) {
+//         // Log the error for debugging
+//         console.error('Error deleting developer and user:', err);
+
+//         // Return a server error response
+//         return response.serverError(res, res.__('messages.internalServerError'), err.message);
+//     }
+// };
+
+
+
 export const deleteDeveloper = async (req, res) => {
-    const { id } = req.params; // Assuming the developer ID is passed in the request params
+  try {
+    const { id: user_id } = req.params;
 
-    try {
-        // Step 1: Fetch the developer by ID
-        const developer = await prisma.developers.findUnique({
-            where: { id: id },  // Look up the developer by the ID
-        });
-
-        if (!developer) {
-            // Developer not found
-            return response.error(res, res.__('messages.developerNotFound'), null);
-        }
-
-        // Step 2: Delete the developer using the `user_id`
-        const deletedDeveloper = await prisma.developers.delete({
-            where: { user_id: developer.user_id },  // Delete using the developer's `user_id`
-        });
-
-        // Step 3: Delete the associated user from the `users` table
-        const deletedUser = await prisma.users.delete({
-            where: { id: developer.user_id },  // Assuming `user_id` maps to the `users` table
-        });
-
-        // Send a success response with the details of deleted developer and user
-        return response.success(
-            res,
-            res.__('messages.developerAndUserDeletedSuccessfully')
-        );
-    } catch (err) {
-        // Log the error for debugging
-        console.error('Error deleting developer and user:', err);
-
-        // Return a server error response
-        return response.serverError(res, res.__('messages.internalServerError'), err.message);
+    if (!user_id) {
+      return response.error(res, res.__('messages.invalidUserId'), null);
     }
+
+    const existingDeveloper = await prisma.developers.findUnique({
+      where: { user_id },
+    });
+
+    if (!existingDeveloper) {
+      return response.error(res, res.__('messages.developerNotFound'), null);
+    }
+
+    // Delete agency
+    const deletedDeveloper = await prisma.developers.delete({
+      where: { user_id },
+    });
+
+    if (deletedDeveloper) {
+      return response.success(res, res.__('messages.developerDeletedSuccessfully'), null);
+    }
+  } catch (err) {
+    console.error('Error deleting developer:', err);
+    return response.serverError(res, res.__('messages.internalServerError'), err.message);
+  }
 };
