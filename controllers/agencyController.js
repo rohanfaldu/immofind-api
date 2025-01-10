@@ -856,6 +856,11 @@ export const deleteAgency = async (req, res) => {
       where: { user_id },
     });
 
+    await prisma.propertyDetails.deleteMany({
+      where: { user_id },
+    });
+
+
     if (!existingAgency) {
       return response.error(res, res.__('messages.agencyNotFound'), null);
     }

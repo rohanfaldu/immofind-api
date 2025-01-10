@@ -997,6 +997,14 @@ export const deleteDeveloper = async (req, res) => {
       where: { user_id },
     });
 
+    await prisma.propertyDetails.deleteMany({
+      where: { user_id },
+    });
+
+    await prisma.projectDetails.deleteMany({
+      where: { user_id },
+    });
+
     if (deletedDeveloper) {
       return response.success(res, res.__('messages.developerDeletedSuccessfully'), null);
     }
