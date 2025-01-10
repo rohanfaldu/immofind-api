@@ -839,19 +839,22 @@ export const updateAgency = async (req, res) => {
 // Delete an agency
 export const deleteAgency = async (req, res) => {
   try {
-    const { id } = req.params;
+    const { id: user_id } = req.params; // Extract `id` from `req.params` and rename it to `user_id`
 
-    // Validate UUID format
-    const isValidUUID = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(id);
-    if (!isValidUUID) {
-      return response.error(res, res.__('messages.invalidUUIDFormat'), null);
+    console.log(req.params); // Log `req.params` for debugging
+
+    // Validate `user_id`
+    if (!user_id) {
+      return response.error(res, res.__('messages.invalidUserId'), null);
     }
-    // Check if agency exists
-    const existingAgency = await prisma.agencies.findUnique({
-      where: { id },
-    });
 
-// console.log(existingAgency);
+    // Log received `user_id`
+    console.log('Received user_id:', user_id);
+
+    // Check if the agency exists
+    const existingAgency = await prisma.agencies.findUnique({
+      where: { user_id },
+    });
 
     if (!existingAgency) {
       return response.error(res, res.__('messages.agencyNotFound'), null);
@@ -859,15 +862,15 @@ export const deleteAgency = async (req, res) => {
 
     // Delete agency
     const deletedAgency = await prisma.agencies.delete({
-      where: { id },
+      where: { user_id },
     });
 
     if (deletedAgency) {
       return response.success(res, res.__('messages.agencyDeletedSuccessfully'), null);
     }
-
   } catch (err) {
     console.error('Error deleting agency:', err);
     return response.serverError(res, res.__('messages.internalServerError'), err.message);
   }
 };
+
