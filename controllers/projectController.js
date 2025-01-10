@@ -1664,20 +1664,34 @@ export const deleteProject = async (req, res) => {
       return await response.error(res, res.__('messages.projectNotFound'));
     }
 
-    // Step 2: Delete related project_meta_details
-    await prisma.projectMetaDetails.deleteMany({
-      where: { project_detail_id: id },
+
+
+    const findMeta = await prisma.propertyDetails.findFirst({
+      where: { id },
     });
 
-    await prisma.propertyDetails.deleteMany({
-      where: { project_id: id },
-    });
-
+    await prisma.$transaction([
+      // Delete related project meta details
+      prisma.projectMetaDetails.deleteMany({
+        where: { project_detail_id: findMeta?.project_id },
+      }),
+      
+      // Delete property meta details if applicable
+      prisma.propertyMetaDetails.deleteMany({
+        where: { property_detail_id: findMeta?.id },
+      }),
     
-    // Step 3: Delete the project
-    await prisma.projectDetails.delete({
-      where: { id: id },
-    });
+      // Delete property details
+      prisma.propertyDetails.deleteMany({
+        where: { project_id: id },
+      }),
+    
+      // Delete project details
+      prisma.projectDetails.deleteMany({
+        where: { id },
+      }),
+  
+    ]);
 
     
     // Step 4: Return success response

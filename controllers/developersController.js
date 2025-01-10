@@ -992,22 +992,43 @@ export const deleteDeveloper = async (req, res) => {
       return response.error(res, res.__('messages.developerNotFound'), null);
     }
 
-    // Delete agency
-    const deletedDeveloper = await prisma.developers.delete({
-      where: { user_id },
-    }); 
-
-    await prisma.propertyDetails.deleteMany({
+    // Fetch property details (adjusted for `findFirst`)
+    const findMeta = await prisma.propertyDetails.findFirst({
       where: { user_id },
     });
 
-    await prisma.projectDetails.deleteMany({
-      where: { user_id },
-    });
+    console.log(findMeta,"findMeta")
 
-    if (deletedDeveloper) {
-      return response.success(res, res.__('messages.developerDeletedSuccessfully'), null);
-    }
+    // Perform all deletions in a transaction
+    await prisma.$transaction([
+      // Delete related project meta details
+      prisma.projectMetaDetails.deleteMany({
+        where: { project_detail_id: findMeta?.project_id },
+      }),
+      
+      // Delete property meta details if applicable
+      prisma.propertyMetaDetails.deleteMany({
+        where: { property_detail_id: findMeta?.id },
+      }),
+    
+      // Delete property details
+      prisma.propertyDetails.deleteMany({
+        where: { user_id },
+      }),
+    
+      // Delete project details
+      prisma.projectDetails.deleteMany({
+        where: { user_id },
+      }),
+    
+      // Finally, delete the developer
+      prisma.developers.delete({
+        where: { user_id },
+      }),
+    ]);
+    
+
+    return response.success(res, res.__('messages.developerDeletedSuccessfully'), null);
   } catch (err) {
     console.error('Error deleting developer:', err);
     return response.serverError(res, res.__('messages.internalServerError'), err.message);

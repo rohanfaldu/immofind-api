@@ -839,30 +839,49 @@ export const updateAgency = async (req, res) => {
 // Delete an agency
 export const deleteAgency = async (req, res) => {
   try {
-    const { id: user_id } = req.params; // Extract `id` from `req.params` and rename it to `user_id`
+    const { id: user_id } = req.params; // Extract `id` from `req.params`
 
-    console.log(req.params); // Log `req.params` for debugging
+    console.log('Request params:', req.params); // Debugging
 
     // Validate `user_id`
     if (!user_id) {
       return response.error(res, res.__('messages.invalidUserId'), null);
     }
 
-    // Log received `user_id`
-    console.log('Received user_id:', user_id);
+    console.log('Validated user_id:', user_id);
 
     // Check if the agency exists
     const existingAgency = await prisma.agencies.findUnique({
       where: { user_id },
     });
 
-    await prisma.propertyDetails.deleteMany({
+    if (!existingAgency) {
+      return response.error(res, res.__('messages.agencyNotFound'), null);
+    }
+
+    console.log('Existing agency found:', existingAgency);
+
+    // Check for property details and related metadata
+    const findMeta = await prisma.propertyDetails.findFirst({
       where: { user_id },
     });
 
+    if (findMeta) {
+      console.log('Found property details:', findMeta);
 
-    if (!existingAgency) {
-      return response.error(res, res.__('messages.agencyNotFound'), null);
+      // Delete related metadata
+      await prisma.propertyMetaDetails.deleteMany({
+        where: { property_detail_id: findMeta.id },
+      });
+      console.log('Deleted related property meta details.');
+
+      // Delete property details
+      await prisma.propertyDetails.deleteMany({
+        where: { user_id },
+      });
+      console.log('Deleted property details.');
+    } else {
+      console.log('No property details found for user_id:', user_id);
     }
 
     // Delete agency
@@ -871,11 +890,15 @@ export const deleteAgency = async (req, res) => {
     });
 
     if (deletedAgency) {
+      console.log('Agency deleted successfully:', deletedAgency);
       return response.success(res, res.__('messages.agencyDeletedSuccessfully'), null);
     }
+
+    return response.error(res, res.__('messages.agencyDeletionFailed'), null);
   } catch (err) {
     console.error('Error deleting agency:', err);
     return response.serverError(res, res.__('messages.internalServerError'), err.message);
   }
 };
+
 
