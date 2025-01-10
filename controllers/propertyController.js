@@ -32,7 +32,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
     const skip = (validPage - 1) * validLimit;
 
     // Fetch total count for properties
-    
+    console.log('Login User:- ', req.user.id)
     const whereCondition = (userInfo !== 'admin')?{ user_id: req.user.id }:{};
     const totalCount = await prisma.propertyDetails.count({where: whereCondition});
     console.log(totalCount)
