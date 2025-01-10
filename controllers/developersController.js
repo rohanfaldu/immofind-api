@@ -995,7 +995,7 @@ export const deleteDeveloper = async (req, res) => {
     // Delete agency
     const deletedDeveloper = await prisma.developers.delete({
       where: { user_id },
-    });
+    }); 
 
     await prisma.propertyDetails.deleteMany({
       where: { user_id },
