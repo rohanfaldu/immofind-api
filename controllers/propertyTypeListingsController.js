@@ -151,7 +151,6 @@ export const getPropertyTypeListingById = async (req, res) => {
 export const checkProjectTypeListing = async (req, res) => {
   try {
     const { key } = req.body;
-    console.log(key);
     if (!key) {
       return response.error(res, 'Key is required', 400);
     }

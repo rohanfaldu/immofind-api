@@ -89,7 +89,6 @@ export const getAllProjects = async (req, res) => {
         },
         }
       : undefined;
-      console.log(amenitiesCondition);
 
       const cityCondition = {
         city_id: req.body.city_id,
@@ -242,7 +241,6 @@ export const getAllProjects = async (req, res) => {
       return response.error(res, res.__('messages.noCitiesFound')); // Error if no cities are found
     }
 
-    console.log(cities);
     // Transform the results to include only the necessary language strings
     const transformedCities = cities.map((city) => ({
       id: city.id,
@@ -268,9 +266,6 @@ export const getAllProjects = async (req, res) => {
     }));
 
 
-
-
-    console.log(projects);
     // Format the response
     const simplifiedProjects = projects.map((project) => ({
       id: project.id,
@@ -555,7 +550,6 @@ export const getProjectsById = async (req, res) => {
 
     // Simplify and process the property details
     const simplifiedProperties = properties.map((property) => {
-      console.log(property);
       const description =
         lang === 'fr'
           ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
@@ -867,7 +861,6 @@ export const getProjectsByIdWithId = async (req, res) => {
 
     // Simplify and process the property details
     const simplifiedProperties = properties.map((property) => {
-      console.log(property);
       const description =
         lang === 'fr'
           ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
@@ -1198,7 +1191,6 @@ export const createProject = async (req, res) => {
         },
       },
     })
-    console.log(user);
     if(!user){
       return response.error(res, res.__('messages.onlyDeveloperCreat'), null, 400);
     }
@@ -1653,7 +1645,6 @@ export const updateProject = async (req, res) => {
 
 // Delete a project (soft delete)
 export const deleteProject = async (req, res) => {
-  console.log(req.body);
   try {
     // Extracting the project_id from the request body
     //const { project_id } = req.body;

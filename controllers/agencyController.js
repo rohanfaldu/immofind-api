@@ -190,7 +190,6 @@ export const getAllAgencies = async (req, res) => {
         lang_translations_description: true, 
         lang_translations_service_area: true,
       },});
-      console.log(agencies);
 
     // If no agencies found
     if (!agencies || agencies.length === 0) {
@@ -418,7 +417,7 @@ export const getAgencyById = async (req, res) => {
     // Fetch the agency by its ID using Prisma
     const agency = await prisma.agencies.findUnique({
       where: {
-        id: req.params.id,
+        user_id: req.params.id,
       },
       include: {
         lang_translations_description: true, 
@@ -548,7 +547,6 @@ export const getAgencyById = async (req, res) => {
 
     // Simplify and process the property details
     const simplifiedProperties = properties.map((property) => {
-      console.log(property);
       const description =
         lang === 'fr'
           ? property.lang_translations_property_details_descriptionTolang_translations.fr_string

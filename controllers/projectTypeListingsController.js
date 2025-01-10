@@ -65,7 +65,6 @@ export const createProjectTypeListing = async (req, res) => {
         },
       });
 
-      console.log(langTranslation);
       const lang = res.getLocale();
 
       // Step 2: Insert the ProjectTypeListing and link it to the LangTranslation by ID
@@ -402,7 +401,6 @@ export const updateProjectTypeListing = async (req, res) => {
 export const checkProjectTypeListing = async (req, res) => {
   try {
     const { key } = req.body;
-    console.log(key);
     if (!key) {
       return response.error(res, 'Key is required', 400);
     }

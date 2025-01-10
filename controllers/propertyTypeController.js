@@ -138,8 +138,7 @@ export const createPropertyType = async (req, res) => {
         }
       } 
     });
-    console.log('checkPropertTypeExits');
-    console.log(checkPropertTypeExits);
+
     if(!checkPropertTypeExits){
       // Insert the translations into LangTranslations
       const langTranslation = await prisma.langTranslations.create({

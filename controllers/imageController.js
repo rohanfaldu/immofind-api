@@ -51,8 +51,7 @@ export const uploadMultipleImage = (req, res) => {
             console.error('Multer Error:', err);
             return res.status(500).json({ error: err.message });
         }
-    
-        console.log('Files received:', req.files); // Log the files array
+
     
         if (!req.files || req.files.length === 0) {
             return res.status(400).json({ error: 'No files received' });

@@ -32,10 +32,8 @@ export const getAgentDeveloperProperty = async (req, res) => {
     const skip = (validPage - 1) * validLimit;
 
     // Fetch total count for properties
-    console.log('Login User:- ', req.user.id)
     const whereCondition = (userInfo !== 'admin')?{ user_id: req.user.id }:{};
     const totalCount = await prisma.propertyDetails.count({where: whereCondition});
-    console.log(totalCount)
     // Fetch paginated property details
     const properties = await prisma.propertyDetails.findMany({
       skip,
@@ -286,7 +284,6 @@ export const getAllProperty = async (req, res) => {
 
     
 
-      console.log(amenitiesCondition);
       
     // Get the total count of projects
     const combinedCondition = {
@@ -467,10 +464,6 @@ export const getAllProperty = async (req, res) => {
           const titleData = await prisma.langTranslations.findUnique({
             where: { id: projectDetail.title }, // Assuming title is the ID field
           });
-  
-          console.log(projectDetail);
-          console.log(descriptionData); // Log description data
-          console.log(titleData); // Log title data
   
           responseProjectData = {
             id: projectDetail.id,
@@ -938,8 +931,6 @@ export const getPropertyByIdWithId = async (req, res) => {
       return response.error(res, res.__('messages.propertyNotFound'));
     }
 
-    console.log(property)
-
     // Prepare response based on language
     const lang = res.getLocale();
     const description =
@@ -971,6 +962,7 @@ export const getPropertyByIdWithId = async (req, res) => {
       };
     });
 
+    console.log(property.neighborhoods,"propertyyyyyyyyyyy")
     const responsePayload = {
       id: property.id,
       user: property.users?.id || null,
@@ -1062,7 +1054,6 @@ export const createProperty = async (req, res) => {
             },
           },
         });
-        console.log(user);
         if(!user){
           return response.error(res, res.__('messages.onlyDeveloperAgencyCreat'), null, 400);
         }
@@ -1387,14 +1378,16 @@ export const updateProperty = async (req, res) => {
       size: size !== undefined ? size : existingProperty.size,
       updated_by:updatedBy
     };
-
-  console.log(updateData,"updateData")
+   console.log(updateData,"updateData")
     // Update property details
     const updatedProperty = await prisma.propertyDetails.update({
       where: { id: propertyId },
       data: 
         updateData
     });
+
+   console.log(updatedProperty,"updatedProperty")
+
 
     // Update meta details: delete existing and recreate
     if (meta_details && meta_details.length > 0) {
@@ -1487,7 +1480,6 @@ export const updateProperty = async (req, res) => {
       },
     });
 
-    console.log(updatedPropertyDetails,"updatedPropertyDetails")
     // Prepare the response
     const lang = res.getLocale();
     const simplifiedProperty = {

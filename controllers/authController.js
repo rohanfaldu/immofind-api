@@ -322,7 +322,6 @@ export const createNormalUser = async (req, res) => {
 export const getallUser = async (req, res) => {
     const { type } = req.body;
     const userData = await UserModel.getAllUserd(type);
-    console.log(userData.length);
     const userList = {
         count : userData.length,
         user_data : userData
@@ -337,7 +336,6 @@ export const getallUser = async (req, res) => {
 export const getagency = async (req, res) => {
     const { type } = req.body;
     const userData = await UserModel.getagencyUsered();
-    console.log(userData.length);
     const userList = {
         count : userData.length,
         user_data : userData
@@ -352,7 +350,6 @@ export const getagency = async (req, res) => {
 export const getDeveloper = async (req, res) => {
     const { type } = req.body;
     const userData = await UserModel.getdeveloperUsered();
-    console.log(userData.length);
     const userList = {
         count : userData.length,
         user_data : userData
@@ -407,7 +404,6 @@ export const checkUserExists = async (req, res) => {
             return await response.error(res, 'Please enter social id');
         }
         user = await UserModel.getSocialUser(social_id);
-        console.log(user);
     } else {
         if ( email_address === "") {
             return await response.error(res, 'Please enter email address');

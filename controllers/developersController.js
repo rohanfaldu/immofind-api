@@ -203,7 +203,6 @@ export const getAllDevelopers = async (req, res) => {
         lang_translations_description: true, 
         lang_translations_service_area: true,
       },});
-      console.log(developers);
 
     // If no agencies found
     if (!developers || developers.length === 0) {
@@ -221,7 +220,6 @@ export const getAllDevelopers = async (req, res) => {
     };
 
     // Prepare the response data
-    console.log(developers)
 
     const developerResponseData = await Promise.all(
       developers.map(async (developer) => {
@@ -314,7 +312,7 @@ export const getDeveloperById = async (req, res) => {
     }
 
     const developer = await prisma.developers.findUnique({
-      where: { id: developer_id },
+      where: { user_id: developer_id },
       include: {
         lang_translations_description: true, 
         lang_translations_service_area: true,
@@ -439,9 +437,127 @@ export const getDeveloperById = async (req, res) => {
       },
     });
 
+
+    const projectList = await prisma.projectDetails.findMany({
+      where: { user_id: developer.user_id },
+      orderBy: { created_at: 'desc' },
+      take: 5,
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+          },
+        },
+        lang_translations_title: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        lang_translations_description: {
+          select: {
+            en_string: true,
+            fr_string: true,
+          },
+        },
+        states: {
+          select: { 
+            lang: { select: { fr_string: true, en_string: true } } 
+          },
+        },
+        cities: {
+          select: { 
+            lang: { select: { fr_string: true, en_string: true } } 
+          },
+        },
+        districts: {
+          select: { 
+            langTranslation: { select: { fr_string: true, en_string: true } } 
+          },
+        },
+        currency: {  // Include the currency relation
+          select: {
+            id: true,
+            name: true,
+            symbol: true,  // Adjust this field name based on your Currency model definition
+          },
+        },
+        neighborhoods: {
+          select: {
+            langTranslation: {
+              select: {
+                en_string: true,
+                fr_string: true,
+              },
+            },
+          },
+        },
+        project_meta_details: {
+          select: {
+            value: true,
+            project_type_listing: {
+              select: {
+                id: true,
+                name: true,
+                type: true,
+                key: true,
+                icon: true,
+                lang_translations: {
+                  select: {
+                    en_string: true,
+                    fr_string: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    const simplifiedProject = projectList.map((project) => {
+        return{
+        id: project.id,
+        user_name: project.users?.full_name || null,
+        user_image: project.users?.image || null,
+        title_en: project.lang_translations_title?.en_string,
+        title_fr: project.lang_translations_title?.fr_string,
+        description_fr: project.lang_translations_description?.fr_string,
+        description_en: project.lang_translations_description?.en_string,
+        state: lang === 'fr' ? project.states?.lang?.fr_string : project.states?.lang?.en_string,
+        city: lang === 'fr' ? project.cities?.lang?.fr_string : project.cities?.lang?.en_string,
+        district: lang === 'fr' ? project.districts?.langTranslation?.fr_string : project.districts?.langTranslation?.en_string,
+        neighborhood: lang === 'fr' ? project.neighborhoods?.langTranslation?.fr_string : project.neighborhoods?.langTranslation?.en_string,
+        latitude: project.latitude,
+        longitude: project.longitude,
+        currency: project.currency?.name || null,
+        address: project.address,
+        price: project.price,
+        icon: project.icon,
+        vr_link: project.vr_link,
+        picture: project.picture,
+        video: project.video,
+        created_at: project.created_at,
+        updated_at: project.updated_at,
+        created_by: project.created_by,
+        updated_by: project.updated_by,
+        status: project.status,
+        meta_details: project.project_meta_details.map((meta) => ({
+          id: meta.project_type_listing?.id || null,
+          type: meta.project_type_listing?.type || null,
+          key: meta.project_type_listing?.key || null,
+          name: lang === 'en'
+            ? meta.project_type_listing?.lang_translations?.en_string
+            : meta.project_type_listing?.lang_translations?.fr_string,
+          value: meta.value,
+          icon: meta.project_type_listing?.icon || null,
+        })),
+        }
+    })
+
     // Simplify and process the property details
     const simplifiedProperties = properties.map((property) => {
-      console.log(property);
       const description =
         lang === 'fr'
           ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
@@ -550,6 +666,7 @@ export const getDeveloperById = async (req, res) => {
         image: userInfo?.image,
         user_email_adress: userInfo?.email_address,
         property_details: simplifiedProperties,
+        project_details: simplifiedProject
     };
 
 

@@ -49,7 +49,6 @@ export const createCity = async (req, res) => {
         },
       });
 
-      console.log(existingTranslation,"existingTranslation");
       if (existingTranslation) {
         return response.error(res, res.__('messages.translationAlreadyExists'), {
           en_string: existingTranslation.en_string,
@@ -162,7 +161,6 @@ export const createCity = async (req, res) => {
         },
       });
 
-      console.log(state);
       if (!state) {
         return response.error(res, res.__('messages.stateNotFound')); // Error if state is not found
       }
@@ -452,7 +450,6 @@ export const getCities = async (req, res) => {
       return response.error(res, res.__('messages.noCitiesFound')); // Error if no cities are found
     }
 
-    console.log(cities);
     // Transform the results to include only the necessary language strings
     const transformedCities = cities.map((city) => ({
       id: city.id,

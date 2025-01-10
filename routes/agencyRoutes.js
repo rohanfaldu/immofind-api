@@ -10,7 +10,7 @@ const router = express.Router();
 router.post('/create', authorize, createAgency);
 
 // Send mail (protected)
-router.post('/sendmail', authorize, sendMail);
+router.post('/sendmail', sendMail);
 
 // Get all agencies (protected)
 router.post('/', getAllAgencies);
