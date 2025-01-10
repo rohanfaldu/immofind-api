@@ -1676,6 +1676,7 @@ export const deleteProject = async (req, res) => {
         where: { project_detail_id: findMeta?.project_id },
       }),
       
+      
       // Delete property meta details if applicable
       prisma.propertyMetaDetails.deleteMany({
         where: { property_detail_id: findMeta?.id },
