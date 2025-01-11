@@ -525,6 +525,7 @@ export const getDeveloperById = async (req, res) => {
         title_fr: project.lang_translations_title?.fr_string,
         description_fr: project.lang_translations_description?.fr_string,
         description_en: project.lang_translations_description?.en_string,
+        slug: project.slug,
         state: lang === 'fr' ? project.states?.lang?.fr_string : project.states?.lang?.en_string,
         city: lang === 'fr' ? project.cities?.lang?.fr_string : project.cities?.lang?.en_string,
         district: lang === 'fr' ? project.districts?.langTranslation?.fr_string : project.districts?.langTranslation?.en_string,
