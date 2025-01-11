@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Routes
 router.post('/', getAllProperty);
-router.post('/getbyid', authorize, getPropertyById);
+router.post('/getbyid', getPropertyById);
 router.post('/getbyIds', authorize, getPropertyByIdWithId);
 router.post('/agent-developer', authorize, getAgentDeveloperProperty);
 router.post('/create', authorize,createProperty);
