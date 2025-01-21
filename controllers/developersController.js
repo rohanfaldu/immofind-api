@@ -47,7 +47,8 @@ export const createDeveloper = async (req, res) => {
     country_code,
     license_number,
     whatsup_number,
-    agency_packages
+    agency_packages,
+    cover
   } = req.body;
 
   try {
@@ -104,6 +105,7 @@ export const createDeveloper = async (req, res) => {
       taxNumber: tax_number,
       country_code,
       licenseNumber: license_number,
+      cover,
       created_by: createdUserId, // Use createdUserId instead of userId
 
       
@@ -149,7 +151,8 @@ export const createDeveloper = async (req, res) => {
       tax_number: developer.taxNumber,
       country_code: developer.country_code,
       license_number: developer.licenseNumber,
-      agency_packages: developer.agencyPackageId
+      agency_packages: developer.agencyPackageId,
+      cover: developer.cover
     };
 
     // Convert BigInt fields to string for response
@@ -252,6 +255,7 @@ export const getAllDevelopers = async (req, res) => {
           updated_at: developer.updated_at,
           created_by: developer.created_by,
           updated_by: developer.updated_by,
+          cover: developer.cover,
           publishing_status_id: developer.publishingStatusId,
           sub_user_id: developer.sub_user_id,
           country_code: developer.country_code,
@@ -318,6 +322,8 @@ export const getDeveloperById = async (req, res) => {
         lang_translations_service_area: true,
       }
     });
+
+    console.log(developer,"developer")
 
     const fetchTranslation = async (id) => {
       if (!id) return null;
@@ -743,7 +749,8 @@ export const getByUserId = async (req, res) => {
         youtubeLink: true,
         pinterestLink: true,
         linkedinLink: true,
-        instagramLink: true
+        instagramLink: true,
+        cover: true
       },
     });
 
@@ -774,7 +781,8 @@ export const getByUserId = async (req, res) => {
       youtube_link: developerData?.youtubeLink,
       pinterest_link: developerData?.pinterestLink,
       linkedin_link: developerData?.linkedinLink,
-      instagram_link: developerData?.instagramLink
+      instagram_link: developerData?.instagramLink,
+      cover: developerData?.cover
     }
 
     const responseData = {
@@ -839,7 +847,8 @@ export const updateDeveloper = async (req, res) => {
       country_code,
       tax_number,
       license_number,
-      agency_packages
+      agency_packages,
+      cover
     } = req.body;
 
     // Check if the developer exists
@@ -868,7 +877,8 @@ export const updateDeveloper = async (req, res) => {
         licenseNumber: license_number,
         updated_by: user_id,
         updated_at: new Date(),
-        agencyPackageId: agency_packages
+        agencyPackageId: agency_packages,
+        cover: cover
       },
     });
 
@@ -920,7 +930,8 @@ export const updateDeveloper = async (req, res) => {
       tax_number: developer.taxNumber,
       country_code: developer.country_code,
       license_number: developer.licenseNumber,
-      agency_packages: developer.agencyPackageId
+      agency_packages: developer.agencyPackageId,
+      cover: developer.cover
     };
 
     const safeResponse = transformBigIntToString(responseData);

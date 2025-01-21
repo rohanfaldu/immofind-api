@@ -306,7 +306,8 @@ export const getByUserId = async (req, res) => {
         youtube_link: true,
         pinterest_link: true,
         linkedin_link: true,
-        instagram_link: true
+        instagram_link: true,
+        cover: true
       },
     });
 
@@ -337,7 +338,8 @@ export const getByUserId = async (req, res) => {
       youtube_link: agencyData?.youtube_link,
       pinterest_link: agencyData?.pinterest_link,
       linkedin_link: agencyData?.linkedin_link,
-      instagram_link: agencyData?.instagram_link
+      instagram_link: agencyData?.instagram_link,
+      cover: agencyData?.cover
     }
 
     const responseData = {
