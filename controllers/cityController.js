@@ -9,10 +9,8 @@ const prisma = new PrismaClient();
 export const createCity = async (req, res) => {
   try {
     const { en_name, fr_name, state_id, latitude, longitude } = req.body;
-
-    // Validate required fields
     if (!en_name || !fr_name || !state_id) {
-      return await response.error(res, res.__('messages.fieldError')); // Error when required fields are missing
+      return await response.error(res, res.__('messages.fieldError'));
     }
 
     const isValidLatitude = typeof latitude === 'number' && latitude >= -90 && latitude <= 90;
@@ -126,22 +124,18 @@ export const createCity = async (req, res) => {
 
   export const getCitiesByStateId = async (req, res) => {
     try {
-      const { state_id, lang } = req.body; // Extract state_id and lang from the request body
-
-      // Check if state_id is provided
+      const { state_id, lang } = req.body;
       if (!state_id) {
-        return response.error(res, res.__('messages.stateIdRequired')); // Error if state_id is missing
+        return response.error(res, res.__('messages.stateIdRequired'));
       }
-
-      // Validate state_id format
       if (!isUuid(state_id)) {
         return response.error(
           res,
-          res.__('messages.invalidStateIdFormat') // Custom error message for invalid UUID format
+          res.__('messages.invalidStateIdFormat')
         );
       }
 
-      const isFrench = lang === 'fr'; // Determine if the language is French
+      const isFrench = lang === 'fr';
 
       // Fetch state by state_id
       const state = await prisma.states.findUnique({
@@ -385,8 +379,7 @@ export const createCity = async (req, res) => {
 
 export const getCities = async (req, res) => {
   try {
-    const { page = 1, limit = 10, lang } = req.body;
-
+    const { page = 1, limit = 10, lang, city_name } = req.body;
 
     const isFrench = lang === 'fr'; 
 
@@ -398,15 +391,30 @@ export const getCities = async (req, res) => {
     const totalCount = await prisma.cities.count({
       where: {
         is_deleted: false,
+        lang: city_name
+          ? {
+              OR: [
+                { fr_string: { contains: city_name, mode: 'insensitive' } },
+                { en_string: { contains: city_name, mode: 'insensitive' } },
+              ],
+            }
+          : undefined,
       },
     });
-
 
     const cities = await prisma.cities.findMany({
       skip,
       take: validLimit,
       where: {
         is_deleted: false, // Only fetch non-deleted cities
+        lang: city_name
+          ? {
+              OR: [
+                { fr_string: { contains: city_name, mode: 'insensitive' } },
+                { en_string: { contains: city_name, mode: 'insensitive' } },
+              ],
+            }
+          : undefined,
       },
       select: {
         id: true,
@@ -446,9 +454,6 @@ export const getCities = async (req, res) => {
       },
     });
 
-    if (!cities.length) {
-      return response.error(res, res.__('messages.noCitiesFound')); // Error if no cities are found
-    }
 
     // Transform the results to include only the necessary language strings
     const transformedCities = cities.map((city) => ({
@@ -492,6 +497,7 @@ export const getCities = async (req, res) => {
     }); // Server error
   }
 };
+
 
 
 export const getCityById = async (req, res) => {

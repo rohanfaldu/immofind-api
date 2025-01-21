@@ -1,124 +1,67 @@
 import { PrismaClient } from '@prisma/client';
 import response from '../components/utils/response.js';
-
+import commonFunction from '../components/utils/commonFunction.js';
 const prisma = new PrismaClient();
 
 // Create State with LangTranslations
-import jwt from 'jsonwebtoken'; // Import jwt if not already done
+import jwt from 'jsonwebtoken';
 
 export const createState = async (req, res) => {
   try {
     const { en_name, fr_name, latitude, longitude } = req.body;
 
-    // Validate required fields
-    if (!en_name || !fr_name) {
-      return await response.error(res, res.__('messages.fieldError')); // Error when required fields are missing
+    // Validate input fields
+    if (!en_name || !fr_name || 
+        typeof latitude !== 'number' || latitude < -90 || latitude > 90 || 
+        typeof longitude !== 'number' || longitude < -180 || longitude > 180) {
+      return response.error(res, res.__('messages.fieldError'));
     }
 
-    // Validate latitude and longitude as numbers and within valid range
-    const isValidLatitude = typeof latitude === 'number' && latitude >= -90 && latitude <= 90;
-    const isValidLongitude = typeof longitude === 'number' && longitude >= -180 && longitude <= 180;
+    const userId = req.user.id;
 
-    if (!isValidLatitude || !isValidLongitude) {
-      return await response.error(
-        res,
-        res.__('messages.invalidCoordinates'),
-        { latitude, longitude }
-      ); // Error if coordinates are invalid
-    }
-
-    // Extract token from Authorization header
-    const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return await response.error(res, res.__('messages.authTokenRequired')); // Error if token is missing
-    }
-
-    const token = authHeader.split(' ')[1];
-    let userId;
-
-    // Verify and decode the token to get user ID
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET); // Use your JWT secret
-      userId = decoded.id; // Adjust based on your token structure
-    } catch (error) {
-      return await response.error(res, res.__('messages.invalidToken')); // Error if token is invalid
-    }
-
-    // Find if a LangTranslation exists with the given names
-    const langTranslation = await prisma.langTranslations.findFirst({
-      where: {
-        OR: [
-          { en_string: en_name },
-          { fr_string: fr_name },
-        ],
-      },
-    });
-
-    if (langTranslation) {
-      // Check if the LangTranslation ID is already used in the states table
-      const existingState = await prisma.states.findFirst({
+    // Use a transaction to check for existing state and create a new lang translation
+    const [existingState, langTranslation] = await prisma.$transaction([
+      prisma.states.findFirst({
         where: {
-          lang_id: langTranslation.id, // Check for an existing state with the same lang_id
-          is_deleted: false,
+          OR: [
+            { lang: { en_string: en_name } },
+            { lang: { fr_string: fr_name } },
+          ],
         },
-      });
+      }),
+      prisma.langTranslations.create({
+        data: {
+          en_string: en_name,
+          fr_string: fr_name,
+        },
+      }),
+    ]);
 
-      if (existingState) {
-        return await response.error(
-          res,
-          res.__('messages.stateAlreadyExists'),
-          { existingState }
-        );
-      }
+    if (existingState) {
+      return response.error(res, res.__('messages.stateAlreadyExists'), { existingState });
     }
 
-    // Create a new LangTranslation entry if no matching translation exists
-    const newLangTranslation = langTranslation
-      ? langTranslation
-      : await prisma.langTranslations.create({
-          data: {
-            en_string: en_name,
-            fr_string: fr_name,
-          },
-        });
-
-    // Create the state with the langTranslation reference and created_by user_id
     const state = await prisma.states.create({
       data: {
-        lang_id: newLangTranslation.id, // Link to LangTranslations ID
-        latitude: latitude,
-        longitude: longitude,
-        created_by: userId, // Store user ID who created the state
+        lang_id: langTranslation.id,
+        latitude,
+        longitude,
+        created_by: userId,
       },
     });
 
-    const lang = res.getLocale();
     const responseData = {
       id: state.id,
-      state: lang === 'fr' ? newLangTranslation.fr_string : newLangTranslation.en_string, // Use the appropriate language
-      is_deleted: state.is_deleted,
-      created_at: state.created_at,
-      updated_at: state.updated_at,
-      created_by: state.created_by,
-      updated_by: state.updated_by,
-      latitude: state.latitude,
-      longitude: state.longitude,
+      state: res.getLocale() === 'fr' ? langTranslation.fr_string : langTranslation.en_string,
+      ...state,
     };
 
-    return await response.success(
-      res,
-      res.__('messages.stateCreatedSuccessfully'),
-      responseData
-    ); // Success message
+    return response.success(res, res.__('messages.stateCreatedSuccessfully'), responseData);
   } catch (error) {
     console.error(error);
-    return await response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
+    return response.error(res, res.__('messages.internalServerError'), { message: error.message });
   }
 };
-
-
-
-
 export const updateState = async (req, res) => {
   try {
     const { state_id, en_name, fr_name, latitude, longitude } = req.body;
@@ -127,15 +70,11 @@ export const updateState = async (req, res) => {
       return response.error(res, res.__('messages.fieldError'));
     }
 
-    const isValidLatitude = typeof latitude === 'number' && latitude >= -90 && latitude <= 90;
-    const isValidLongitude = typeof longitude === 'number' && longitude >= -180 && longitude <= 180;
-
-    if (!isValidLatitude || !isValidLongitude) {
-      return await response.error(
-        res,
-        res.__('messages.invalidCoordinates'),
-        { latitude, longitude }
-      ); // Error if coordinates are invalid
+    if (
+      (latitude !== undefined && (typeof latitude !== 'number' || latitude < -90 || latitude > 90)) ||
+      (longitude !== undefined && (typeof longitude !== 'number' || longitude < -180 || longitude > 180))
+    ) {
+      return response.error(res, res.__('messages.invalidCoordinates'), { latitude, longitude });
     }
 
     const userId = req.user.id;
@@ -148,40 +87,20 @@ export const updateState = async (req, res) => {
       return response.error(res, res.__('messages.stateNotFound'));
     }
 
-    let langTranslation;
-    if (en_name || fr_name) {
-      // Check if the translation already exists
-      const existingTranslation = await prisma.states.findFirst({
-        where: {
-          lang: {
-            OR: [
-              { en_string: en_name },
-              { fr_string: fr_name },
-            ],
-          },
-        },
-      });
+    const translationData = {};
+    if (en_name) translationData.en_string = en_name;
+    if (fr_name) translationData.fr_string = fr_name;
 
-      
-      if (existingTranslation && existingTranslation.id !== state.id) {
-        return response.error(res, res.__('messages.stateAlreadyExists'), {
-          en_string: existingTranslation.en_string,
-          fr_string: existingTranslation.fr_string,
-        });
-      }
-
-      langTranslation = await prisma.langTranslations.create({
-        data: {
-          en_string: en_name,
-          fr_string: fr_name,
-        },
-      });
-    }
+    const langTranslation = await prisma.langTranslations.upsert({
+      where: { id: state.lang_id },
+      update: translationData,
+      create: { ...translationData },
+    });
 
     const updatedState = await prisma.states.update({
       where: { id: state.id },
       data: {
-        lang_id: langTranslation ? langTranslation.id : state.lang_id, 
+        lang_id: langTranslation.id,
         latitude: latitude !== undefined ? latitude : state.latitude,
         longitude: longitude !== undefined ? longitude : state.longitude,
         updated_by: userId,
@@ -191,7 +110,7 @@ export const updateState = async (req, res) => {
 
     const responseData = {
       id: updatedState.id,
-      state: langTranslation ? (res.getLocale() === 'fr' ? langTranslation.fr_string : langTranslation.en_string) : state.lang_id,
+      state: res.getLocale() === 'fr' ? langTranslation.fr_string : langTranslation.en_string,
       is_deleted: updatedState.is_deleted,
       created_at: updatedState.created_at,
       updated_at: updatedState.updated_at,
@@ -201,20 +120,12 @@ export const updateState = async (req, res) => {
       longitude: updatedState.longitude,
     };
 
-    return response.success(
-      res,
-      res.__('messages.stateUpdatedSuccessfully'),
-      responseData
-    );
+    return response.success(res, res.__('messages.stateUpdatedSuccessfully'), responseData);
   } catch (error) {
     console.error('Error in updateState:', error);
     return response.error(res, res.__('messages.internalServerError'), { message: error.message });
   }
 };
-
-
-
-
 export const getStateByStateId = async (req, res) => {
   try {
     const { state_id } = req.body;
@@ -226,27 +137,27 @@ export const getStateByStateId = async (req, res) => {
       where: {
         id: state_id,
       },
+      include: {
+        lang:{
+          select:{
+            fr_string: true,
+            en_string: true,
+          }
+        }
+      }
     });
+
+    console.log(state,"state")
 
     if (!state) {
       return response.error(res, res.__('messages.stateNotFound'));
     }
 
-    const langTranslation = await prisma.langTranslations.findUnique({
-      where: {
-        id: state.lang_id,
-      },
-    });
-
-    if (!langTranslation) {
-      return response.error(res, res.__('messages.translationNotFound'));
-    }
-
     const result = {
       state: {
         id: state.id,
-        en_name: langTranslation.en_string,
-        fr_name: langTranslation.fr_string,
+        en_name: state.lang?.en_string,
+        fr_name: state.lang?.fr_string,
         is_deleted: state.is_deleted,
         created_at: state.created_at,
         updated_at: state.updated_at,
@@ -266,105 +177,65 @@ export const getStateByStateId = async (req, res) => {
     });
   }
 };
-
-
-
 export const deleteState = async (req, res) => {
   try {
     const { state_id } = req.body;
-
-    // Validate that state_id is provided
     if (!state_id) {
-      return response.error(res, res.__('messages.fieldError')); // Error when state_id is missing
+      return response.error(res, res.__('messages.fieldError'));
     }
 
-    const authHeader = req.headers['authorization'];
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return response.error(res, res.__('messages.authTokenRequired')); // Error if token is missing
-    }
-
-    const token = authHeader.split(' ')[1];
-    let userId;
-
-    // Verify the token to get the user ID
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET); // Use your JWT secret
-      userId = decoded.id; // Adjust based on your token structure
-    } catch (error) {
-      return response.error(res, res.__('messages.invalidToken')); // Error if token is invalid
-    }
-
-    // Find the state to delete
     const state = await prisma.states.findUnique({
       where: { id: state_id, is_deleted: false },
     });
 
     if (!state) {
-      return response.error(res, res.__('messages.stateNotFound')); // Error if state not found
+      return response.error(res, res.__('messages.stateNotFound'));
     }
 
-    // Check if there are any cities associated with this state
     const associatedCities = await prisma.cities.count({
       where: { state_id: state_id, is_deleted: false },
     });
 
     if (associatedCities > 0) {
-      return response.error(res, res.__('messages.stateNotDeleteDueToCities')); // Error if state has associated cities
+      return response.error(res, res.__('messages.stateNotDeleteDueToCities'));
     }
 
-    // Delete the state from the database
+
     await prisma.states.delete({
       where: { id: state_id },
     });
 
     return response.success(
       res,
-      res.__('messages.stateDeletedSuccessfully'), // Success message
-      { state_id } // Return the deleted state's ID
+      res.__('messages.stateDeletedSuccessfully'),
+      { state_id }
     );
   } catch (error) {
     console.error('Error in deleteState:', error);
-    return response.error(res, res.__('messages.internalServerError'), { message: error.message }); // Server error
+    return response.error(res, res.__('messages.internalServerError'), { message: error.message });
   }
 };
-
-
-
-
 export const getAllStates = async (req, res) => {
   try {
-    const { page = 1, limit = 10, lang } = req.body;
+    const { page = 1, limit = 10 } = req.body;
+    const lang = res.getLocale();
+    const where = {
+      is_deleted: false,
+    };
+    const include = {
+      lang: true,
+    };
+    const orderBy = {};
 
-    const validPage = Math.max(1, parseInt(page, 10) || 1); // Default to 1 if invalid
-    const validLimit = Math.max(1, parseInt(limit, 10) || 10); // Default to 10 if invalid
+    const paginationResult = await commonFunction.pagination(page, limit, where, orderBy, include, 'states');
+    console.log('Pagination Result:', paginationResult);
 
-    // Calculate the offset (skip) for pagination
-    const skip = (validPage - 1) * validLimit;
+    const { totalCount, validPage: currentPage, validLimit: itemsPerPage, finding: states } = paginationResult;
 
-    // Fetch the total count of non-deleted states
-    const totalCount = await prisma.states.count({
-      where: {
-        is_deleted: false, // Assuming you want only non-deleted states
-      },
-    });
-    // Fetch all states from the database
-    const states = await prisma.states.findMany({
-      skip,
-      take: validLimit,
-      where: {
-        is_deleted: false, // Assuming you want only non-deleted states
-      },
-      include: {
-        lang: true, // Include the related LangTranslations
-      },
-    });
-
-    // Check if there are any states
     if (states.length === 0) {
-      return response.error(res, res.__('messages.noStatesFound')); // Handle no states found
+      return response.error(res, res.__('messages.noStatesFound'));
     }
 
-    // Map through states to format the response
     const result = states.map((state) => {
       const name = lang === 'fr' && state.lang 
         ? state.lang.fr_string 
@@ -386,10 +257,11 @@ export const getAllStates = async (req, res) => {
     return response.success(res, res.__('messages.statesFetchedSuccessfully'), { 
       states: result,
       totalCount,
-      totalPages: Math.ceil(totalCount / validLimit),
-      currentPage: validPage,
-      itemsPerPage: validLimit,
-     }); // Wrap states in an object
+      totalPages: Math.ceil(totalCount / itemsPerPage),
+      currentPage,
+      itemsPerPage,
+    });
+
   } catch (error) {
     console.error('Error fetching states:', error);
     return response.error(res, res.__('messages.internalServerError'), {

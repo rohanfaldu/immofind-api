@@ -165,9 +165,6 @@ export const createAgency = async (req, res) => {
 // Get all agencies
 export const getAllAgencies = async (req, res) => {
   try {
-    // Extract user_id from the authenticated user
-    const { user_id } = req.body;
-
     const { page = 1, limit = 10 } = req.body;
     const lang = res.getLocale();
 
@@ -191,14 +188,7 @@ export const getAllAgencies = async (req, res) => {
         lang_translations_service_area: true,
       },});
 
-    // If no agencies found
-    if (!agencies || agencies.length === 0) {
-      return res.status(404).json({
-        status: false,
-        message: res.__('messages.noAgenciesFound'),
-      });
-    }
-
+  
     // Helper function to fetch translations
     const fetchTranslation = async (id) => {
       if (!id) return null;

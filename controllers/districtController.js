@@ -116,14 +116,14 @@ export const createDistrict = async (req, res) => {
 // Get Districts by City
 export const getDistrictsByCity = async (req, res) => {
   try {
-    const { city_id, lang } = req.body; // Extract city_id and lang from the request body
+    const { city_id, lang, district_name } = req.body; // Extract city_id, lang, and district_name from the request body
 
- // Validate city_id presence
+    // Validate city_id presence
     if (!city_id) {
       return response.error(
         res,
-        res.__('messages.cityIdRequired')
-      ); // Error if city_id is missing
+        res.__('messages.cityIdRequired') // Error if city_id is missing
+      );
     }
 
     // Validate city_id format
@@ -133,6 +133,7 @@ export const getDistrictsByCity = async (req, res) => {
         res.__('messages.invalidCityIdFormat') // Error if city_id is not a valid UUID
       );
     }
+
     // Verify if city_id exists
     const cityExists = await prisma.cities.findUnique({
       where: { id: city_id },
@@ -144,11 +145,22 @@ export const getDistrictsByCity = async (req, res) => {
         res.__('messages.invalidCityId') // Error if city_id does not exist
       );
     }
+
     const isFrench = lang === 'fr'; // Determine if the language is French
 
     // Fetch districts by city_id with language-specific translations
     const districts = await prisma.districts.findMany({
-      where: { city_id },
+      where: {
+        city_id,
+        langTranslation: district_name
+          ? {
+              OR: [
+                { fr_string: { contains: district_name, mode: 'insensitive' } },
+                { en_string: { contains: district_name, mode: 'insensitive' } },
+              ],
+            }
+          : undefined,
+      },
       select: {
         id: true,
         langTranslation: {
@@ -172,11 +184,9 @@ export const getDistrictsByCity = async (req, res) => {
     // Transform the response to include only the relevant language string
     const transformedDistricts = districts.map((district) => ({
       id: district.id,
-      name: district.name,
-      name: district.langTranslation?.fr_string || district.langTranslation?.en_string,
+      name: district.langTranslation?.fr_string || district.langTranslation?.en_string, // Use the appropriate language string
       latitude: district.latitude,
       longitude: district.longitude,
-      slug: district.slug,
       created_at: district.created_at,
       updated_at: district.updated_at,
     }));
@@ -195,6 +205,7 @@ export const getDistrictsByCity = async (req, res) => {
     }); // Return server error
   }
 };
+
 
 
 

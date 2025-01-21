@@ -2,6 +2,19 @@ import { PrismaClient } from '@prisma/client';
 import response from '../components/utils/response.js';
 import { validate as isUUID } from "uuid";
 import commonFunction from "../components/utils/commonFunction.js";
+import {
+  userInclude,
+  langTranslationsInclude,
+  currencyInclude,
+  districtsInclude,
+  propertyMetaDetailsInclude,
+  propertyTypesInclude,
+  cityInclude,
+  stateInclude,
+  neighborhoodInclude
+} from "../components/utils/commonIncludes.js";
+import commonFilter from "../components/utils/commonFilters.js"
+
 const prisma = new PrismaClient();
 import slugify from 'slugify';
 
@@ -20,100 +33,27 @@ export const getAgentDeveloperProperty = async (req, res) => {
   try {
     const userInfo = await commonFunction.getLoginUser(req.user.id);
 
-    // Extract pagination and locale from the request
     const { page = 1, limit = 10 } = req.body;
     const lang = res.getLocale();
-
-    // Ensure page and limit are valid numbers
-    const validPage = Math.max(1, parseInt(page, 10)); // Default to 1 if invalid
-    const validLimit = Math.max(1, parseInt(limit, 10)); // Default to 1 if invalid
-
-    // Calculate the offset (skip) for pagination
-    const skip = (validPage - 1) * validLimit;
-
-    // Fetch total count for properties
     const whereCondition = (userInfo !== 'admin')?{ user_id: req.user.id }:{};
-    const totalCount = await prisma.propertyDetails.count({where: whereCondition});
-    // Fetch paginated property details
-    const properties = await prisma.propertyDetails.findMany({
-      skip,
-      take: validLimit,
-      where: whereCondition,
-      orderBy:{
-        created_at: 'desc',
-      },
-      include: {
-        users: {
-          select: {
-            full_name: true,
-            image: true,
-          },
-        },
-        lang_translations_property_details_descriptionTolang_translations: {
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
-        lang_translations: {
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
-        currency: {
-          select: {
-              name: true,
-              symbol: true,
-              status: true
-          }
-        },
-        districts: {
-        select: {
-            langTranslation: {
-            select: {
-                en_string: true,
-                fr_string: true,
-            },
-            },
-        },
-        },
-        property_meta_details: {
-          select: {
-            value: true,
-            property_type_listings: {
-              select: {
-                id: true,
-                name: true,
-                type: true,
-                icon: true,
-                key: true,
-                lang_translations: {
-                  select: {
-                    en_string: true,
-                    fr_string: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        property_types: {
-          select: {
-            id: true,
-            title: true,
-            lang_translations: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
-      },
-    });
 
-    // Simplify and process the property details
+    const include = {
+      ...userInclude,
+      ...langTranslationsInclude,
+      ...currencyInclude,
+      ...districtsInclude,
+      ...propertyMetaDetailsInclude,
+      ...propertyTypesInclude,
+    };
+
+    const orderBy = {created_at: 'desc'};
+
+
+    const paginationResult = await commonFunction.pagination(page, limit, whereCondition, orderBy, include, 'propertyDetails');
+
+    const { totalCount, validPage: currentPage, validLimit: itemsPerPage, finding: properties } = paginationResult;
+
+
     const simplifiedProperties = properties.map((property) => {
       const description =
         lang === 'fr'
@@ -167,6 +107,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
         price: property.price,
         created_at: property.created_at,
         bathRooms,
+        status: property.status,
         currency: property.currency?.name || null,
         bedRooms,
         district: property.districts?.name || null,
@@ -175,12 +116,11 @@ export const getAgentDeveloperProperty = async (req, res) => {
       };
     });
 
-    // Construct the response payload with pagination metadata
     const responsePayload = {
       totalCount,
-      totalPages: Math.ceil(totalCount / validLimit),
-      currentPage: validPage,
-      itemsPerPage: validLimit,
+      totalPages: Math.ceil(totalCount / itemsPerPage),
+      currentPage,
+      itemsPerPage,
       list: simplifiedProperties,
     };
 
@@ -200,102 +140,219 @@ export const getAgentDeveloperProperty = async (req, res) => {
     );
   }
 };
-export const getAllProperty = async (req, res) => {
+
+
+export const likeProperty = async (req, res) => {
+  const { propertyId } = req.params; // Get the property ID from the request parameters
+  const userId = req.user.id; // Assuming user ID is available in req.user after authorization
+
+  try {
+    // Create a new like
+    await prisma.propertyLike.create({
+      data: {
+        property_id: propertyId,
+        user_id: userId,
+      },
+    });
+
+    // Increment the like count on the property
+    await prisma.propertyDetails.update({
+      where: { id: propertyId },
+      data: { like_count: { increment: 1 } },
+    });
+
+    return response.success(
+      res,
+      res.__('messages.propertyLikedSuccessfully'),
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError')
+    );
+  }
+};
+
+
+
+export const unlikeProperty = async (req, res) => {
+  const { propertyId } = req.params; // Get the property ID from the request parameters
+  const userId = req.user.id; // Get the user ID from the request object
+
+  try {
+    // Delete the like record using the composite unique key
+    await prisma.propertyLike.delete({
+      where: {
+        user_id_property_id: {
+          user_id: userId,
+          property_id: propertyId,
+        },
+      },
+    });
+
+    // Decrement the like count on the property
+    await prisma.propertyDetails.update({
+      where: { id: propertyId },
+      data: { like_count: { decrement: 1 } },
+    });
+
+    return response.success(
+      res,
+      res.__('messages.propertyUnlikedSuccessfully'),
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError')
+    );
+  }
+};
+
+
+export const getLikedProperty = async (req, res) => {
+  const userId = req.user.id;
+
   try {
 
-    // Extract pagination and locale from the request
-    const { page = 1, limit = 10, title, description, minPrice, maxPrice, amenities_id, type_id } = req.body;
+    const { page = 1, limit = 10 } = req.body;
     const lang = res.getLocale();
 
-    // Ensure page and limit are valid numbers
-    const validPage = Math.max(1, parseInt(page, 10)); // Default to 1 if invalid
-    const validLimit = Math.max(1, parseInt(limit, 10)); // Default to 1 if invalid
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
 
-    // Calculate the offset (skip) for pagination
     const skip = (validPage - 1) * validLimit;
 
-    // Fetch total count for properties
-    const titleCondition = title ? lang === 'fr'? 
-        {
-          lang_translations: {
-            fr_string: {
-              contains: title,
-              mode: 'insensitive',
-            },
-          },
-        }
-      : {
-        lang_translations: {
-            en_string: {
-              contains: title,
-              mode: 'insensitive',
-            },
-          },
-        }: undefined;
+    const totalCount = await prisma.propertyLike.count({
+        where: { user_id: userId },
+    });
 
 
-        const descriptionCondition = description
-        ? lang === 'fr'
-          ? {
-            lang_translations_property_details_descriptionTolang_translations: {
-                fr_string: {
-                  contains: description,
-                  mode: 'insensitive',
+       const likedProperties = await prisma.propertyLike.findMany({
+            skip,
+            take: validLimit,
+            orderBy: { created_at: 'desc' },
+            where: { user_id: userId },
+            include: { 
+              property: {
+                include: {
+                  lang_translations_property_details_descriptionTolang_translations: true,
+                  lang_translations: true,
+
                 },
               },
-            }
-          : {
-            lang_translations_property_details_descriptionTolang_translations: {
-                en_string: {
-                  contains: description,
-                  mode: 'insensitive',
-                },
-              },
-            }
-        : undefined;
-
-        const priceCondition = {
-          price: {
-            gte: minPrice ? parseFloat(minPrice) : undefined,
-            lte: maxPrice ? parseFloat(maxPrice) : undefined,
-          },
-        };
-
-        const amenitiesCondition = Array.isArray(amenities_id) && amenities_id.length > 0
-      ? {
-        property_meta_details: {
-          some: {
-            property_type_id: {
-              in: amenities_id, // Use "in" to match any ID in the array
             },
-          },
-        },
-        }
-      : undefined;
+        });
 
-
-        const typeCondition = type_id
-        ? {
-            property_types: {
-                id: type_id,
+        const simplifiedData = likedProperties.map(like => {
+          const property = like.property;
+        
+          const title = lang === 'fr' 
+            ? property.lang_translations?.fr_string || property.lang_translations?.en_string 
+            : property.lang_translations?.en_string || property.lang_translations?.fr_string;
+        
+          const description = lang === 'fr' 
+            ? property.lang_translations_property_details_descriptionTolang_translations?.fr_string || '' 
+            : property.lang_translations_property_details_descriptionTolang_translations?.en_string || '';
+        
+          return {
+            ...like,
+            property: {
+              id: property.id,
+              price: property.price,
+              state_id: property.state_id,
+              city_id: property.city_id,
+              district_id: property.district_id,
+              vr_link: property.vr_link,
+              video: property.video,
+              status: property.status,
+              user_id: property.user_id,
+              is_deleted: property.is_deleted,
+              created_at: property.created_at,
+              updated_at: property.updated_at,
+              created_by: property.created_by,
+              updated_by: property.updated_by,
+              project_id: property.project_id,
+              size: property.size,
+              transaction: property.transaction,
+              direction: property.direction,
+              type: property.type,
+              title,
+              description,
+              picture: property.picture,
+              currency_id: property.currency_id,
+              neighborhoods_id: property.neighborhoods_id,
+              address: property.address,
+              latitude: property.latitude,
+              longitude: property.longitude,
+              slug: property.slug,
+              like_count: property.like_count,
+              // Exclude lang_translations and lang_translations_property_details_descriptionTolang_translations
             },
-          }
-        : undefined;
+          };
+        });
+        
 
-    
 
-      
-    // Get the total count of projects
+      const responsePayload = {
+        list: simplifiedData,
+        totalCount,
+        totalPages: Math.ceil(totalCount / validLimit),
+        currentPage: validPage,
+        itemsPerPage: validLimit,
+      };
+
+      return response.success(
+        res,
+        res.__('messages.likedPropertyFetchedSuccessfully'),
+        responsePayload
+      );
+  } catch (error) {
+      console.error(error);
+      return response.error(
+        res,
+        res.__('messages.errorFetchingProperties')
+      );
+  }
+};
+
+export const getAllProperty = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction} = req.body;
+    const lang = res.getLocale();
+
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
+
+    const skip = (validPage - 1) * validLimit;
+
+    const filters = [
+      await commonFilter.titleCondition(title),
+      await commonFilter.descriptionCondition(description),
+      await commonFilter.cityCondition(city_id),
+      await commonFilter.districtCondition(district_id),
+      await commonFilter.neighborhoodCondition(neighborhoods_id),
+      await commonFilter.addressCondition(address),
+      await commonFilter.typeCondition(type_id),
+      await commonFilter.priceCondition(minPrice, maxPrice),
+      await commonFilter.squareFootSize(minSize, maxSize),
+      await commonFilter.amenitiesCondition(amenities_id_array),
+      await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value),
+      await commonFilter.directionCondition(direction),
+      await commonFilter.developerCondition(developer_id),
+      await commonFilter.transactionCondition(transaction)
+
+    ]
+
     const combinedCondition = {
-      AND: [titleCondition, descriptionCondition, priceCondition, amenitiesCondition, typeCondition].filter(Boolean),
+      AND: filters.filter(Boolean),
     };
-
 
     const totalCount = await prisma.propertyDetails.count({
       where: combinedCondition,
     });
 
-    // Fetch paginated property details
     const properties = await prisma.propertyDetails.findMany({
       skip,
       take: validLimit,
@@ -304,108 +361,91 @@ export const getAllProperty = async (req, res) => {
       },
       where: combinedCondition,
       include: {
-        users: {
-          select: {
-            full_name: true,
-            image: true,
-            email_address:true,
-          },
-        },
-        lang_translations_property_details_descriptionTolang_translations: {
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
-        lang_translations: {
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
-        districts: {
-        select: {
-            langTranslation: {
-            select: {
-                en_string: true,
-                fr_string: true,
-            },
-            },
-        },
-        },
-        property_meta_details: {
-          select: {
-            value: true,
-            property_type_listings: {
-              select: {
-                id: true,
-                name: true,
-                type: true,
-                icon: true,
-                key: true,
-                lang_translations: {
-                  select: {
-                    en_string: true,
-                    fr_string: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        currency: {
-          select: {
-              name: true,
-              symbol: true,
-              status: true
-          }
-        },
-        cities: {
-          select: {
-            lang: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
-        states:{
-          select: {
-            lang: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
-        neighborhoods: {
-          select: {
-              langTranslation: {
-              select: {
-                  en_string: true,
-                  fr_string: true,
-              },
-              },
-          },
-          },
-        property_types: {
-          select: {
-            id: true,
-            title: true,
-            lang_translations: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
+        ...userInclude,
+        ...langTranslationsInclude,
+        ...districtsInclude,
+        ...propertyMetaDetailsInclude,
+        ...currencyInclude,
+        ...cityInclude,
+        ...stateInclude,
+        ...neighborhoodInclude,
+        ...propertyTypesInclude
       },
     });
-    
-    // Simplify and process the property details
+
+
+    const isFrench = lang === 'fr'; 
+    const cities = await prisma.cities.findMany({
+      where: {
+        is_deleted: false,
+      },
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+        created_at: true,
+        lang: {
+          select: {
+            fr_string: isFrench,
+            en_string: !isFrench,
+          },
+        },
+        ...stateInclude,
+        ...districtsInclude
+      },
+    });
+
+    const developers = await prisma.developers.findMany({
+      where: {
+        is_deleted: false,
+      }
+    });
+
+
+    const developerResponseData = await Promise.all(
+      developers.map(async (developer) => {
+        const userInfo = await prisma.users.findUnique({
+          where: {
+            id: developer.user_id,
+          }
+        });
+        return{
+          id: developer.id,
+          user_id: developer.user_id,
+          user_name: userInfo?.user_name,
+          full_name: userInfo?.full_name,
+          image: userInfo?.image,
+          user_email_adress: userInfo?.email_address,
+        }
+      })
+    );
+
+
+    const transformedCities = cities.map((city) => ({
+      id: city.id,
+      city_name: isFrench ? city.lang.fr_string : city.lang.en_string,
+      latitude: city.latitude,
+      longitude: city.longitude,
+      created_at: city.created_at, 
+      state: city.states.id
+    }));
+
+
+    let likedPropertyIds = [];
+    if (req.user?.id) {
+    const likedProperties = await prisma.propertyLike.findMany({
+      where: {
+        user_id: req.user.id,
+      },
+      select: {
+        property_id: true,
+      },
+    });
+
+    likedPropertyIds = likedProperties.map((like) => like.property_id);
+  }
+
+
     const simplifiedProperties = await Promise.all(
       properties.map(async (property) => {
         const description =
@@ -451,18 +491,17 @@ export const getAllProperty = async (req, res) => {
         
         const propertyType = res.__('messages.propertyType') + " " + property.transaction;
         let responseProjectData = null;
-        // Fetch project details asynchronously
         if(property.project_id !== null){
           const projectDetail = await prisma.projectDetails.findUnique({
-            where: { id: property.project_id }, // Ensure property_id is correct
+            where: { id: property.project_id },
           });
       
           const descriptionData = await prisma.langTranslations.findUnique({
-            where: { id: projectDetail.description }, // Assuming description is the ID field
+            where: { id: projectDetail.description },
           });
       
           const titleData = await prisma.langTranslations.findUnique({
-            where: { id: projectDetail.title }, // Assuming title is the ID field
+            where: { id: projectDetail.title },
           });
   
           responseProjectData = {
@@ -479,16 +518,19 @@ export const getAllProperty = async (req, res) => {
           id: property.id,
           user_name: property.users?.full_name || null,
           user_image: property.users?.image || null,
+          user_id: property.users?.id,
           email_address: property.users?.email_address || null,
           description,
           title,
           slug: property.slug,
           transaction: propertyType,
           transaction_type: property.transaction,
+          status: property.status,
           picture: property.picture,
           video: property.video,
           latitude: property.latitude,
           longitude: property.longitude,
+          direction: property.direction,
           address: property.address,
           size: property.size,
           price: property.price,
@@ -521,6 +563,7 @@ export const getAllProperty = async (req, res) => {
             title: type,
           },
           project_details: responseProjectData,
+          like: likedPropertyIds.includes(property.id),
         };
       })
     );
@@ -530,9 +573,13 @@ export const getAllProperty = async (req, res) => {
       ...simplifiedProperties.map((property) => property.price || 0)
     );
 
+    const maxSizeSliderRange = Math.max(
+      ...simplifiedProperties.map((property) => property.size || 0)
+    );
+
     const listings = await prisma.propertyTypeListings.findMany({
       include: {
-        lang_translations: true, // Include the related LangTranslations based on `name`
+        lang_translations: true,
       },
     });
 
@@ -560,42 +607,38 @@ export const getAllProperty = async (req, res) => {
                   ? property.lang_translations.fr_string
                   : property.lang_translations.en_string
                 : 'No title available',
-            created_by: user ? user.user_name : 'Unknown User', // Use the user name or fallback
+            created_by: user ? user.user_name : 'Unknown User',
             createdAt: property.created_at,
           };
         })
       );
 
-
-    // Map the results and apply language selection
     const simplifiedListings = listings.map((listing) => ({
       id: listing.id,
       name:
         listing.lang_translations
           ? lang === 'fr'
-            ? listing.lang_translations.fr_string // Fetch French translation
-            : listing.lang_translations.en_string // Fetch English translation
-          : 'No name available', // Fallback if no translation exists
+            ? listing.lang_translations.fr_string
+            : listing.lang_translations.en_string
+          : 'No name available',
       type: listing.type,
       key: listing.key,
-      category: listing.category?.toString() || null, // Serialize BigInt to string
+      category: listing.category?.toString() || null,
     }));
 
-
-
-    // Construct the response payload with pagination metadata
     const responsePayload = {
       list: simplifiedProperties,
       property_meta_details: simplifiedListings,
       property_types: simplifiedTypeProperties,
+      cities: transformedCities,
       maxPriceSliderRange,
+      maxSizeSliderRange,
       totalCount,
       totalPages: Math.ceil(totalCount / validLimit),
       currentPage: validPage,
       itemsPerPage: validLimit,
+      developers: developerResponseData
     };
-
-    // Send response
     return response.success(
       res,
       res.__('messages.propertyFetchSuccessfully'),
@@ -603,8 +646,6 @@ export const getAllProperty = async (req, res) => {
     );
   } catch (error) {
     console.error('Error fetching property details:', error);
-
-    // Return error response
     return response.error(
       res,
       res.__('messages.errorFetchingProperties')
@@ -623,113 +664,22 @@ export const getPropertyById = async (req, res) => {
     const property = await prisma.propertyDetails.findUnique({
       where: { slug: property_slug },
       include: {
-        users: {
-          select: {
-            full_name: true,
-            image: true,
-            email_address: true,
-          },
-        },
-        lang_translations_property_details_descriptionTolang_translations: {
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
-        lang_translations: {
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
-        districts: {
-          select: {
-            langTranslation: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
-        cities: {
-          select: {
-            lang: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
-        states:{
-          select: {
-            lang: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
-        property_meta_details: {
-          select: {
-            value: true,
-            property_type_listings: {
-              select: {
-                id: true,
-                name: true,
-                type: true,
-                icon: true,
-                key: true,
-                lang_translations: {
-                  select: {
-                    en_string: true,
-                    fr_string: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        currency: {
-          select: {
-            name: true,
-            symbol: true,
-            status: true,
-          },
-        },
-        neighborhoods: {
-          select: {
-              langTranslation: {
-              select: {
-                  en_string: true,
-                  fr_string: true,
-              },
-              },
-          },
-          },
-        property_types: {
-          select: {
-            id: true,
-            title: true,
-            lang_translations: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
+        ...userInclude,
+        ...langTranslationsInclude,
+        ...districtsInclude,
+        ...cityInclude,
+        ...stateInclude,
+        ...propertyMetaDetailsInclude,
+        ...currencyInclude,
+        ...neighborhoodInclude,
+        ...propertyTypesInclude
       },
     });
 
-    // Handle case where property is not found
     if (!property) {
       return response.error(res, res.__('messages.propertyNotFound'));
     }
 
-    // Prepare response based on language
     const lang = res.getLocale();
     const metaDetails = property.property_meta_details.map((meta) => {
       const langObj =
@@ -756,6 +706,7 @@ export const getPropertyById = async (req, res) => {
       description_fr: property.lang_translations_property_details_descriptionTolang_translations.fr_string,
       title_en: property.lang_translations.en_string,
       title_fr: property.lang_translations.fr_string,
+      direction: property.direction,
       transaction_type: property.transaction,
       picture: property.picture,
       video: property.video,
@@ -792,7 +743,6 @@ export const getPropertyById = async (req, res) => {
       },
     };
 
-    // Send response
     return response.success(
       res,
       res.__('messages.propertyFetchSuccessfully'),
@@ -801,7 +751,6 @@ export const getPropertyById = async (req, res) => {
   } catch (error) {
     console.error('Error fetching property by ID:', error);
 
-    // Return error response
     return response.error(
       res,
       res.__('messages.errorFetchingProperties')
@@ -819,133 +768,23 @@ export const getPropertyByIdWithId = async (req, res) => {
     const property = await prisma.propertyDetails.findUnique({
       where: { slug: property_slug },
       include: {
-        users: {
-          select: {
-            full_name: true,
-            id: true,
-            image: true,
-            email_address: true,
-          },
-        },
-        lang_translations_property_details_descriptionTolang_translations: {
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
-        lang_translations: {
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
-        districts: {
-          select: {
-            id: true,
-            langTranslation: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
-        cities: {
-          select: {
-            id: true,
-            lang: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
-        states:{
-          select: {
-            id: true,
-            lang: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
-        property_meta_details: {
-          select: {
-            value: true,
-            property_type_listings: {
-              select: {
-                id: true,
-                name: true,
-                type: true,
-                icon: true,
-                key: true,
-                lang_translations: {
-                  select: {
-                    en_string: true,
-                    fr_string: true,
-                  },
-                },
-              },
-            },
-          },
-        },
-        currency: {
-          select: {
-            id: true,
-            name: true,
-            symbol: true,
-            status: true,
-          },
-        },
-        neighborhoods: {
-          select: {
-            id: true,
-            langTranslation: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
-        property_types: {
-          select: {
-            id: true,
-            title: true,
-            lang_translations: {
-              select: {
-                en_string: true,
-                fr_string: true,
-              },
-            },
-          },
-        },
+        ...userInclude,
+        ...langTranslationsInclude,
+        ...districtsInclude,
+        ...cityInclude,
+        ...stateInclude,
+        ...propertyMetaDetailsInclude,
+        ...currencyInclude,
+        ...neighborhoodInclude,
+        ...propertyTypesInclude
       },
     });
 
-    // Handle case where property is not found
     if (!property) {
       return response.error(res, res.__('messages.propertyNotFound'));
     }
 
-    // Prepare response based on language
     const lang = res.getLocale();
-    const description =
-      lang === 'fr'
-        ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
-        : property.lang_translations_property_details_descriptionTolang_translations.en_string;
-    const title =
-      lang === 'fr'
-        ? property.lang_translations.fr_string
-        : property.lang_translations.en_string;
-    const neighborhood =
-      lang === 'fr'
-        ? property.neighborhoods?.langTranslation?.fr_string
-        : property.neighborhoods?.langTranslation?.en_string;
-
     const metaDetails = property.property_meta_details.map((meta) => {
       const langObj =
         lang === 'fr'
@@ -962,7 +801,7 @@ export const getPropertyByIdWithId = async (req, res) => {
       };
     });
 
-    console.log(property.neighborhoods,"propertyyyyyyyyyyy")
+    console.log(property,">>>>>>>>>>>")
     const responsePayload = {
       id: property.id,
       user: property.users?.id || null,
@@ -972,6 +811,7 @@ export const getPropertyByIdWithId = async (req, res) => {
       title_en: property.lang_translations.en_string,
       title_fr: property.lang_translations.fr_string,
       transaction_type: property.transaction,
+      direction: property.direction,
       picture: property.picture,
       video: property.video,
       latitude: property.latitude,
@@ -994,7 +834,6 @@ export const getPropertyByIdWithId = async (req, res) => {
       },
     };
 
-    // Send response
     return response.success(
       res,
       res.__('messages.propertyFetchSuccessfully'),
@@ -1003,7 +842,6 @@ export const getPropertyByIdWithId = async (req, res) => {
   } catch (error) {
     console.error('Error fetching property by ID:', error);
 
-    // Return error response
     return response.error(
       res,
       res.__('messages.errorFetchingProperties')
@@ -1014,46 +852,14 @@ export const getPropertyByIdWithId = async (req, res) => {
 
 export const createProperty = async (req, res) => {
     try {
-        // Extracting the data from the request body
         const createdBy = req.user.id;
-        const {
-            title_en,
-            title_fr,
-            description_en,
-            description_fr,
-            price,
-            currency_id,
-            neighborhoods_id,
-            district_id,
-            city_id,
-            state_id,
-            latitude,
-            longitude,
-            address,
-            vr_link,
-            picture,
-            video,
-            user_id,
-            type_id,
-            transaction,
-            project_id,
-            size,
-            meta_details
-        } = req.body;
-
-
-
+        const { title_en, title_fr, description_en, description_fr, price, currency_id, neighborhoods_id, district_id, city_id, state_id, latitude,
+                longitude, address, vr_link, picture, video, user_id, type_id, transaction, project_id, size, meta_details, direction} = req.body;
 
         const user = await prisma.users.findFirst({
-          where: {
-            id: user_id,
-            roles: {
-              name: {
-                in: ['developer', 'agency'], // Check for either 'developer' or 'agency'
-              },
-            },
-          },
+          where: { id: user_id, roles: { name: { in: ['developer', 'agency'], }, }, },
         });
+        
         if(!user){
           return response.error(res, res.__('messages.onlyDeveloperAgencyCreat'), null, 400);
         }
@@ -1071,15 +877,13 @@ export const createProperty = async (req, res) => {
           return response.error(res, res.__('messages.propertyExists'), null, 400);
         }
         
-
         const baseSlug = slugify(title_en, { lower: true, replacement: '_', strict: true });
         const uniqueSlug = await generateUniqueSlug(baseSlug);
-        // Create lang translations for title and description
         const titleTranslation = await prisma.langTranslations.create({
             data: {
                 en_string: title_en,
                 fr_string: title_fr,
-                created_by: user_id, // Assuming user_id is the ID of the user creating the property
+                created_by: user_id,
             },
         });
 
@@ -1090,13 +894,14 @@ export const createProperty = async (req, res) => {
                 created_by: user_id,
             },
         });
-        // Create the property
+ 
         const newProperty = await prisma.propertyDetails.create({
             data: {
-                title: titleTranslation.id, // Linking the title translation
-                description: descriptionTranslation.id, // Linking the description translation
+                title: titleTranslation.id, 
+                description: descriptionTranslation.id,
                 price: price,
                 slug: uniqueSlug,
+                direction: direction,
                 currency_id: currency_id,
                 neighborhoods_id: neighborhoods_id,
                 district_id: district_id,
@@ -1109,105 +914,33 @@ export const createProperty = async (req, res) => {
                 vr_link: vr_link || null,
                 picture: picture || null,
                 video: video || null,
-                user_id: user_id, // Assuming the user is creating the property
+                user_id: user_id,
                 type: type_id,
                 transaction: transaction,
-                size: size || null, // Optional, can be null
+                size: size || null,
                 created_by:createdBy,
                 property_meta_details: {
                     create: meta_details.map((meta) => ({
                         value: meta.value,
-                        property_type_id: meta.property_type_id, // Linking to the property type
+                        property_type_id: meta.property_type_id,
                     })),
                 },
             },
         });
 
-        // Fetch the created property with all necessary relationships for the response
         const createdProperty = await prisma.propertyDetails.findUnique({
             where: { id: newProperty.id },
             include: {
-                users: {
-                    select: {
-                        full_name: true,
-                        image: true,
-                    },
-                },
-                lang_translations_property_details_descriptionTolang_translations: {
-                    select: {
-                        en_string: true,
-                        fr_string: true,
-                    },
-                },
-                lang_translations: {
-                    select: {
-                        en_string: true,
-                        fr_string: true,
-                    },
-                },
-                 districts: {
-                    select: {
-                        langTranslation: {
-                        select: {
-                            en_string: true,
-                            fr_string: true,
-                        },
-                        },
-                    },
-                },
-                property_meta_details: {
-                    select: {
-                        value: true,
-                        property_type_listings: {
-                            select: {
-                                id: true,
-                                name: true,
-                                type: true,
-                                key: true,
-                                lang_translations: {
-                                    select: {
-                                        en_string: true,
-                                        fr_string: true,
-                                    },
-                                },
-                            },
-                        },
-                    },
-                },
-                  currency: { // Fetch currency details
-                      select: {
-                          name: true,
-                          symbol: true,
-                          status: true,
-                      },
-                    },
-                    neighborhoods: {
-                      select: {
-                          langTranslation: {
-                          select: {
-                              en_string: true,
-                              fr_string: true,
-                          },
-                          },
-                      },
-                  },
-
-                property_types: {
-                    select: {
-                        id: true,
-                        title: true,
-                        lang_translations: {
-                            select: {
-                                en_string: true,
-                                fr_string: true,
-                            },
-                        },
-                    },
-                },
+                ...userInclude,
+                ...langTranslationsInclude,
+                ...districtsInclude,
+                ...propertyMetaDetailsInclude,
+                ...currencyInclude,
+                ...neighborhoodInclude,
+                ...propertyTypesInclude
             },
         });
 
-        // Prepare the property data in the same format as the response of `getAllProperty`
         const lang = res.getLocale();
         const simplifiedProperty = {
             id: createdProperty.id,
@@ -1219,6 +952,7 @@ export const createProperty = async (req, res) => {
             title: lang === 'fr' ? createdProperty.lang_translations.fr_string : createdProperty.lang_translations.en_string,
             transaction: `${res.__('messages.propertyType')} ${createdProperty.transaction}`,
             transaction_type: createdProperty.transaction,
+            direction: createdProperty.direction,
             latitude: createdProperty.latitude,
             longitude: createdProperty.longitude,
             address: createdProperty.address,
@@ -1248,13 +982,6 @@ export const createProperty = async (req, res) => {
             type: lang === 'fr'
                 ? createdProperty.property_types?.lang_translations?.fr_string
                 : createdProperty.property_types?.lang_translations?.en_string,
-                
-            // currency_details: createdProperty.currency?{
-            //     name: createdProperty.currency.name,
-            //     symbol: createdProperty.currency.symbol,
-            //     status: createdProperty.currency.status,
-            // }
-            // : null,
 
             currency: createdProperty.currency
             ? createdProperty.currency.symbol
@@ -1266,21 +993,7 @@ export const createProperty = async (req, res) => {
                 ? createdProperty.neighborhoods.langTranslation.fr_string
                 : createdProperty.neighborhoods.langTranslation.en_string
                 : null,
-
-
-
-            // neighborhood_details: createdProperty.neighborhoods?{
-            //     district_id: createdProperty.neighborhoods.district_id,
-            //     lang_id: createdProperty.neighborhoods.lang_id,
-            //     latitude: createdProperty.neighborhoods.latitude,
-            //     longitude: createdProperty.neighborhoods.longitude,
-            //     created_at: createdProperty.neighborhoods.created_at,
-            //     updated_at: createdProperty.neighborhoods.updated_at,
-            // }
-            // : null,
         };
-
-        // Return the response with the created property data
         return await response.success(res, res.__('messages.propertyCreatedSuccessfully'), simplifiedProperty);
     } catch (error) {
         console.error('Error creating property:', error);
@@ -1288,40 +1001,17 @@ export const createProperty = async (req, res) => {
     }
 };
 
+
 export const updateProperty = async (req, res) => {
   const updatedBy = req.user.id;
-  const {
-    propertyId, // ID of the property to update
-    title_en,
-    title_fr,
-    description_en,
-    description_fr,
-    price,
-    currency_id,
-    neighborhoods_id,
-    district_id,
-    city_id,
-    state_id,
-    latitude,
-    longitude,
-    address,
-    vr_link,
-    picture,
-    video,
-    user_id,
-    type_id,
-    transaction,
-    size,
-    meta_details,
-  } = req.body;
+  const { propertyId, title_en, title_fr, description_en, description_fr, price, currency_id, neighborhoods_id, district_id, city_id,
+          state_id, latitude, longitude, address, vr_link, picture, video, user_id, type_id, transaction, size, meta_details, direction} = req.body;
 
   try {
-    // Validate propertyId
     if (!propertyId || !isUUID(propertyId)) {
       return await response.error(res, res.__('messages.invalidPropertyId'));
     }
 
-    // Check if property exists
     const existingProperty = await prisma.propertyDetails.findUnique({
       where: { id: propertyId },
     });
@@ -1330,7 +1020,20 @@ export const updateProperty = async (req, res) => {
       return await response.error(res, res.__('messages.propertyNotFound'));
     }
 
-    // Update title translations if provided
+
+    const propertyTitleExist = await prisma.propertyDetails.findFirst({
+      where: {
+        OR: [
+          { lang_translations: { en_string: title_en } },
+          { lang_translations: { fr_string: title_fr } },
+        ],
+      },
+    })
+
+    if(propertyTitleExist && propertyTitleExist.id !== existingProperty.id){
+      return response.error(res, res.__('messages.propertyExists'), null, 400);
+    }
+
     if (title_en || title_fr) {
       await prisma.langTranslations.update({
         where: { id: existingProperty.title },
@@ -1342,7 +1045,6 @@ export const updateProperty = async (req, res) => {
       });
     }
 
-    // Update description translations if provided
     if (description_en || description_fr) {
       await prisma.langTranslations.update({
         where: { id: existingProperty.description },
@@ -1354,7 +1056,6 @@ export const updateProperty = async (req, res) => {
       });
     }
 
-    // Validate district_id if provided
     if (district_id && !isUUID(district_id)) {
       return await response.error(res, res.__('messages.invalidDistrictId'));
     }
@@ -1365,6 +1066,7 @@ export const updateProperty = async (req, res) => {
       city_id: city_id !== undefined ? city_id : existingProperty.city_id,
       state_id: state_id !== undefined ? state_id : existingProperty.state_id,
       latitude: latitude !== undefined ? latitude : existingProperty.latitude,
+      direction: direction !== undefined ? direction : existingProperty.direction,
       address: address !== undefined ? address : existingProperty.address,
       currency_id: currency_id !== undefined ? currency_id : existingProperty.currency_id,
       neighborhoods_id: neighborhoods_id !== undefined ? neighborhoods_id : existingProperty.neighborhoods_id,
@@ -1378,18 +1080,13 @@ export const updateProperty = async (req, res) => {
       size: size !== undefined ? size : existingProperty.size,
       updated_by:updatedBy
     };
-   console.log(updateData,"updateData")
-    // Update property details
+
     const updatedProperty = await prisma.propertyDetails.update({
       where: { id: propertyId },
       data: 
         updateData
     });
 
-   console.log(updatedProperty,"updatedProperty")
-
-
-    // Update meta details: delete existing and recreate
     if (meta_details && meta_details.length > 0) {
       await prisma.propertyMetaDetails.deleteMany({
         where: { property_detail_id: propertyId },
@@ -1404,83 +1101,21 @@ export const updateProperty = async (req, res) => {
       });
     }
 
-    // Fetch the updated property with relationships
     const updatedPropertyDetails = await prisma.propertyDetails.findUnique({
       where: { id: updatedProperty.id },
       include: {
-        users: {
-          select: { full_name: true, image: true },
-        },
-        lang_translations_property_details_descriptionTolang_translations: {
-          select: { en_string: true, fr_string: true },
-        },
-        lang_translations: {
-          select: { en_string: true, fr_string: true },
-        },
-        districts: {
-          select: {
-            langTranslation: {
-              select: { en_string: true, fr_string: true },
-            },
-          },
-        },
-        cities: {
-          select: {
-            lang: {
-              select: { en_string: true, fr_string: true },
-            },
-          },
-        },
-        states: {
-          select: {
-            lang: {
-              select: { en_string: true, fr_string: true },
-            },
-          },
-        },
-        neighborhoods: {
-          select: {
-            langTranslation: {
-              select: { en_string: true, fr_string: true },
-            },
-          },
-        },
-        currency: { // Fetch currency details
-          select: {
-              name: true,
-              symbol: true,
-              status: true,
-          },
-        },
-        property_meta_details: {
-          select: {
-            value: true,
-            property_type_listings: {
-              select: {
-                id: true,
-                name: true,
-                type: true,
-                key: true,
-                lang_translations: {
-                  select: { en_string: true, fr_string: true },
-                },
-              },
-            },
-          },
-        },
-        property_types: {
-          select: {
-            id: true,
-            title: true,
-            lang_translations: {
-              select: { en_string: true, fr_string: true },
-            },
-          },
-        },
+        ...userInclude,
+        ...langTranslationsInclude,
+        ...districtsInclude,
+        ...cityInclude,
+        ...stateInclude,
+        ...neighborhoodInclude,
+        ...currencyInclude,
+        ...propertyMetaDetailsInclude,
+        ...propertyTypesInclude
       },
     });
 
-    // Prepare the response
     const lang = res.getLocale();
     const simplifiedProperty = {
       id: updatedPropertyDetails.id,
@@ -1499,6 +1134,7 @@ export const updateProperty = async (req, res) => {
       latitude: updatedPropertyDetails.latitude,
       longitude: updatedPropertyDetails.longitude,
       address: updatedPropertyDetails.address,
+      direction: updatedPropertyDetails.direction,
       size: updatedPropertyDetails.size,
       price: updatedPropertyDetails.price,
       currency: updatedPropertyDetails.currency.symbol,
@@ -1568,12 +1204,10 @@ export const deleteProperty = async (req, res) => {
           return await response.error(res, res.__('messages.propertyNotFound'));
         }
 
-        // Corrected deleteMany call with the proper field
         await prisma.propertyMetaDetails.deleteMany({
-            where: { property_detail_id: propertyId }, // Adjusted field name
+            where: { property_detail_id: propertyId },
         });
 
-        // Delete the property
         await prisma.propertyDetails.delete({
             where: { id: propertyId },
         });
@@ -1587,45 +1221,47 @@ export const deleteProperty = async (req, res) => {
 
 
 export const statusUpdateProperty = async (req, res) => {
-  const {id, status } = req.body;
+  const { id } = req.body;
 
   try {
-      // Step 1: Validate that the status is provided
-    if (status === undefined) {
-      return await response.error(res, res.__('messages.statusRequired'));
+    // Check if id is provided
+    if (!id) {
+      return await response.error(res, res.__('messages.idRequired'));
     }
 
-    // Step 2: Check if the project exists
-    const existingPropery = await prisma.propertyDetails.findUnique({
+    // Find the existing property
+    const existingProperty = await prisma.propertyDetails.findUnique({
       where: { id: id },
     });
 
-    if (!existingPropery) {
+    // Check if the property exists
+    if (!existingProperty) {
       return await response.error(res, res.__('messages.projectNotFound'));
     }
 
-    // Step 3: Update the project status
+    // Toggle the status
+    const updatedStatus = !existingProperty.status;
+
+    // Update the property status
     await prisma.propertyDetails.update({
       where: { id: id },
       data: {
-        status: status, // Update status field of the project
+        status: updatedStatus,
       },
     });
 
-    // Step 4: Update project_meta_details if needed (e.g., for status or related info)
+    // Update the related property meta details if necessary
     await prisma.propertyMetaDetails.updateMany({
-      where: { property_detail_id: id }, // Ensure you update the related meta details
+      where: { property_detail_id: id },
       data: {
-        // Add any updates you need to perform on the meta details
-        // status: status, // Example: update the status on meta details as well
-        // is_deleted: status === 'inactive',
         property_detail_id: id 
       },
     });
 
-      return await response.success(res, res.__('messages.propertyUpdatedSuccessfully'), null);
+    // Return success response
+    return await response.success(res, res.__('messages.propertyUpdatedSuccessfully'), null);
   } catch (error) {
-      console.error('Error statusUpdate property:', error);
-      return await response.serverError(res, res.__('messages.errorstatusUpdateProperty'));
+    console.error('Error statusUpdate property:', error);
+    return await response.serverError(res, res.__('messages.errorstatusUpdateProperty'));
   }
 };

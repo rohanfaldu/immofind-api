@@ -20,6 +20,8 @@ import projectRoutes from './routes/projectRoutes.js';
 import projectTypeListingsRoutes from './routes/projectTypeListingsRoutes.js';
 import dashboardListingsRoutes from './routes/dashboardListingsRoutes.js';
 import currencyRoutes from './routes/currencyRoutes.js';
+import propertySaveSearchesRoutes from './routes/propertySaveSearchesRoutes.js';
+
 import cors from 'cors';
 import i18n from 'i18n';
 import path from 'path';
@@ -91,6 +93,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/project-type-listings', projectTypeListingsRoutes);
 app.use('/api/dashboard', dashboardListingsRoutes);
 app.use('/api/currency', currencyRoutes);
+app.use('/api/property-save-searches', propertySaveSearchesRoutes);
 // Home route
 app.get('/', (req, res) => {
     res.send('Welcome to the Immofind API!');

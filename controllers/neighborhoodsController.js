@@ -224,7 +224,7 @@ export const getAllNeighborhoods = async (req, res) => {
 // Get Neighborhoods by District
 export const getNeighborhoodsByDistrict = async (req, res) => {
   try {
-    const { district_id, lang } = req.body;
+    const { district_id, lang, neighbourhood_name } = req.body;
 
     // Validate district_id
     if (!district_id) {
@@ -257,7 +257,17 @@ export const getNeighborhoodsByDistrict = async (req, res) => {
 
     // Fetch neighborhoods by district_id
     const neighborhoods = await prisma.neighborhoods.findMany({
-      where: { district_id },
+      where: { 
+        district_id,
+        langTranslation: neighbourhood_name
+          ? {
+              OR: [
+                { fr_string: { contains: neighbourhood_name, mode: 'insensitive' } },
+                { en_string: { contains: neighbourhood_name, mode: 'insensitive' } },
+              ],
+            }
+          : undefined,
+      },
       select: {
         id: true,
         langTranslation: {
@@ -272,10 +282,6 @@ export const getNeighborhoodsByDistrict = async (req, res) => {
         updated_at: true,
       },
     });
-
-    if (!neighborhoods.length) {
-      return response.error(res, res.__('messages.noNeighborhoodsFoundForDistrict'));
-    }
 
     const transformedNeighborhoods = neighborhoods.map((neighborhood) => ({
       id: neighborhood.id,

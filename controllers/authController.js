@@ -155,7 +155,7 @@ export const updateUser = async (req, res) => {
         };
         const roleName = await commonFunction.getRole(userUpdate.roles.name);
         return (is_deleted)? await response.success(res, res.__(`messages.${roleName}DeleteSuccessfully`), responseData)
-        : await response.success(res, res.__(`messages.${roleName}CreatedSuccessfully`), responseData);
+        : await response.success(res, res.__(`messages.${roleName}UpdatedSuccessfully`), responseData);
         // Respond with success message and user information
     } catch (error) {
         return await response.serverError(res, res.__('messages.internalServerError'));
@@ -431,47 +431,84 @@ export const checkUserExists = async (req, res) => {
     
 }
 
+const createDeviceToken = async (values) => {
+  try {
+    console.log("Creating device token with values:", values);
+    await prisma.deviceToken.create({
+      data: {
+        ...values,
+      },
+    });
+  } catch (error) {
+    console.error("Error creating device token:", error);
+    throw new Error("Unable to create device token.");
+  }
+};
+
 export const loginUser = async (req, res) => {
-    try {
-      const { email_address, code } = req.body;
-  
-      // Check if email address is provided
-      if (!email_address) {
-        return response.error(res, res.__('messages.fieldError'));
-      }
-  
-      // Check for user with the provided email address
-      const checkUser = await UserModel.getUser(email_address, '');
-      if (!checkUser) {
-        return response.error(res, res.__('messages.userNotFound'));
-      }
-  
-      // Validate the code
-      if (!code) {
-        return response.error(res, res.__('messages.fieldError'));
-      }
-  
-      if (checkUser.email_password_code !== parseInt(code, 10)) {
-        return response.error(res, res.__('messages.userCheckEmailCode'));
-      }
-  
-      // Generate token for the user
-      const CreateToken = await jwtGenerator.generateToken(checkUser.id, checkUser.email_address);
-      const responseData = {
-        user_information: !!checkUser.mobile_number,
-        userProfile: checkUser,
-        token: CreateToken,
-      };
-  
-      // Invalidate OTP
-      await UserModel.updateUser({ id: checkUser.id }, { email_password_code: null });
-  
-      return response.success(res, res.__('messages.loginSuccessfully'), responseData);
-    } catch (error) {
-      console.error(error); // Log the error for debugging
-      return response.serverError(res, res.__('messages.internalServerError'));
+  try {
+    const { email_address, code, device_type, device_id, fcm_token } = req.body;
+
+    if (!email_address || !code || !device_type || !device_id || !fcm_token) {
+      return response.error(res, res.__("messages.fieldError"));
     }
-  };
+
+    const checkUser = await UserModel.getUser(email_address, "");
+    if (!checkUser) {
+      return response.error(res, res.__("messages.userNotFound"));
+    }
+
+    if (checkUser.email_password_code !== parseInt(code, 10)) {
+      return response.error(res, res.__("messages.userCheckEmailCode"));
+    }
+
+    const deviceToken = await prisma.deviceToken.findFirst({
+      where: {
+        device_id,
+        user_id: checkUser.id,
+      },
+    });
+
+    console.log("Device Token:", deviceToken);
+
+    if (deviceToken) {
+        await prisma.deviceToken.update({
+          where: { id: deviceToken.id },
+          data: { fcm_token, device_type },
+        });
+      } else {
+        // Delete any existing token for the user before creating a new one
+        await prisma.deviceToken.deleteMany({
+          where: { user_id: checkUser.id },
+        });
+      
+        await createDeviceToken({
+          device_type,
+          fcm_token,
+          device_id,
+          user_id: checkUser.id,
+        });
+      }
+      
+
+    const token = await jwtGenerator.generateToken(checkUser.id, checkUser.email_address);
+
+    const responseData = {
+      user_information: !!checkUser.mobile_number,
+      userProfile: checkUser,
+      token,
+    };
+
+    await UserModel.updateUser({ id: checkUser.id }, { email_password_code: null });
+
+    return response.success(res, res.__("messages.loginSuccessfully"), responseData);
+  } catch (error) {
+    console.error("Error during login:", error);
+    return response.serverError(res, res.__("messages.internalServerError"));
+  }
+};
+
+  
   
 
 

@@ -170,7 +170,7 @@ model PropertyDetails {
   district_id                                                       String                @db.Uuid
   vr_link                                                           String?               @db.VarChar
   video                                                             String?               @db.VarChar
-  status                                                            Boolean               @default(false)
+  status                                                            Boolean               @default(true)
   user_id                                                           String                @db.Uuid
   is_deleted                                                        Boolean               @default(false)
   created_at                                                        DateTime?             @default(now()) @db.Timestamp(6)
@@ -180,6 +180,7 @@ model PropertyDetails {
   project_id                                                        String?               @db.Uuid
   size                                                              Int?
   transaction                                                       String                @db.VarChar
+  direction                                                         String                @db.VarChar
   type                                                              String                @db.Uuid
   title                                                             String                @db.Uuid
   description                                                       String                @db.Uuid
@@ -190,6 +191,7 @@ model PropertyDetails {
   latitude                                                          String                @db.VarChar
   longitude                                                         String                @db.VarChar
   slug                                                              String?               @unique
+  like_count                                                        Int                @default(0)
   cities                                                            Cities?               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
   districts                                                         Districts             @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
   property_details                                                  ProjectDetails?       @relation("property_detailsToproperty_details", fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_id_foreign_key")
@@ -200,6 +202,7 @@ model PropertyDetails {
   property_types                                                    PropertyTypes         @relation(fields: [type], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_type_foreign_key")
   users                                                             Users                 @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_user_foreign_key")
   states                                                            States?               @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
+  propertyLikes                                                     PropertyLike[]        @relation("PropertyLikes")
   property_meta_details                                             PropertyMetaDetails[]
 
   @@map("property_details")
@@ -242,6 +245,34 @@ model ProjectDetails {
   other_property_details        PropertyDetails[]    @relation("property_detailsToproperty_details")
 
   @@map("project_details")
+}
+
+model PropertySaveSearches {
+  id                      String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                 String?              
+  title                   String?              
+  description             String?              
+  city_id                 String?              
+  district_id             String?              
+  neighborhoods_id        String?             
+  address                 String?             @db.VarChar
+  type                    String?              
+  min_price               Int?
+  max_price               Int?
+  min_size                Int?
+  max_size                Int?
+  direction               String?              @db.VarChar
+  developer_id            String?              
+  transaction             String?              @db.VarChar
+  amenities_type_boolean  String[]
+  amenities_type_number   Json?
+  is_deleted              Boolean             @default(false)
+  created_at              DateTime?           @default(now()) @db.Timestamp(6)
+  updated_at              DateTime?           @default(now()) @db.Timestamp(6)
+  created_by              String?             @db.Uuid
+  updated_by              String?             @db.Uuid
+  
+  @@map("property_save_searches")
 }
 
 model ProjectMetaDetails {
@@ -395,8 +426,10 @@ model Users {
   mobile_number        BigInt?
   agencies             Agencies?
   developers           Developers?
+  devicetoken          DeviceToken[]
   project_details      ProjectDetails[]
   property_details     PropertyDetails[]
+  propertyLikes        PropertyLike[]    @relation("UserPropertyLikes")
   roles                Roles             @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_foreign_key")
 
   @@map("users")
@@ -450,6 +483,36 @@ model Developers {
 
   @@map("developers")
 }
+
+
+model DeviceToken {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fcm_token    String
+  device_id    String
+  device_type  String
+  user_id      String      @db.Uuid
+  created_at   DateTime?   @default(now()) @db.Timestamp(6)
+  updated_at   DateTime?   @default(now()) @db.Timestamp(6)
+  users        Users       @relation(fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "devicetoken_user_fkey")
+
+  @@map("device_token")
+  @@unique([device_id, user_id]) // Ensure uniqueness of device_id and user_id combination
+}
+
+model PropertyLike {
+  id           String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  property_id  String            @db.Uuid // Change this line
+  user_id      String            @db.Uuid
+  created_at   DateTime?         @default(now()) @db.Timestamp(6)
+  users        Users             @relation("UserPropertyLikes", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  property     PropertyDetails   @relation("PropertyLikes", fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("property_like")
+  @@unique([user_id, property_id]) // Ensure unique likes per property per user
+}
+
+
+
 
 enum AgencyType {
   BASIC

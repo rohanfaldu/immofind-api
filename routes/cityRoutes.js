@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Define your routes here
 router.post('/create', authorize, createCity); // Protected route
-router.post('/', authorize,getCities); // Public route (no authorization needed)
+router.post('/',getCities); // Public route (no authorization needed)
 router.post('/getbystate', authorize, getCitiesByStateId); // Protected route
 // router.post('/search',authorize, getCitiesByState); // Public route (no authorization needed)
 router.delete('/delete', authorize, deleteCity);

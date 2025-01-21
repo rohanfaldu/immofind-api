@@ -197,8 +197,18 @@
 		"invalidCoordinates": "Coordonnées invalides.",
 		"cityNotDeleteDueToDistricts": "La ville ne peut pas être supprimée en raison des districts existants.",
 		"districtNotDeleteDueToneighborhood": "Le district ne peut pas être supprimé en raison des quartiers existants.",
-		"neighborhoodInUse": "Le quartier est utilisé par une autre table."
-
+		"neighborhoodInUse": "Le quartier est utilisé par une autre table.",
+		"develoersRetrievedSuccessfully": "Développeur récupéré avec succès.",
+		"developerRetrievedSuccessfully": "Développeur récupéré avec succès.",
+		"phoneNumberAlreadyExists": "Le numéro de téléphone existe déjà.",
+		"invalidUserId": "Identifiant d'utilisateur invalide.",
+		"cityDeletedSuccessfully": "Ville supprimée avec succès.",
+		"userUpdatedSuccessfully": "L'utilisateur a été mis à jour avec succès.",
+		"propertySearchesSavedSuccessfully": "Recherches de propriétés enregistrées avec succès.",
+		"emailAlreadyExists": "L'e-mail existe déjà.",
+		"propertyLikedSuccessfully": "Propriété aimée avec succès.",
+		"propertyUnlikedSuccessfully": "Propriété refusée avec succès.",
+		"likedPropertyFetchedSuccessfully": "Propriété aimée récupérée avec succès."
 
 
 	}

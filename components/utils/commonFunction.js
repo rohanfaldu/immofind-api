@@ -62,5 +62,41 @@ const commonFunction = {
             return 'admin';
         }
     },
+
+    pagination: async (page, limit, where, orderBy, include, tableName) => {
+        try {
+          const validPage = Math.max(1, parseInt(page, 10) || 1);
+          const validLimit = Math.max(1, parseInt(limit, 10) || 10);
+          const skip = (validPage - 1) * validLimit;
+      
+          const totalCount = await prisma[tableName].count({
+            where,
+          });
+      
+          const finding = await prisma[tableName].findMany({
+            skip,
+            take: validLimit,
+            orderBy,
+            where,
+            include,
+          });
+      
+          return { totalCount, validPage, validLimit, finding };
+        } catch (error) {
+          console.error(`Error in pagination for ${tableName}:`, error);
+          throw error; // Rethrow the error to be handled in the calling function
+        }
+      },
+
+      langCondition: async(field, res) => {
+        const lang = res.getLocale();
+        return{
+            [lang === 'fr' ? 'fr_string' : 'en_string']: {
+                contains: field,
+                mode: 'insensitive',
+              },
+        }
+      }
+      
 };
 export default commonFunction;

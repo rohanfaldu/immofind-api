@@ -24,3 +24,18 @@ export const authorize = async (req, res, next) => {
     return response.authError(res, "Unauthorized: Invalid token");
   }
 };
+
+
+export const optionalAuthenticate = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  if (authHeader) {
+    const token = authHeader.split(' ')[1]; // Extract Bearer token
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET); // Replace with your JWT secret
+      req.user = decoded; // Attach user info (e.g., id) to the request object
+    } catch (err) {
+      console.warn('Invalid token:', err.message); // Log warning but don't block
+    }
+  }
+  next(); // Proceed whether token is valid or not
+};
