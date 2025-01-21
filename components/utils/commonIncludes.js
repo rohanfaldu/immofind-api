@@ -4,7 +4,9 @@ export const userInclude = {
         full_name: true,
         image: true,
         email_address: true,
-        id: true
+        id: true,
+        mobile_number: true,
+        country_code: true
       },
     },
   };

@@ -519,6 +519,8 @@ export const getAllProperty = async (req, res) => {
           user_name: property.users?.full_name || null,
           user_image: property.users?.image || null,
           user_id: property.users?.id,
+          phone_number: property.users?.mobile_number.toString(),
+          country_code: property.users?.country_code,
           email_address: property.users?.email_address || null,
           description,
           title,
