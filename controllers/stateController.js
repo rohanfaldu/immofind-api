@@ -254,6 +254,7 @@ export const getAllStates = async (req, res) => {
       };
     });
 
+    // console.log(">");
     return response.success(res, res.__('messages.statesFetchedSuccessfully'), { 
       states: result,
       totalCount,
