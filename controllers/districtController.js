@@ -446,6 +446,7 @@ export const updateDistrict = async (req, res) => {
         where: { id: city_id },
       });
 
+      // console.log("lll")
       if (!cityExists) {
         return response.error(res, res.__('messages.cityNotFound'));
       }
