@@ -56,6 +56,7 @@ export const createDistrict = async (req, res) => {
     // Check for existing translation
     const existingTranslation = await prisma.districts.findFirst({
       where: {
+        city_id,
         OR: [
           { langTranslation: { en_string: en_name } },
           { langTranslation: { fr_string: fr_name } },
@@ -176,10 +177,6 @@ export const getDistrictsByCity = async (req, res) => {
       },
     });
 
-    // Check if districts are found
-    if (!districts || districts.length === 0) {
-      return response.error(res, res.__('messages.noDistrictsFoundForCity')); // No districts found
-    }
 
     // Transform the response to include only the relevant language string
     const transformedDistricts = districts.map((district) => ({
@@ -458,6 +455,7 @@ export const updateDistrict = async (req, res) => {
     if (en_name || fr_name) {
       const existingTranslation = await prisma.districts.findFirst({
         where: {
+          city_id,
           OR: [
             { langTranslation: { en_string: en_name } },
             { langTranslation: { fr_string: fr_name } },

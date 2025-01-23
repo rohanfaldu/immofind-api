@@ -5,7 +5,8 @@ import {
   getNeighborhoodById,
   updateNeighborhood,
   deleteNeighborhood,
-  getAllNeighborhoods
+  getAllNeighborhoods,
+  getNeighborhoodsByCity
 } from '../controllers/neighborhoodsController.js';
 import { authorize } from '../middleware/authorization.js'; // Import the authorization middleware
 
@@ -16,6 +17,8 @@ router.post("/create", authorize, createNeighborhood);
 
 // Get neighborhoods by district
 router.post("/id", getNeighborhoodsByDistrict);
+
+router.post("/cityid", getNeighborhoodsByCity);
 
 router.post("/", authorize, getAllNeighborhoods);
 

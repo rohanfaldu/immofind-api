@@ -10,24 +10,22 @@ const prisma = new PrismaClient();
 // Create Neighborhood
 export const createNeighborhood = async (req, res) => {
   try {
-    const { district_id, en_name, fr_name, latitude, longitude, lang } = req.body;
+    const { district_id, city_id, en_name, fr_name, latitude, longitude, lang } = req.body;
 
     // Validate required fields
-    if (!district_id || (!en_name && !fr_name)) {
+    if (!city_id && !district_id) {
       return response.error(
         res,
-        res.__('messages.fieldError', { field: 'district_id, en_name, or fr_name' })
+        res.__('messages.fieldError', { field: 'district_id, or city_id , en_name, or fr_name' })
       );
     }
 
-    // Validate `district_id` format
-    if (!isUuid(district_id)) {
+    if (!en_name && !fr_name) {
       return response.error(
         res,
-        res.__('messages.invalidDistrictIdFormat') // Error if district_id is not a valid UUID
+        res.__('messages.fieldError', { field: 'en_name, or fr_name' })
       );
     }
-
 
     const authHeader = req.headers['authorization'];
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -55,17 +53,36 @@ export const createNeighborhood = async (req, res) => {
       ); // Error if coordinates are invalid
     }
 
-    // Verify `district_id` exists in Districts table
-    const districtExists = await prisma.districts.findUnique({
-      where: { id: district_id },
-      include: { langTranslation: true }, // Include langTranslation
-    });
+    let districtExists = null;
+    if (district_id) {
+      // Verify `district_id` exists in Districts table
+      districtExists = await prisma.districts.findUnique({
+        where: { id: district_id },
+        include: { langTranslation: true }, // Include langTranslation
+      });
 
-    if (!districtExists) {
-      return response.error(
-        res,
-        res.__('messages.invalidDistrictId') // Error if district_id does not exist
-      );
+      if (!districtExists) {
+        return response.error(
+          res,
+          res.__('messages.invalidDistrictId') // Error if district_id does not exist
+        );
+      }
+    }
+
+    let cityExists = null;
+    if (city_id) {
+      // Verify `city_id` exists in Cities table
+      cityExists = await prisma.cities.findUnique({
+        where: { id: city_id },
+        include: { lang: true }, // Include langTranslation
+      });
+
+      if (!cityExists) {
+        return response.error(
+          res,
+          res.__('messages.invalidCityId') // Error if city_id does not exist
+        );
+      }
     }
 
     // Check if `en_name` or `fr_name` already exists
@@ -73,6 +90,8 @@ export const createNeighborhood = async (req, res) => {
     if (en_name || fr_name) {
       const existingTranslation = await prisma.neighborhoods.findFirst({
         where: {
+          city_id,
+          district_id,
           OR: [
             { langTranslation: { en_string: en_name } },
             { langTranslation: { fr_string: fr_name } },
@@ -98,7 +117,8 @@ export const createNeighborhood = async (req, res) => {
     // Create the neighborhood
     const neighborhood = await prisma.neighborhoods.create({
       data: {
-        district_id,
+        district_id: district_id || null,
+        city_id: city_id || null,
         lang_id: langTranslation.id,
         latitude,
         longitude,
@@ -108,10 +128,15 @@ export const createNeighborhood = async (req, res) => {
     });
 
     // Fetch the created neighborhood with translations
-    const stateTranslation = await prisma.langTranslations.findUnique({
-      where: { id: districtExists.langTranslation.id }, // Access the correct id
-    });
-
+    const stateTranslation = districtExists
+      ? await prisma.langTranslations.findUnique({
+          where: { id: districtExists.langTranslation.id }, // Access the correct id
+        })
+      : cityExists
+      ? await prisma.langTranslations.findUnique({
+          where: { id: cityExists.lang.id },
+        })
+      : null;
 
     return response.success(
       res,
@@ -119,7 +144,8 @@ export const createNeighborhood = async (req, res) => {
       {
         id: neighborhood.id,
         district_id: neighborhood.district_id,
-        neighborhood_name: lang === 'fr' ? stateTranslation.fr_string : stateTranslation.en_string,
+        city_id: neighborhood.city_id, 
+        neighborhood_name: lang === 'fr' ? stateTranslation?.fr_string : stateTranslation?.en_string,
         latitude: neighborhood.latitude,
         longitude: neighborhood.longitude,
         is_deleted: neighborhood.is_deleted,
@@ -138,6 +164,7 @@ export const createNeighborhood = async (req, res) => {
     );
   }
 };
+
 
 
 export const getAllNeighborhoods = async (req, res) => {
@@ -165,6 +192,11 @@ export const getAllNeighborhoods = async (req, res) => {
             langTranslation: true,
           },
         },
+        cities: {
+          include: {
+            lang: true, // Include city language translations
+          },
+        },
       },
     });
 
@@ -172,22 +204,30 @@ export const getAllNeighborhoods = async (req, res) => {
       return response.error(res, res.__('messages.noNeighborhoodsFound'));
     }
 
-    const neighborhoodList = neighborhoods.map(neighborhood => {
-      // Check if langTranslation exists for the neighborhood
+    const neighborhoodList = neighborhoods.map((neighborhood) => {
+      // Handle possible null values
       const neighborhoodTranslation = neighborhood.langTranslation || {};
-      const districtTranslation = neighborhood.district.langTranslation || {};
+      const districtTranslation = neighborhood.district?.langTranslation || {};
+      const cityTranslation = neighborhood.cities?.lang || {};
 
-      // Get district name based on the requested language, with fallback
-      const districtName = lang === 'fr' 
-        ? districtTranslation.fr_string || 'District name not available' 
-        : districtTranslation.en_string || 'District name not available';
+      const districtName =
+        lang === 'fr'
+          ? districtTranslation.fr_string || 'District name not available'
+          : districtTranslation.en_string || 'District name not available';
+
+      const cityName =
+        lang === 'fr'
+          ? cityTranslation.fr_string || 'City name not available'
+          : cityTranslation.en_string || 'City name not available';
 
       return {
         id: neighborhood.id,
         district_name: districtName,
-        neighborhood_name: lang === 'fr'
-          ? neighborhoodTranslation.fr_string || 'Neighborhood name not available'
-          : neighborhoodTranslation.en_string || 'Neighborhood name not available',
+        city_name: cityName,
+        neighborhood_name:
+          lang === 'fr'
+            ? neighborhoodTranslation.fr_string || 'Neighborhood name not available'
+            : neighborhoodTranslation.en_string || 'Neighborhood name not available',
         latitude: neighborhood.latitude,
         longitude: neighborhood.longitude,
         is_deleted: neighborhood.is_deleted,
@@ -209,7 +249,6 @@ export const getAllNeighborhoods = async (req, res) => {
         itemsPerPage: validLimit,
       }
     );
-
   } catch (error) {
     console.error('Error retrieving neighborhoods:', error);
     return response.error(
@@ -219,6 +258,7 @@ export const getAllNeighborhoods = async (req, res) => {
     );
   }
 };
+
 
 
 // Get Neighborhoods by District
@@ -309,6 +349,109 @@ export const getNeighborhoodsByDistrict = async (req, res) => {
   }
 };
 
+
+
+export const getNeighborhoodsByCity = async (req, res) => {
+  try {
+    const { city_id, lang, neighbourhood_name } = req.body;
+
+    // Validate city_id
+    if (!city_id) {
+      return response.error(
+        res,
+        res.__('messages.cityIdRequired')
+      );
+    }
+
+    if (!isUuid(city_id)) {
+      return response.error(
+        res,
+        res.__('messages.invalidCityIdFormat')
+      );
+    }
+
+    // Verify if city_id exists
+    const cityExists = await prisma.cities.findUnique({
+      where: { id: city_id },
+    });
+
+    if (!cityExists) {
+      return response.error(
+        res,
+        res.__('messages.invalidCityId')
+      );
+    }
+
+    const isFrench = lang === 'fr';
+
+    // Fetch neighborhoods by city_id
+    const neighborhoods = await prisma.neighborhoods.findMany({
+      where: {
+        city_id,
+        langTranslation: neighbourhood_name
+          ? {
+              OR: [
+                { fr_string: { contains: neighbourhood_name, mode: 'insensitive' } },
+                { en_string: { contains: neighbourhood_name, mode: 'insensitive' } },
+              ],
+            }
+          : undefined,
+      },
+      select: {
+        id: true,
+        langTranslation: {
+          select: {
+            fr_string: true,
+            en_string: true,
+          },
+        },
+        district: {
+          select: {
+            langTranslation: {
+              select: {
+                fr_string: true,
+                en_string: true,
+              },
+            },
+          },
+        },
+        latitude: true,
+        longitude: true,
+        created_at: true,
+        updated_at: true,
+      },
+    });
+
+    const transformedNeighborhoods = neighborhoods.map((neighborhood) => ({
+      id: neighborhood.id,
+      district_name: lang === 'fr'
+        ? neighborhood.district?.langTranslation?.fr_string || 'District name not available'
+        : neighborhood.district?.langTranslation?.en_string || 'District name not available',
+      name: lang === 'fr'
+        ? neighborhood.langTranslation?.fr_string || 'Neighborhood name not available'
+        : neighborhood.langTranslation?.en_string || 'Neighborhood name not available',
+      latitude: neighborhood.latitude,
+      longitude: neighborhood.longitude,
+      created_at: neighborhood.created_at,
+      updated_at: neighborhood.updated_at,
+    }));
+
+    return response.success(
+      res,
+      res.__('messages.neighborhoodsFetchedSuccessfully'),
+      transformedNeighborhoods
+    );
+  } catch (error) {
+    console.error('Error fetching neighborhoods by city:', error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError'),
+      { message: error.message }
+    );
+  }
+};
+
+
 // Get Neighborhood by ID
 export const getNeighborhoodById = async (req, res) => {
   try {
@@ -338,6 +481,7 @@ export const getNeighborhoodById = async (req, res) => {
             en_string: true,
           },
         },
+        city_id: true,
         district_id: true,
         latitude: true,
         longitude: true,
@@ -356,6 +500,7 @@ export const getNeighborhoodById = async (req, res) => {
       fr_name: neighborhood.langTranslation?.fr_string,
       latitude: neighborhood.latitude,
       district_id: neighborhood.district_id,
+      city_id: neighborhood.city_id,
       longitude: neighborhood.longitude,
       created_at: neighborhood.created_at,
       updated_at: neighborhood.updated_at,
@@ -369,13 +514,24 @@ export const getNeighborhoodById = async (req, res) => {
 };
 
 // Update Neighborhood
+import { v4 as isUUID } from 'uuid';
+
 export const updateNeighborhood = async (req, res) => {
   try {
     const { id } = req.params;
-    const { en_name, fr_name, latitude, longitude, district_id, lang } = req.body;
+    const { en_name, fr_name, latitude, longitude, district_id, lang, city_id } = req.body;
 
-    if (!id) {
-      return response.error(res, res.__('messages.neighborhoodIdRequired'));
+    if (!id || !isUUID(id)) {
+      return response.error(res, res.__('messages.invalidNeighborhoodId'));
+    }
+
+    // Validate optional IDs
+    if (district_id && !isUUID(district_id)) {
+      return response.error(res, res.__('messages.invalidDistrictId'));
+    }
+
+    if (city_id && !isUUID(city_id)) {
+      return response.error(res, res.__('messages.invalidCityId'));
     }
 
     const authHeader = req.headers['authorization'];
@@ -409,11 +565,13 @@ export const updateNeighborhood = async (req, res) => {
     let langTranslation;
     if (en_name || fr_name) {
       // Check if the translation already exists
-      const existingTranslation = await prisma.neighborhoods.findFirst({
+      const existingTranslation = await prisma.langTranslations.findFirst({
         where: {
+          city_id,
+          district_id,
           OR: [
-            { langTranslation: { en_string: en_name } },
-            { langTranslation: { fr_string: fr_name } },
+            { en_string: en_name },
+            { fr_string: fr_name },
           ],
         },
       });
@@ -440,7 +598,8 @@ export const updateNeighborhood = async (req, res) => {
       data: {
         latitude,
         longitude,
-        district_id,
+        district_id: district_id || null, // Ensure null is passed if ID is not provided
+        city_id: city_id || null, // Ensure null is passed if ID is not provided
         lang_id: langTranslation ? langTranslation.id : neighborhood.lang_id, // Update lang_id if translation exists
         updated_by: userId, // Track who updated
         updated_at: new Date(),
@@ -460,6 +619,7 @@ export const updateNeighborhood = async (req, res) => {
     const responseData = {
       id: updatedNeighborhood.id,
       district_id: updatedNeighborhood.district_id,
+      city_id: updatedNeighborhood.city_id,
       name, // Include name instead of lang_id
       latitude: updatedNeighborhood.latitude,
       longitude: updatedNeighborhood.longitude,
@@ -475,6 +635,7 @@ export const updateNeighborhood = async (req, res) => {
     return response.error(res, res.__('messages.internalServerError'), { message: error.message });
   }
 };
+
 
 // Delete Neighborhood
 export const deleteNeighborhood = async (req, res) => {

@@ -73,6 +73,7 @@ model Cities {
   lang             LangTranslations? @relation(fields: [lang_id], references: [id])
   states           States            @relation(fields: [state_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "state_foreign_key")
   districts        Districts[]
+  neighborhoods    Neighborhoods[]
   ProjectDetails   ProjectDetails[]
   property_details PropertyDetails[]
 
@@ -101,7 +102,8 @@ model Districts {
 
 model Neighborhoods {
   id              String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  district_id     String            @db.Uuid
+  district_id     String?           @db.Uuid
+  city_id         String?           @db.Uuid
   lang_id         String?           @db.Uuid
   latitude        Float?
   longitude       Float?
@@ -110,7 +112,8 @@ model Neighborhoods {
   updated_at      DateTime?         @default(now()) @db.Timestamp(6)
   created_by      String?           @db.Uuid
   updated_by      String?           @db.Uuid
-  district        Districts         @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "district_foreign_key")
+  cities          Cities?            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
+  district        Districts?         @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "district_foreign_key")
   langTranslation LangTranslations? @relation(fields: [lang_id], references: [id])
   projectDetails  ProjectDetails[]  @relation("ProjectNeighborhoods")
   propertyDetails PropertyDetails[] @relation("PropertyNeighborhoods")
@@ -167,7 +170,7 @@ model PropertyDetails {
   price                                                             Int
   state_id                                                          String?               @db.Uuid
   city_id                                                           String?               @db.Uuid
-  district_id                                                       String                @db.Uuid
+  district_id                                                       String?               @db.Uuid
   vr_link                                                           String?               @db.VarChar
   video                                                             String?               @db.VarChar
   status                                                            Boolean               @default(true)
@@ -193,7 +196,7 @@ model PropertyDetails {
   slug                                                              String?               @unique
   like_count                                                        Int                @default(0)
   cities                                                            Cities?               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_foreign_key")
-  districts                                                         Districts             @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
+  districts                                                         Districts?            @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_foreign_key")
   property_details                                                  ProjectDetails?       @relation("property_detailsToproperty_details", fields: [project_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "project_id_foreign_key")
   lang_translations_property_details_descriptionTolang_translations LangTranslations      @relation("property_details_descriptionTolang_translations", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_descriptioj_foreign_key")
   currency                                                          Currency?             @relation("PropertyCurrency", fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -212,7 +215,7 @@ model ProjectDetails {
   id                            String               @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   state_id                      String               @db.Uuid
   city_id                       String               @db.Uuid
-  district_id                   String               @db.Uuid
+  district_id                   String?               @db.Uuid
   vr_link                       String?              @db.VarChar
   video                         String?              @db.VarChar
   status                        Boolean              @default(false)
@@ -234,7 +237,7 @@ model ProjectDetails {
   picture                       String[]
   slug                          String?              @unique
   cities                        Cities               @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_project_foreign_key")
-  districts                     Districts            @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_project_foreign_key")
+  districts                     Districts?            @relation(fields: [district_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "districts_project_foreign_key")
   currency                      Currency?            @relation("ProjectCurrency", fields: [currency_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_description LangTranslations     @relation("project_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
   neighborhoods                 Neighborhoods?       @relation("ProjectNeighborhoods", fields: [neighborhoods_id], references: [id], onDelete: NoAction, onUpdate: NoAction)

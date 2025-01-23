@@ -1149,7 +1149,7 @@ export const createProject = async (req, res) => {
       description_fr,
       state_id,
       city_id,
-      district_id,
+      district_id, // Optional
       latitude,
       longitude,
       address,
@@ -1159,7 +1159,7 @@ export const createProject = async (req, res) => {
       video,
       user_id,
       meta_details,
-      neighborhoods_id,
+      neighborhoods_id, // Optional
       price,
       currency_id
     } = req.body;
@@ -1171,32 +1171,29 @@ export const createProject = async (req, res) => {
       !description_en ||
       !description_fr ||
       !state_id ||
-      !city_id ||
-      !district_id ||
       !latitude ||
       !longitude ||
       !user_id ||
-      !neighborhoods_id||
       !icon
     ) {
       return response.error(res, res.__('messages.allFieldsRequired'), null, 400);
     }
 
-    
     const user = await prisma.users.findFirst({
       where: {
         id: user_id,
         roles: {
-          name: 'developer',  // Ensure the variable `type` has a correct role name
+          name: 'developer',
         },
       },
-    })
-    if(!user){
+    });
+
+    if (!user) {
       return response.error(res, res.__('messages.onlyDeveloperCreat'), null, 400);
     }
 
     const projectCount = await prisma.projectDetails.count();
-    if(projectCount > 0 ){
+    if (projectCount > 0) {
       const projectTitleExist = await prisma.projectDetails.findFirst({
         where: {
           OR: [
@@ -1204,22 +1201,22 @@ export const createProject = async (req, res) => {
             { lang_translations_title: { fr_string: title_fr } },
           ],
         },
-      })
-      
-      if(projectTitleExist){
+      });
+
+      if (projectTitleExist) {
         return response.error(res, res.__('messages.projectCreated'), null, 400);
       }
     }
-    
 
     const baseSlug = slugify(title_en, { lower: true, replacement: '_', strict: true });
     const uniqueSlug = await generateUniqueSlug(baseSlug);
-    // // Step 1: Create translations for title and description
+
+    // Step 1: Create translations for title and description
     const titleTranslation = await prisma.langTranslations.create({
       data: {
         en_string: title_en,
         fr_string: title_fr,
-        created_by: user_id, // Assuming user_id is the ID of the user creating the project
+        created_by: user_id,
       },
     });
 
@@ -1231,15 +1228,15 @@ export const createProject = async (req, res) => {
       },
     });
 
-    // // Step 2: Create the project
+    // Step 2: Create the project
     const newProject = await prisma.projectDetails.create({
       data: {
-        title: titleTranslation.id, // Link to the title translation
-        description: descriptionTranslation.id, // Link to the description translation
+        title: titleTranslation.id,
+        description: descriptionTranslation.id,
         state_id: state_id,
         city_id: city_id,
-        district_id: district_id,
-        neighborhoods_id: neighborhoods_id,
+        district_id: district_id || null, // Optional field
+        neighborhoods_id: neighborhoods_id || null, // Optional field
         price: price,
         latitude: latitude,
         longitude: longitude,
@@ -1257,56 +1254,23 @@ export const createProject = async (req, res) => {
         project_meta_details: {
           create: meta_details.map((meta) => ({
             value: meta.value,
-            project_type_listing_id: meta.project_type_listing_id, // Link to the project type listing
+            project_type_listing_id: meta.project_type_listing_id,
           })),
         },
       },
     });
 
-    // // Step 3: Fetch the created project with necessary relationships for the response
+    // Fetch the created project for the response
     const createdProject = await prisma.projectDetails.findUnique({
       where: { id: newProject.id },
       include: {
-        users: {
-          select: {
-            full_name: true,
-            image: true,
-          },
-        },
-        lang_translations_title: {
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
-        lang_translations_description: {
-          select: {
-            en_string: true,
-            fr_string: true,
-          },
-        },
-        states: {
-          select: { 
-            lang: { select: { fr_string: true, en_string: true } } 
-          },
-        },
-        cities: {
-          select: { 
-            lang: { select: { fr_string: true, en_string: true } } 
-          },
-        },
-        districts: {
-          select: { 
-            langTranslation: { select: { fr_string: true, en_string: true } } 
-          },
-        },
-        neighborhoods: {
-          select: {
-            langTranslation: {
-              select: { en_string: true, fr_string: true },
-            },
-          },
-        },
+        users: { select: { full_name: true, image: true } },
+        lang_translations_title: { select: { en_string: true, fr_string: true } },
+        lang_translations_description: { select: { en_string: true, fr_string: true } },
+        states: { select: { lang: { select: { fr_string: true, en_string: true } } } },
+        cities: { select: { lang: { select: { fr_string: true, en_string: true } } } },
+        districts: { select: { langTranslation: { select: { fr_string: true, en_string: true } } } },
+        neighborhoods: { select: { langTranslation: { select: { en_string: true, fr_string: true } } } },
         project_meta_details: {
           select: {
             value: true,
@@ -1316,12 +1280,7 @@ export const createProject = async (req, res) => {
                 name: true,
                 type: true,
                 key: true,
-                lang_translations: {
-                  select: {
-                    en_string: true,
-                    fr_string: true,
-                  },
-                },
+                lang_translations: { select: { en_string: true, fr_string: true } },
               },
             },
           },
@@ -1329,7 +1288,7 @@ export const createProject = async (req, res) => {
       },
     });
 
-    // // Step 4: Format the project data for the response
+    // Format the project data for the response
     const lang = res.getLocale();
     const simplifiedProject = {
       id: createdProject.id,
@@ -1337,26 +1296,10 @@ export const createProject = async (req, res) => {
       user_image: createdProject.users?.image || null,
       title: lang === 'fr' ? createdProject.lang_translations_title.fr_string : createdProject.lang_translations_title.en_string,
       description: lang === 'fr' ? createdProject.lang_translations_description.fr_string : createdProject.lang_translations_description.en_string,
-      state:
-      createdProject.states?.lang &&
-        (lang === "fr"
-          ? createdProject.states.lang.fr_string
-          : createdProject.states.lang.en_string),
-      city:
-      createdProject.cities?.lang &&
-        (lang === "fr"
-          ? createdProject.cities.lang.fr_string
-          : createdProject.cities.lang.en_string),
-      district:
-      createdProject.districts?.langTranslation &&
-        (lang === "fr"
-          ? createdProject.districts.langTranslation.fr_string
-          : createdProject.districts.langTranslation.en_string),
-      neighborhood:
-      createdProject.neighborhoods?.langTranslation &&
-        (lang === "fr"
-          ? createdProject.neighborhoods.langTranslation.fr_string
-          : createdProject.neighborhoods.langTranslation.en_string),
+      state: createdProject.states?.lang && (lang === "fr" ? createdProject.states.lang.fr_string : createdProject.states.lang.en_string),
+      city: createdProject.cities?.lang && (lang === "fr" ? createdProject.cities.lang.fr_string : createdProject.cities.lang.en_string),
+      district: createdProject.districts?.langTranslation && (lang === "fr" ? createdProject.districts.langTranslation.fr_string : createdProject.districts.langTranslation.en_string),
+      neighborhood: createdProject.neighborhoods?.langTranslation && (lang === "fr" ? createdProject.neighborhoods.langTranslation.fr_string : createdProject.neighborhoods.langTranslation.en_string),
       currency_id: createdProject.currency_id,
       price: createdProject.price,
       latitude: createdProject.latitude,
@@ -1371,10 +1314,7 @@ export const createProject = async (req, res) => {
       created_by: createdProject.created_by,
       updated_by: createdProject.updated_by,
       meta_details: createdProject.project_meta_details.map((meta) => {
-        const langObj = lang === 'en'
-          ? meta.project_type_listing?.lang_translations?.en_string
-          : meta.project_type_listing?.lang_translations?.fr_string;
-
+        const langObj = lang === 'en' ? meta.project_type_listing?.lang_translations?.en_string : meta.project_type_listing?.lang_translations?.fr_string;
         return {
           id: meta.project_type_listing?.id || null,
           type: meta.project_type_listing?.type || null,
@@ -1385,13 +1325,13 @@ export const createProject = async (req, res) => {
       }),
     };
 
-    // // Step 5: Return the response
     return await response.success(res, res.__('messages.projectCreatedSuccessfully'), simplifiedProject);
   } catch (error) {
     console.error('Error creating project:', error);
     return await response.serverError(res, res.__('messages.errorCreatingProject'));
   }
 };
+
 
 
 // Update an existing project
@@ -1419,7 +1359,7 @@ export const updateProject = async (req, res) => {
       user_id,
       meta_details,
       currency_id,
-      price
+      price,
     } = req.body;
 
     // Validate required fields
@@ -1431,7 +1371,6 @@ export const updateProject = async (req, res) => {
       !description_fr ||
       !state_id ||
       !city_id ||
-      !district_id ||
       !latitude ||
       !longitude ||
       !user_id
@@ -1457,7 +1396,7 @@ export const updateProject = async (req, res) => {
       update: {
         en_string: title_en,
         fr_string: title_fr,
-        updated_by: user_id, // Assuming user_id is the ID of the user updating the project
+        updated_by: user_id,
       },
       create: {
         en_string: title_en,
@@ -1490,8 +1429,8 @@ export const updateProject = async (req, res) => {
         city_id: city_id,
         currency_id: currency_id,
         price: price,
-        district_id: district_id,
-        neighborhoods_id: neighborhoods_id,
+        district_id: district_id || null, // Optional district_id
+        neighborhoods_id: neighborhoods_id || null, // Optional neighborhoods_id
         latitude: latitude,
         longitude: longitude,
         address: address,
@@ -1499,14 +1438,14 @@ export const updateProject = async (req, res) => {
         picture: picture || null,
         icon: icon || null,
         video: video || null,
-        user_id: user_id, // The user updating the project
-        updated_by:updatedBy,
+        user_id: user_id,
+        updated_by: updatedBy,
         updated_at: new Date(),
         project_meta_details: {
           deleteMany: {}, // Delete old meta details
           create: meta_details.map((meta) => ({
             value: meta.value,
-            project_type_listing_id: meta.project_type_listing_id, // Link to the project type listing
+            project_type_listing_id: meta.project_type_listing_id,
           })),
         },
       },
@@ -1535,13 +1474,13 @@ export const updateProject = async (req, res) => {
           },
         },
         states: {
-          select: { 
-            lang: { select: { fr_string: true, en_string: true } } 
+          select: {
+            lang: { select: { fr_string: true, en_string: true } },
           },
         },
         cities: {
-          select: { 
-            lang: { select: { fr_string: true, en_string: true } } 
+          select: {
+            lang: { select: { fr_string: true, en_string: true } },
           },
         },
         neighborhoods: {
@@ -1552,8 +1491,8 @@ export const updateProject = async (req, res) => {
           },
         },
         districts: {
-          select: { 
-            langTranslation: { select: { fr_string: true, en_string: true } } 
+          select: {
+            langTranslation: { select: { fr_string: true, en_string: true } },
           },
         },
         project_meta_details: {
@@ -1584,26 +1523,32 @@ export const updateProject = async (req, res) => {
       id: createdProject.id,
       user_name: createdProject.users?.full_name || null,
       user_image: createdProject.users?.image || null,
-      title: lang === 'fr' ? createdProject.lang_translations_title.fr_string : createdProject.lang_translations_title.en_string,
-      description: lang === 'fr' ? createdProject.lang_translations_description.fr_string : createdProject.lang_translations_description.en_string,
+      title:
+        lang === 'fr'
+          ? createdProject.lang_translations_title.fr_string
+          : createdProject.lang_translations_title.en_string,
+      description:
+        lang === 'fr'
+          ? createdProject.lang_translations_description.fr_string
+          : createdProject.lang_translations_description.en_string,
       neighborhood:
-      createdProject.neighborhoods?.langTranslation &&
-        (lang === "fr"
+        createdProject.neighborhoods?.langTranslation &&
+        (lang === 'fr'
           ? createdProject.neighborhoods.langTranslation.fr_string
           : createdProject.neighborhoods.langTranslation.en_string),
       state:
-      createdProject.states?.lang &&
-        (lang === "fr"
+        createdProject.states?.lang &&
+        (lang === 'fr'
           ? createdProject.states.lang.fr_string
           : createdProject.states.lang.en_string),
-      city: 
-      createdProject.cities?.lang &&
-        (lang === "fr"
+      city:
+        createdProject.cities?.lang &&
+        (lang === 'fr'
           ? createdProject.cities.lang.fr_string
           : createdProject.cities.lang.en_string),
       district:
-      createdProject.districts?.langTranslation &&
-        (lang === "fr"
+        createdProject.districts?.langTranslation &&
+        (lang === 'fr'
           ? createdProject.districts.langTranslation.fr_string
           : createdProject.districts.langTranslation.en_string),
       latitude: createdProject.latitude,
@@ -1620,9 +1565,10 @@ export const updateProject = async (req, res) => {
       created_by: createdProject.created_by,
       updated_by: createdProject.updated_by,
       meta_details: createdProject.project_meta_details.map((meta) => {
-        const langObj = lang === 'en'
-          ? meta.project_type_listing?.lang_translations?.en_string
-          : meta.project_type_listing?.lang_translations?.fr_string;
+        const langObj =
+          lang === 'en'
+            ? meta.project_type_listing?.lang_translations?.en_string
+            : meta.project_type_listing?.lang_translations?.fr_string;
 
         return {
           id: meta.project_type_listing?.id || null,
@@ -1641,6 +1587,7 @@ export const updateProject = async (req, res) => {
     return await response.serverError(res, res.__('messages.errorCreatingProject'));
   }
 };
+
 
 
 // Delete a project (soft delete)
