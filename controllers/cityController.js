@@ -416,6 +416,11 @@ export const getCities = async (req, res) => {
             }
           : undefined,
       },
+      orderBy: {
+        lang: {
+          [isFrench ? 'fr_string' : 'en_string']: 'asc', // Order by city name in the selected language
+        },
+      },
       select: {
         id: true,
         latitude: true,

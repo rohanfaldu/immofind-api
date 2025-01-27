@@ -169,7 +169,7 @@ export const createNeighborhood = async (req, res) => {
 
 export const getAllNeighborhoods = async (req, res) => {
   try {
-    const { page = 1, limit = 10, lang } = req.query;
+    const { page = 1, limit = 10, lang } = req.body;
 
     const validPage = Math.max(1, parseInt(page, 10) || 1);
     const validLimit = Math.max(1, parseInt(limit, 10) || 10);

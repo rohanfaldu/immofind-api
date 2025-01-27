@@ -327,7 +327,7 @@ export const getAllProperty = async (req, res) => {
 
     const skip = (validPage - 1) * validLimit;
 
-    const filters = [
+    const otherConditions = [
       await commonFilter.titleCondition(title),
       await commonFilter.descriptionCondition(description),
       await commonFilter.cityCondition(city_id),
@@ -341,13 +341,21 @@ export const getAllProperty = async (req, res) => {
       await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value),
       await commonFilter.directionCondition(direction),
       await commonFilter.developerCondition(developer_id),
-      await commonFilter.transactionCondition(transaction)
+    ]
 
+    const transactionConditions = [
+      await commonFilter.transactionCondition(transaction)
     ]
 
     const combinedCondition = {
-      AND: filters.filter(Boolean),
+      AND: [
+        { AND: transactionConditions.filter(Boolean) },
+        { OR: otherConditions.filter(Boolean) },
+      ],
     };
+
+
+
 
     const totalCount = await prisma.propertyDetails.count({
       where: combinedCondition,
@@ -483,6 +491,12 @@ export const getAllProperty = async (req, res) => {
             value: meta.value,
           };
         });
+
+        
+        
+
+
+
     
         const bathRooms =
           metaDetails.find((meta) => meta.key === 'bathrooms')?.value || "0";
@@ -513,7 +527,102 @@ export const getAllProperty = async (req, res) => {
           }
         }
         
+        let price_score = 100;
+        let location_score = 100;
+        let surface_are_score = 100;
+        let property_type_score = 100;
+        let amenities_score = 100;
+
+        // Price calculation
+        if (property.price >= minPrice && property.price <= maxPrice) {
+          price_score = 100;
+        } else if (property.price > maxPrice) {
+          const percentAbove = ((property.price - maxPrice) / maxPrice) * 100;
+          if (100 - percentAbove >= 50) {
+            price_score = 100 - percentAbove;
+          } else {
+            price_score = 0;
+          }
+        } else if (property.price < minPrice) {
+          const percentBelow = ((minPrice - property.price) / minPrice) * 100;
+          if (100 - percentBelow >= 50) {
+            price_score = 100 - percentBelow;
+          } else {
+            price_score = 0;
+          }
+        }
+
+        // Surface area calculation
+        if (property.size >= minSize && property.size <= maxSize) {
+          surface_are_score = 100;
+        } else if (property.size > maxSize) {
+          const percentAbove = ((property.size - maxSize) / maxSize) * 100;
+          if (100 - percentAbove >= 50) {
+            surface_are_score = 100 - percentAbove;
+          } else {
+            surface_are_score = 0;
+          }
+        } else if (property.size < minSize) {
+          const percentBelow = ((minSize - property.size) / minSize) * 100;
+          if (100 - percentBelow >= 50) {
+            surface_are_score = 100 - percentBelow;
+          } else {
+            surface_are_score = 0;
+          }
+        }
+
+
+        //Boolean amenities filter 
+        if (property && property.property_meta_details) {
+          const booleanIdsSet = new Set(
+              property.property_meta_details
+                  .filter(meta => meta.property_type_listings?.type === "boolean")
+                  .map(meta => meta.property_type_listings?.id)
+          );
+      
+          let matchedAmenities = [];
+          if (Array.isArray(amenities_id_array)) {
+              const allMatch = amenities_id_array.every(id => booleanIdsSet.has(id));
+      
+              if (allMatch) {
+                amenities_score = 100;
+              } else {
+                  matchedAmenities = amenities_id_array.filter(id => booleanIdsSet.has(id));
+                  const totalRequested = amenities_id_array.length;
+                  const totalMatched = matchedAmenities.length;
+                  amenities_score = (totalMatched / totalRequested) * 100;
+              }
+          } else {
+              console.error("amenities_id_array is undefined or not an array:", amenities_id_array);
+              amenities_score = 100;
+          }
+      
+          console.log('Match Percentage:', amenities_score);
+      } else {
+          console.error("Property or property_meta_details is undefined:", property);
+      }
+      
+      
+        //Property type calculation
+        if (!type_id) {
+          property_type_score = 100;
+        } else {
+            if (property.property_types?.id === type_id) {
+                property_type_score = 100;
+            } else {
+                property_type_score = 0;
+            }
+        }
+
     
+        const price_weight = 0.30
+        const location_weight = 0.25
+        const surface_area = 0.10
+        const property_type = 0.10
+        const amenities = 0.10
+
+        //location score static, 
+        const final_score = (price_score * price_weight + location_score * location_weight + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities)
         return {
           id: property.id,
           user_name: property.users?.full_name || null,
@@ -566,6 +675,14 @@ export const getAllProperty = async (req, res) => {
           },
           project_details: responseProjectData,
           like: likedPropertyIds.includes(property.id),
+          filter_result:{
+            location: location_score * location_weight,
+            price: price_score * price_weight,
+            surface_area: surface_are_score * surface_area,
+            property_type: property_type_score * property_type,
+            amenities: amenities_score * amenities,
+            total_percentage: final_score,
+          }
         };
       })
     );

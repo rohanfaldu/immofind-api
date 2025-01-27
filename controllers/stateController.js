@@ -217,7 +217,8 @@ export const deleteState = async (req, res) => {
 };
 export const getAllStates = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.body;
+    const { page, limit } = req.body;
+
     const lang = res.getLocale();
     const where = {
       is_deleted: false,
