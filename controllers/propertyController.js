@@ -532,8 +532,8 @@ export const getAllProperty = async (req, res) => {
         let surface_are_score = 100;
         let property_type_score = 100;
         let amenities_score = 100;
-       
         let room_amenities_score = 0; // Initialize matchPercentage with 0
+        let year_amenities_score = 0;
 
         // Price calculation
         if (property.price >= minPrice && property.price <= maxPrice) {
@@ -583,11 +583,15 @@ export const getAllProperty = async (req, res) => {
           );
       
           let matchedAmenities = [];
-          if (Array.isArray(amenities_id_array)) {
+          
+          // Handle case when amenities_id_array is an empty string or undefined
+          if (!amenities_id_array || amenities_id_array === "") {
+              amenities_score = 100; // Default score for empty or undefined amenities_id_array
+          } else if (Array.isArray(amenities_id_array)) {
               const allMatch = amenities_id_array.every(id => booleanIdsSet.has(id));
       
               if (allMatch) {
-                amenities_score = 100;
+                  amenities_score = 100;
               } else {
                   matchedAmenities = amenities_id_array.filter(id => booleanIdsSet.has(id));
                   const totalRequested = amenities_id_array.length;
@@ -595,14 +599,15 @@ export const getAllProperty = async (req, res) => {
                   amenities_score = (totalMatched / totalRequested) * 100;
               }
           } else {
-              console.error("amenities_id_array is undefined or not an array:", amenities_id_array);
+              console.error("amenities_id_array is not a valid array:", amenities_id_array);
               amenities_score = 100;
           }
       
-          console.log('Match Percentage:', amenities_score);
+          // console.log("Match Percentage:", amenities_score);
       } else {
           console.error("Property or property_meta_details is undefined:", property);
       }
+      
 
 
         //Bedrooms amenities filter
@@ -611,39 +616,60 @@ export const getAllProperty = async (req, res) => {
             .filter(meta => meta.property_type_listings?.type === "number")
             .find(meta => meta.property_type_listings.key === "rooms");
         
-          console.log(bedRooms, "bedRooms");
-        
-          // Check if amenities_id_object_with_value is undefined or null
-          if (!amenities_id_object_with_value) {
-            room_amenities_score = 100; // Default match percentage to 100% if undefined
-          } else if (bedRooms) {
+          if (!amenities_id_object_with_value || Object.keys(amenities_id_object_with_value).length === 0) {
+            room_amenities_score = 100;
+          } else if(bedRooms){
             const propertyId = bedRooms.property_type_listings.id;
             const propertyValue = bedRooms.value;
         
             let totalFilters = 0;
             let matchedFilters = 0;
-            // Count matching and total filters
             for (const [amenityId, amenityValue] of Object.entries(amenities_id_object_with_value)) {
-              totalFilters++; // Increment the total filters count
+              totalFilters++;
         
-              // Check if the amenity matches
               if (propertyId === amenityId && propertyValue === amenityValue) {
-                matchedFilters++; // Increment matched filters count
+                matchedFilters++;
               }
             }
         
-            // Calculate the match percentage
             room_amenities_score = (matchedFilters / totalFilters) * 100;
           }
         
-          // Log the result
           console.log(`Match Percentage: ${room_amenities_score}%`);
         } else {
           console.error("Property or property_meta_details is undefined:", property);
         }
         
-
-
+        //Year of construction calculation
+        if (property && property.property_meta_details) {
+          const yearOfConstruction = property.property_meta_details
+            .filter(meta => meta.property_type_listings?.type === "number")
+            .find(meta => meta.property_type_listings.key === "year_of_construction");
+        console.log(property.property_meta_details,"}}}}}}}}}}}}}}}}}}}}}")
+        
+          if (!amenities_id_object_with_value || Object.keys(amenities_id_object_with_value).length === 0) {
+            year_amenities_score = 100;
+          } else if(yearOfConstruction){
+            const propertyId = yearOfConstruction.property_type_listings.id;
+            const propertyValue = yearOfConstruction.value;
+        
+            let totalFilters = 0;
+            let matchedFilters = 0;
+            for (const [amenityId, amenityValue] of Object.entries(amenities_id_object_with_value)) {
+              totalFilters++;
+        
+              if (propertyId === amenityId && propertyValue === amenityValue) {
+                matchedFilters++;
+              }
+            }
+        
+            year_amenities_score = (matchedFilters / totalFilters) * 100;
+          }
+        
+          // console.log(`Match Percentage: ${year_amenities_score}%`);
+        } else {
+          console.error("Property or property_meta_details is undefined:", property);
+        }
 
       
       
@@ -665,9 +691,10 @@ export const getAllProperty = async (req, res) => {
         const property_type = 0.10
         const amenities = 0.10
         const roomAmenities = 0.10
+        const yearAmenities = 0.05
 
         //location score static, 
-        const final_score = (price_score * price_weight + location_score * location_weight + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities + roomAmenities * room_amenities_score)
+        const final_score = (price_score * price_weight + location_score * location_weight + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities + roomAmenities * room_amenities_score + yearAmenities *year_amenities_score)
         return {
           id: property.id,
           user_name: property.users?.full_name || null,
@@ -727,6 +754,7 @@ export const getAllProperty = async (req, res) => {
             property_type: property_type_score * property_type,
             amenities: amenities_score * amenities,
             room_amenities: roomAmenities * room_amenities_score,
+            construction_year_amenities: yearAmenities * year_amenities_score,
             total_percentage: parseFloat(final_score.toFixed(2)),
           }
         };
