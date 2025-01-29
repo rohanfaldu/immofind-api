@@ -3,7 +3,7 @@ import { getAllPropertyTypeListings, checkProjectTypeListing, createPropertyType
 import { authorize } from '../middleware/authorization.js'; // Import the authorization middleware
 const router = express.Router();
 
-router.post('/',authorize, getAllPropertyTypeListings);
+router.post('/', getAllPropertyTypeListings);
 router.post('/getbyid',authorize, getPropertyTypeListingById);
 router.post('/create',authorize, createPropertyTypeListing);
 // router.post('/:id', getPropertyTypeListingById);
