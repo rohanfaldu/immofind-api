@@ -106,6 +106,7 @@ export const propertyMetaDetailsInclude = {
             type: true,
             icon: true,
             key: true,
+            is_filtered: true,
             lang_translations: {
               select: {
                 en_string: true,
