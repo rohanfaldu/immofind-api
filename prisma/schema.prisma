@@ -341,6 +341,7 @@ model PropertyTypeListings {
   type                  String?               @db.VarChar
   name                  String                @db.Uuid
   status                Boolean               @default(false)
+  is_filtered           Boolean?              @default(false)
   property_meta_details PropertyMetaDetails[]
   lang_translations     LangTranslations      @relation(fields: [name], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "property_listing_name_foreign_key")
 
@@ -506,16 +507,6 @@ model PropertyLike {
   @@unique([user_id, property_id])
   @@map("property_like")
 }
-
-model DevelopersToAgencyPackages {
-  A String @db.Uuid
-  B String @db.Uuid
-
-  @@unique([A, B], map: "_DevelopersToAgencyPackages_AB_unique")
-  @@index([B], map: "_DevelopersToAgencyPackages_B_index")
-  @@map("_DevelopersToAgencyPackages")
-}
-
 enum AgencyType {
   BASIC
   STANDARD
