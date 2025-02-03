@@ -816,7 +816,7 @@ export const getAllProperty = async (req, res) => {
             amenities: amenities_score * amenities,
             room_amenities: roomAmenities * room_amenities_score,
             construction_year_amenities: yearAmenities * year_amenities_score,
-            total_percentage: parseFloat(final_score.toFixed(2)),
+            total_percentage: Math.ceil(parseFloat(final_score.toFixed(2))),
             exact_distance: property.exact_distance || null
           }
         };
