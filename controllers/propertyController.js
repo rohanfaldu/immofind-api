@@ -2,6 +2,10 @@ import { PrismaClient } from '@prisma/client';
 import response from '../components/utils/response.js';
 import { validate as isUUID } from "uuid";
 import commonFunction from "../components/utils/commonFunction.js";
+import axios from "axios";
+import { Client } from '@googlemaps/google-maps-services-js';
+
+const GOOGLE_MAPS_API_KEY = "AIzaSyCwhqQx0uqNX7VYhsgByiF9TzXwy81CFag";
 import {
   userInclude,
   langTranslationsInclude,
@@ -18,6 +22,7 @@ import commonFilter from "../components/utils/commonFilters.js"
 const prisma = new PrismaClient();
 import slugify from 'slugify';
 
+const googleMapsClient = new Client({});
 
 // Get all property type listing
 const generateUniqueSlug = async (baseSlug, attempt = 0) => {
@@ -319,7 +324,8 @@ export const getLikedProperty = async (req, res) => {
 
 export const getAllProperty = async (req, res) => {
   try {
-    const { page = 1, limit = 10, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction} = req.body;
+    const { page = 1, limit = 10, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude} = req.body;
+    console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
     const lang = res.getLocale();
 
     const validPage = Math.max(1, parseInt(page, 10));
@@ -528,12 +534,12 @@ export const getAllProperty = async (req, res) => {
         }
         
         let price_score = 100;
-        let location_score = 100;
+        let location_score = 25;
         let surface_are_score = 100;
         let property_type_score = 100;
         let amenities_score = 100;
-        let room_amenities_score = 0; // Initialize matchPercentage with 0
-        let year_amenities_score = 0;
+        let room_amenities_score = 100; // Initialize matchPercentage with 0
+        let year_amenities_score = 100;
 
         // Price calculation
         if (property.price >= minPrice && property.price <= maxPrice) {
@@ -599,7 +605,6 @@ export const getAllProperty = async (req, res) => {
                   amenities_score = (totalMatched / totalRequested) * 100;
               }
           } else {
-              console.error("amenities_id_array is not a valid array:", amenities_id_array);
               amenities_score = 100;
           }
       
@@ -634,18 +639,15 @@ export const getAllProperty = async (req, res) => {
         
             room_amenities_score = (matchedFilters / totalFilters) * 100;
           }
-        
-          console.log(`Match Percentage: ${room_amenities_score}%`);
         } else {
           console.error("Property or property_meta_details is undefined:", property);
         }
-        
+
         //Year of construction calculation
         if (property && property.property_meta_details) {
           const yearOfConstruction = property.property_meta_details
             .filter(meta => meta.property_type_listings?.type === "number")
             .find(meta => meta.property_type_listings.key === "year_of_construction");
-        console.log(property.property_meta_details,"}}}}}}}}}}}}}}}}}}}}}")
         
           if (!amenities_id_object_with_value || Object.keys(amenities_id_object_with_value).length === 0) {
             year_amenities_score = 100;
@@ -672,21 +674,106 @@ export const getAllProperty = async (req, res) => {
         }
 
       
-      
-        //Property type calculation
-        if (!type_id) {
-          property_type_score = 100;
-        } else {
-            if (property.property_types?.id === type_id) {
-                property_type_score = 100;
-            } else {
-                property_type_score = 0;
-            }
-        }
+        //location calculation
+        // let location_score = 100;
+        if (filter_latitude && filter_longitude && property.latitude && property.longitude) {
+          try {
+            // Format coordinates properly as strings
+            const origin = `${filter_latitude},${filter_longitude}`;
+            const destination = `${property.latitude},${property.longitude}`;
+            const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins=${origin}&destinations=${destination}&key=${GOOGLE_MAPS_API_KEY}`;
+            
+            const response = await axios.get(url);
+            // console.log('Distance Matrix Response:', JSON.stringify(response.data, null, 2));
+            
+            if (response.data.status === 'OK' && 
+                response.data.rows && 
+                response.data.rows[0] && 
+                response.data.rows[0].elements && 
+                response.data.rows[0].elements[0] && 
+                response.data.rows[0].elements[0].status === 'OK') {
+              
+              const element = response.data.rows[0].elements[0];
+              const distanceInMeters = element.distance.value;
+              const distanceInKm = distanceInMeters / 1000;
+              const durationText = element.duration.text;
+        
+              // Calculate score based on actual driving distance
+              if (distanceInKm <= 9) {
+                location_score = ((10 - distanceInKm) * 10) * 25 / 100;
+              } else{
+                location_score = 0;
+              }
+              
+        
+              // Add the exact distance and duration to the property object
+              property.exact_distance = {
+                text: element.distance.text,
+                value: distanceInKm,
+                duration: durationText
+              };
+              
+              console.log('Successfully calculated distance:', property.exact_distance);
 
+              
+
+            } else {
+              console.error('Error in distance calculation response:', response.data);
+              // Fallback to straight-line distance calculation
+              const R = 6371; // Earth's radius in kilometers
+              const lat1 = parseFloat(filter_latitude);
+              const lon1 = parseFloat(filter_longitude);
+              const lat2 = parseFloat(property.latitude);
+              const lon2 = parseFloat(property.longitude);
+              
+              const dLat = (lat2 - lat1) * Math.PI / 180;
+              const dLon = (lon2 - lon1) * Math.PI / 180;
+              const a = 
+                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+              const distance = R * c;
+              
+              property.exact_distance = {
+                text: `${distance.toFixed(2)} km (straight-line)`,
+                value: parseFloat(distance.toFixed(2)),
+                duration: 'N/A'
+              };
+              
+              console.log('Fallback distance calculated:', property.exact_distance);
+            }
+          } catch (error) {
+            console.error('Error calculating distance:', error.message);
+            // Fallback to straight-line distance calculation
+            const R = 6371; // Earth's radius in kilometers
+            const lat1 = parseFloat(filter_latitude);
+            const lon1 = parseFloat(filter_longitude);
+            const lat2 = parseFloat(property.latitude);
+            const lon2 = parseFloat(property.longitude);
+            
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+              Math.sin(dLon / 2) * Math.sin(dLon / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+            const distance = R * c;
+            
+            property.exact_distance = {
+              text: `${distance.toFixed(2)} km (straight-line)`,
+              value: parseFloat(distance.toFixed(2)),
+              duration: 'N/A'
+            };
+            
+            console.log('Fallback distance calculated:', property.exact_distance);
+          }
+        }
+        
     
         const price_weight = 0.30
-        const location_weight = 0.25
+        // const location_weight = 0.25
         const surface_area = 0.10
         const property_type = 0.10
         const amenities = 0.10
@@ -694,7 +781,7 @@ export const getAllProperty = async (req, res) => {
         const yearAmenities = 0.05
 
         //location score static, 
-        const final_score = (price_score * price_weight + location_score * location_weight + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities + roomAmenities * room_amenities_score + yearAmenities *year_amenities_score)
+        const final_score = (price_score * price_weight + location_score + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities + roomAmenities * room_amenities_score + yearAmenities *year_amenities_score)
         return {
           id: property.id,
           user_name: property.users?.full_name || null,
@@ -748,7 +835,7 @@ export const getAllProperty = async (req, res) => {
           project_details: responseProjectData,
           like: likedPropertyIds.includes(property.id),
           filter_result:{
-            location: location_score * location_weight,
+            location: location_score ,
             price: price_score * price_weight,
             surface_area: surface_are_score * surface_area,
             property_type: property_type_score * property_type,
@@ -756,6 +843,7 @@ export const getAllProperty = async (req, res) => {
             room_amenities: roomAmenities * room_amenities_score,
             construction_year_amenities: yearAmenities * year_amenities_score,
             total_percentage: parseFloat(final_score.toFixed(2)),
+            exact_distance: property.exact_distance || null
           }
         };
       })
@@ -994,7 +1082,6 @@ export const getPropertyByIdWithId = async (req, res) => {
       };
     });
 
-    console.log(property,">>>>>>>>>>>")
     const responsePayload = {
       id: property.id,
       user: property.users?.id || null,
