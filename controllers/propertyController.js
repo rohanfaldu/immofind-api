@@ -859,6 +859,9 @@ export const getAllProperty = async (req, res) => {
     );
 
     const listings = await prisma.propertyTypeListings.findMany({
+      where: {
+        is_filtered: true
+      },
       include: {
         lang_translations: true,
       },

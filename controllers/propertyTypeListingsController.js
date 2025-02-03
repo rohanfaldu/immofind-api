@@ -106,6 +106,7 @@ export const getPropertyTypeListingById = async (req, res) => {
       fr_name:listing.lang_translations.fr_string,
       type: listing.type,
       key: listing.key,
+      is_filtered: listing.is_filtered,
       category: listing.category?.toString() || null, // Serialize BigInt to string
       created_at: listing.created_at,
       updated_at: listing.updated_at,
@@ -172,7 +173,7 @@ export const checkProjectTypeListing = async (req, res) => {
 
 
 export const createPropertyTypeListing = async (req, res) => {
-  const { en_string, fr_string, icon, type, category, created_by, key } = req.body;
+  const { en_string, fr_string, icon, type, category, created_by, key, is_filtered } = req.body;
 
   // Ensure the required fields are provided
   if (!en_string || !fr_string || !icon || !type || !category || !key) {
@@ -208,6 +209,7 @@ export const createPropertyTypeListing = async (req, res) => {
           key: key,
           category: BigInt(category), // Ensure category is properly cast as BigInt
           created_by: created_by,
+          is_filtered: is_filtered,
           lang_translations: {
             connect: {
               id: langTranslation.id, // Link to the newly created LangTranslation
@@ -234,7 +236,7 @@ export const createPropertyTypeListing = async (req, res) => {
 
 
 export const updatePropertyTypeListing = async (req, res) => {
-  const { id, en_string, fr_string, icon, type, category, lang, key } = req.body;
+  const { id, en_string, fr_string, icon, type, category, lang, key, is_filtered } = req.body;
 
   // Ensure the required fields are provided
   if (!id || !lang || !key) {
@@ -282,6 +284,7 @@ export const updatePropertyTypeListing = async (req, res) => {
           },
         },
         key: key || existingPropertyTypeListing.key,
+        is_filtered: is_filtered,
       },
     });
 
