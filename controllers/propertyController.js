@@ -714,34 +714,8 @@ export const getAllProperty = async (req, res) => {
               };
               
               console.log('Successfully calculated distance:', property.exact_distance);
-
-              
-
             } else {
-              console.error('Error in distance calculation response:', response.data);
-              // Fallback to straight-line distance calculation
-              const R = 6371; // Earth's radius in kilometers
-              const lat1 = parseFloat(filter_latitude);
-              const lon1 = parseFloat(filter_longitude);
-              const lat2 = parseFloat(property.latitude);
-              const lon2 = parseFloat(property.longitude);
-              
-              const dLat = (lat2 - lat1) * Math.PI / 180;
-              const dLon = (lon2 - lon1) * Math.PI / 180;
-              const a = 
-                Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                Math.sin(dLon / 2) * Math.sin(dLon / 2);
-              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-              const distance = R * c;
-              
-              property.exact_distance = {
-                text: `${distance.toFixed(2)} km (straight-line)`,
-                value: parseFloat(distance.toFixed(2)),
-                duration: 'N/A'
-              };
-              
-              console.log('Fallback distance calculated:', property.exact_distance);
+              location_score = 0;
             }
           } catch (error) {
             console.error('Error calculating distance:', error.message);
