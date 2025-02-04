@@ -824,12 +824,33 @@ export const getAllProperty = async (req, res) => {
     );
     
 
+    const data = await prisma.propertyDetails.findMany({
+      skip,
+      take: validLimit,
+      orderBy:{
+        created_at: 'desc',
+      },
+      include: {
+        ...userInclude,
+        ...langTranslationsInclude,
+        ...districtsInclude,
+        ...propertyMetaDetailsInclude,
+        ...currencyInclude,
+        ...cityInclude,
+        ...stateInclude,
+        ...neighborhoodInclude,
+        ...propertyTypesInclude
+      },
+    });
+
+
+
     const maxPriceSliderRange = Math.max(
-      ...simplifiedProperties.map((property) => property.price || 0)
+      ...data.map((property) => property.price || 0)
     );
 
     const maxSizeSliderRange = Math.max(
-      ...simplifiedProperties.map((property) => property.size || 0)
+      ...data.map((property) => property.size || 0)
     );
 
     const listings = await prisma.propertyTypeListings.findMany({
