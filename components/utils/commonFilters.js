@@ -1,13 +1,29 @@
  const commonFilter = {
     titleCondition: async (title, lang) => {
-        return title ? {
-          lang_translations: {
-            [lang === 'fr' ? 'fr_string' : 'en_string']: {
-              contains: title,
-              mode: 'insensitive',
-            },
-          },
-        } : undefined;
+        return title
+          ? {
+              OR: [
+                {
+                cities: {
+                    lang: {
+                        [lang === 'fr' ? 'fr_string' : 'en_string']: {
+                        contains: title,
+                        mode: 'insensitive',
+                        },
+                    },
+                  },
+                },
+                {
+                lang_translations: {
+                    [lang === 'fr' ? 'fr_string' : 'en_string']: {
+                      contains: title,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              ],
+            }
+          : undefined;
       },
 
     descriptionCondition: async (description, lang) => {
