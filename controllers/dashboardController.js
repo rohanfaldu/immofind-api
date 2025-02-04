@@ -23,3 +23,124 @@ export const getList = async (req, res) => {
         response.serverError(res, error);
     }
 }
+
+import { subDays, format, startOfDay, endOfDay } from 'date-fns';
+
+// export const agenciesEngagement = async (req, res) => {
+//     const userId = req.user.id;
+//     const { day_before } = req.body;
+
+//     try {        
+//         const daysBefore = day_before || 7; // Default to last 7 days if not provided
+//         const startDate = subDays(new Date(), daysBefore); // Calculate the start date
+
+//         // Fetch likes data
+//         const likesData = await prisma.propertyLike.findMany({
+//             where: {
+//                 property_publisher: userId,
+//                 created_at: {
+//                     gte: startOfDay(startDate), // Get records from startDate to now
+//                 },
+//             },
+//             select: {
+//                 created_at: true,
+//             },
+//             orderBy: {
+//                 created_at: 'asc', // Sort by date ascending
+//             },
+//         });
+
+//         // Group by date
+//         const likeCountsByDate = likesData.reduce((acc, item) => {
+//             const dateKey = format(new Date(item.created_at), 'yyyy-MM-dd'); // Extract only date
+//             acc[dateKey] = (acc[dateKey] || 0) + 1; // Count occurrences per day
+//             return acc;
+//         }, {});
+
+//         // Prepare response data for the requested days
+//         const userLiked = [];
+//         for (let i = 0; i <= daysBefore; i++) {
+//             const currentDate = format(subDays(new Date(), daysBefore - i), 'yyyy-MM-dd');
+//             userLiked.push({
+//                 date: currentDate,
+//                 count: likeCountsByDate[currentDate] || 0, // Use count if exists, else 0
+//             });
+//         }
+
+//         const responsePayload = {
+//             user_liked: userLiked,
+//         };
+
+//         return response.success(
+//             res,
+//             res.__('messages.propertyCountFetchedSuccessfully'),
+//             responsePayload
+//         );
+//     } catch (error) {
+//         console.error(error);
+//         return response.error(
+//             res,
+//             res.__('messages.internalServerError')
+//         );
+//     }
+// };
+
+
+export const agenciesEngagement = async (req, res) => {
+    const userId = req.user.id;
+    const { day_before } = req.body;
+
+    try {
+        const daysBefore = day_before || 7; // Default to last 7 days if not provided
+        const startDate = subDays(new Date(), daysBefore); // Calculate the start date
+
+        // Fetch likes data
+        const likesData = await prisma.propertyLike.findMany({
+            where: {
+                property_publisher: userId,
+                created_at: {
+                    gte: startOfDay(startDate), // Get records from startDate to now
+                },
+            },
+            select: {
+                created_at: true,
+            },
+            orderBy: {
+                created_at: 'asc', // Sort by date ascending
+            },
+        });
+
+        // Group by date
+        const likeCountsByDate = likesData.reduce((acc, item) => {
+            const dateKey = format(new Date(item.created_at), 'MM-dd'); // Extract month and day
+            acc[dateKey] = (acc[dateKey] || 0) + 1; // Count occurrences per day
+            return acc;
+        }, {});
+
+        // Prepare response data for the requested days
+        const userLiked = [];
+        for (let i = 0; i <= daysBefore; i++) {
+            const currentDate = format(subDays(new Date(), daysBefore - i), 'MM-dd'); // Format as MM-DD
+            userLiked.push({
+                date: currentDate,
+                count: likeCountsByDate[currentDate] || 0, // Use count if exists, else 0
+            });
+        }
+
+        const responsePayload = {
+            user_liked: userLiked,
+        };
+
+        return response.success(
+            res,
+            res.__('messages.propertyCountFetchedSuccessfully'),
+            responsePayload
+        );
+    } catch (error) {
+        console.error(error);
+        return response.error(
+            res,
+            res.__('messages.internalServerError')
+        );
+    }
+};

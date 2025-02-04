@@ -211,6 +211,6 @@
 		"likedPropertyFetchedSuccessfully": "Liked property fetched successfully.",
 		"neighborhoodDeletedSuccessfully": "Neighborhood deleted successfully.",
 		"noDistrictsFound": "District not found.",
-		"noDevelopersFound": "messages.noDevelopersFound"
+		"propertyCountFetchedSuccessfully": "Property count fetched successfully."
 	}
 }

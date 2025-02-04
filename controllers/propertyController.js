@@ -148,7 +148,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
 
 
 export const likeProperty = async (req, res) => {
-  const { propertyId } = req.params; // Get the property ID from the request parameters
+  const { propertyId, propertyPublisherId } = req.body; // Get the property ID from the request parameters
   const userId = req.user.id; // Assuming user ID is available in req.user after authorization
 
   try {
@@ -157,6 +157,7 @@ export const likeProperty = async (req, res) => {
       data: {
         property_id: propertyId,
         user_id: userId,
+        property_publisher: propertyPublisherId,
       },
     });
 
