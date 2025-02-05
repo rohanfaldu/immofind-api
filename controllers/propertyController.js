@@ -757,10 +757,18 @@ export const getAllProperty = async (req, res) => {
 
         //location score static, 
         const final_score = (price_score * price_weight + location_score + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities + roomAmenities * room_amenities_score + yearAmenities *year_amenities_score)
+
+        const user_role = await prisma.roles.findUnique({
+          where: {
+            id: property.users?.role_id,
+          }
+        });
+
         return {
           id: property.id,
           user_name: property.users?.full_name || null,
           user_image: property.users?.image || null,
+          user_role: user_role.name,
           user_id: property.users?.id,
           phone_number: property.users?.mobile_number.toString(),
           country_code: property.users?.country_code,
