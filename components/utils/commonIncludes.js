@@ -6,7 +6,8 @@ export const userInclude = {
         email_address: true,
         id: true,
         mobile_number: true,
-        country_code: true
+        country_code: true,
+        role_id: true
       },
     },
   };
