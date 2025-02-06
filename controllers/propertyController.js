@@ -834,8 +834,6 @@ export const getAllProperty = async (req, res) => {
     
 
     const data = await prisma.propertyDetails.findMany({
-      skip,
-      take: validLimit,
       orderBy:{
         created_at: 'desc',
       },
