@@ -43,7 +43,7 @@ export const createUser = async (req, res) => {
         
         const checkUser = await UserModel.getUser(email_address,phone_number);
 
-        let user_information = false;
+        let user_information = true;
         if(checkUser){
             if(!user_id){
                 return await response.error(res,'Please enter the User Id');
