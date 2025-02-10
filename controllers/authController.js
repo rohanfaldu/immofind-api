@@ -30,19 +30,20 @@ export const createUser = async (req, res) => {
             if(email_address === '' ) {
                 return await response.error(res, 'Please enter the email address');
             }
-            const checkPhonember = await commonFunction.checkPhonember(phone_number);
-            if(!checkPhonember){
-                return await response.error(res,'Please enter the phone number');
-            }
+            // if(phone_number) {
+            // const checkPhonember = await commonFunction.checkPhonember(phone_number);
+            // if(!checkPhonember){
+            //     return await response.error(res,'Please enter the phone number');
+            // }
         } else{
-            if(email_address === '' && phone_number === '') {
-                return await response.error(res, 'Please check the email address and phone number was empty');
+            if(email_address === '') {
+                return await response.error(res, 'Please check the email address was empty');
             }
         }
         
         const checkUser = await UserModel.getUser(email_address,phone_number);
 
-        let user_information = false;
+        let user_information = true;
         if(checkUser){
             if(!user_id){
                 return await response.error(res,'Please enter the User Id');
@@ -494,7 +495,7 @@ export const loginUser = async (req, res) => {
     const token = await jwtGenerator.generateToken(checkUser.id, checkUser.email_address);
 
     const responseData = {
-      user_information: !!checkUser.mobile_number,
+      user_information: true,
       userProfile: checkUser,
       token,
     };
