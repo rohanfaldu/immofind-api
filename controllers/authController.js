@@ -495,7 +495,7 @@ export const loginUser = async (req, res) => {
     const token = await jwtGenerator.generateToken(checkUser.id, checkUser.email_address);
 
     const responseData = {
-      user_information: !!checkUser.mobile_number,
+      user_information: true,
       userProfile: checkUser,
       token,
     };
