@@ -146,6 +146,97 @@ export const getAgentDeveloperProperty = async (req, res) => {
   }
 };
 
+export const propertyComment = async (req, res) => {
+  try {
+    const { propertyId, comment, rating } = req.body;
+    const userId = req.user.id;
+
+    const existingComment = await prisma.PropertyComment.findFirst({
+      where: {
+        property_id: propertyId,
+        user_id: userId,
+      },
+    });
+
+    if (existingComment) {
+      return response.error(
+        res,
+        res.__('messages.commentAlreadyExists')
+      );
+    }
+
+    const newComment = await prisma.propertyComment.create({
+      data: {
+        property_id: propertyId,
+        user_id: userId,
+        rating: rating,
+        comment: comment,
+      },
+    });
+
+    return response.success(
+      res,
+      res.__('messages.commentAddedSuccessfully'),
+      newComment
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError')
+    );
+  }
+}
+
+
+export const getPropertyComment = async (req, res) => {
+  try {
+    const { propertyId, page, limit } = req.body;
+
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
+    const skip = (validPage - 1) * validLimit;
+
+    const totalCount = await prisma.propertyComment.count({
+      where: {
+        property_id: propertyId,
+      },
+    });
+
+    const comments = await prisma.propertyComment.findMany({
+      where: {
+        property_id: propertyId,
+      },
+      include: {
+        ...userInclude,
+      },
+      skip,
+      take: validLimit,
+    });
+
+    const responsePayload = {
+      list: comments,
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+    };
+
+    return response.success(
+      res,
+      res.__('messages.commentFetchSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError')
+    );
+  }
+}
+
+
 
 export const likeProperty = async (req, res) => {
   const { propertyId, propertyPublisherId } = req.body; // Get the property ID from the request parameters
