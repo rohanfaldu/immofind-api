@@ -426,7 +426,7 @@ model Users {
   email_password_code  Int?
   phone_password_code  Int?
   social_id            String?           @db.VarChar
-  mobile_number        BigInt?
+  mobile_number        BigInt?           @default(null)
   agencies             Agencies?
   developers           Developers?
   devicetoken          DeviceToken[]
