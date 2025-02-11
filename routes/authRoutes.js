@@ -1,6 +1,8 @@
 import express from 'express';
-import {createNormalUser,createUser, updateAgnecyUserDeveloper, getallUser, getagency, getDeveloper, loginWithPassword, deleteUser, updateUser, getUser, loginUser,checkUserExists,sendOtp,updatePassword} from '../controllers/authController.js';
+import {createNormalUser, updatePasswordWithOutOTP, createUser, updateAgnecyUserDeveloper, getallUser, getagency, getDeveloper, loginWithPassword, deleteUser, updateUser, getUser, loginUser,checkUserExists,sendOtp,updatePassword} from '../controllers/authController.js';
 import passport from 'passport';
+import { authorize } from '../middleware/authorization.js'; // Import the authorization middleware
+
 const router = express.Router();
 
 // Google auth routes
@@ -29,6 +31,8 @@ router.post('/check/user', checkUserExists);
 router.post('/sendotp', sendOtp);
 
 router.post('/updatepassword', updatePassword);
+
+router.post('/updatepasswordwithoutotp',authorize, updatePasswordWithOutOTP);
 
 router.post('/login/password', loginWithPassword);
 

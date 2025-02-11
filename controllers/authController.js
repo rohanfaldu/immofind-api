@@ -687,3 +687,41 @@ export const updatePassword = async (req, res) => {
         return await response.serverError(res, res.__('messages.internalServerError'));
     }
 }
+
+
+export const updatePasswordWithOutOTP = async (req, res) => {
+    try {
+        const { password } = req.body;
+        
+        if (!password) {
+            return response.error(res, res.__('messages.fieldError'));
+        }
+
+        const userId = req.user?.email_address;
+        console.log('userId: ', req.user);
+
+        // Ensure userId is valid
+        if (!userId) {
+            return response.error(res, res.__('messages.userNotFound'));
+        }
+
+        const checkUser = await UserModel.getUser(userId, '');
+
+        if (!checkUser) {
+            return response.error(res, res.__('messages.userNotFound'));
+        }
+
+        const hashedPassword = await passwordGenerator.encrypted(password);
+
+        const data = { password: hashedPassword };
+        const where = { email_address: userId };
+
+        const userUpdate = await UserModel.updateUser(where, data);
+        console.log('userUpdate: ', userUpdate);
+        return response.success(res, res.__('messages.passwordUpdateSuccessfully'), null);
+        
+    } catch (error) {
+        console.error("Error updating password:", error);
+        return response.serverError(res, res.__('messages.internalServerError'));
+    }
+};
