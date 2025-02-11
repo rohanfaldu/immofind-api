@@ -14,7 +14,7 @@ router.put('/:propertyId',authorize, updateProperty);
 router.delete('/:propertyId',authorize, deleteProperty);
 router.post('/statusUpdate', authorize, statusUpdateProperty);
 
-router.post('/comment', authorize, propertyComment);
+router.post('/comment', propertyComment);
 router.post('/getbycommentid', authorize, getPropertyComment);
 
 router.post('/like', authorize, likeProperty);   // Like a property
