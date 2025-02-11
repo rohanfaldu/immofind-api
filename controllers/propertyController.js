@@ -208,7 +208,14 @@ export const getPropertyComment = async (req, res) => {
         property_id: propertyId,
       },
       include: {
-        ...userInclude,
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+            email_address: true,
+            id: true,
+          },
+        },
       },
       skip,
       take: validLimit,
@@ -221,6 +228,7 @@ export const getPropertyComment = async (req, res) => {
       currentPage: validPage,
       itemsPerPage: validLimit,
     };
+    console.log(responsePayload,"responsePayload")
 
     return response.success(
       res,
