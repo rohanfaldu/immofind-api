@@ -491,11 +491,14 @@ export const loginUser = async (req, res) => {
         });
       }
       
-      const dataCheck = prisma.users.findUnique({
+      const dataCheck = await prisma.users.findUnique({
         where: {
           email_address: email_address,
-        },
+        }
       })
+
+      console.log("Data Check:", dataCheck.user_name);
+      console.log("Data Check:", dataCheck);
 
     const token = await jwtGenerator.generateToken(checkUser.id, checkUser.email_address);
 
