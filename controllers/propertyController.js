@@ -863,12 +863,47 @@ export const getAllProperty = async (req, res) => {
           }
         });
 
+        let developerSocial = null;
+
+        if (user_role.name === "developer") {
+          const developer = await prisma.developers.findUnique({
+            where: {
+              user_id: property.users.id
+            }
+          });
+          console.log(developer,"ll")
+        
+          if (developer) {
+            developerSocial = {
+              twitter: developer.twitterLink || null,
+              facebook: developer.facebookLink || null,
+              instagram: developer.instagramLink || null
+            };
+          }
+        } else if (user_role.name === "agency") {
+          const agency = await prisma.agencies.findUnique({
+            where: {
+              user_id: property.users.id
+            }
+          });
+        
+          if (agency) {
+            developerSocial = {
+              twitter: agency.twitter_link || null,
+              facebook: agency.facebook_link || null,
+              instagram: agency.instagram_link || null
+            };
+          }
+        }
         return {
           id: property.id,
           user_name: property.users?.full_name || null,
           user_image: property.users?.image || null,
           user_role: user_role.name,
           user_id: property.users?.id,
+          user_twitter: developerSocial?.twitter || null,
+          user_facebook: developerSocial?.facebook || null,
+          user_instagram: developerSocial?.instagram || null,
           phone_number: property.users?.mobile_number.toString(),
           country_code: property.users?.country_code,
           email_address: property.users?.email_address || null,
