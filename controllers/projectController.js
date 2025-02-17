@@ -2,7 +2,18 @@ import { PrismaClient } from '@prisma/client';
 import response from '../components/utils/response.js';
 import commonFunction from "../components/utils/commonFunction.js";
 import slugify from 'slugify';
-const prisma = new PrismaClient();
+const prisma = new PrismaClient();import {
+  userInclude,
+  langTranslationsInclude,
+  currencyInclude,
+  districtsInclude,
+  propertyMetaDetailsInclude,
+  propertyTypesInclude,
+  cityInclude,
+  stateInclude,
+  neighborhoodInclude
+} from "../components/utils/commonIncludes.js";
+import commonFilter from "../components/utils/commonFilters.js"
 
 const serializeBigInt = (data) => {
   return JSON.parse(
@@ -27,84 +38,26 @@ export const getAllProjects = async (req, res) => {
   try {
     const lang = res.getLocale();
     // Validate and parse pagination inputs
-    const { page = 1, limit = 5, title, description, minPrice, maxPrice, amenities_id } = req.body;
+    const { page = 1, limit = 10, title, city_id, district_id, neighborhoods_id, minPrice, maxPrice, amenities_id_array, amenities_id_object_with_value } = req.body;
     const validPage = Math.max(1, parseInt(page, 10));
     const validLimit = Math.max(1, parseInt(limit, 10));
     const skip = (validPage - 1) * validLimit;
 
-    const titleCondition = title ? lang === 'fr'? 
-        {
-          lang_translations_title: {
-            fr_string: {
-              contains: title,
-              mode: 'insensitive',
-            },
-          },
-        }
-      : {
-          lang_translations_title: {
-            en_string: {
-              contains: title,
-              mode: 'insensitive',
-            },
-          },
-        }: undefined;
-
-
-        const descriptionCondition = description
-        ? lang === 'fr'
-          ? {
-              lang_translations_description: {
-                fr_string: {
-                  contains: description,
-                  mode: 'insensitive',
-                },
-              },
-            }
-          : {
-              lang_translations_description: {
-                en_string: {
-                  contains: description,
-                  mode: 'insensitive',
-                },
-              },
-            }
-        : undefined;
-
-        const priceCondition = {
-          price: {
-            gte: minPrice ? parseFloat(minPrice) : undefined,
-            lte: maxPrice ? parseFloat(maxPrice) : undefined,
-          },
-        };
-
-        const amenitiesCondition = Array.isArray(amenities_id) && amenities_id.length > 0
-      ? {
-        project_meta_details: {
-          some: {
-            project_type_listing_id: {
-              in: amenities_id, // Use "in" to match any ID in the array
-            },
-          },
-        },
-        }
-      : undefined;
-
-      const cityCondition = {
-        city_id: req.body.city_id,
-      };
-
-      const districtCondition = {
-        district_id: req.body.district_id,
-      };
-
-      const stateCondition = {
-        state_id: req.body.state_id,
-      };
+    const otherConditions = [
+      await commonFilter.titleConditionProject(title),
+      await commonFilter.cityCondition(city_id),
+      await commonFilter.districtCondition(district_id),
+      await commonFilter.neighborhoodCondition(neighborhoods_id),
+      await commonFilter.priceCondition(minPrice, maxPrice),
+      await commonFilter.amenitiesConditionProperty(amenities_id_array),
+      await commonFilter.amenitiesNumberConditionProject(amenities_id_object_with_value),
+    ]
       
     // Get the total count of projects
     const combinedCondition = {
-      AND: [titleCondition, descriptionCondition, priceCondition, amenitiesCondition, cityCondition, districtCondition, stateCondition].filter(Boolean),
+      AND: [
+        { OR: otherConditions.filter(Boolean) },
+      ],
     };
     
     const totalCount = await prisma.projectDetails.count({
@@ -308,6 +261,7 @@ export const getAllProjects = async (req, res) => {
       ...simplifiedProjects.map((property) => property.price || 0)
     );
 
+    
     const listings = await prisma.projectTypeListings.findMany({
       include: {
         lang_translations: true, // Include the related LangTranslations based on `name`

@@ -26,6 +26,24 @@
           : undefined;
       },
 
+      titleConditionProject: async (title, lang) => {
+        return title
+          ? {
+              OR: [
+                {
+                lang_translations_title: {
+                    [lang === 'fr' ? 'fr_string' : 'en_string']: {
+                      contains: title,
+                      mode: 'insensitive',
+                    },
+                  },
+                },
+              ],
+            }
+          : undefined;
+      },
+
+
     descriptionCondition: async (description, lang) => {
         description ? {
             lang_translations_property_details_descriptionTolang_translations: {
@@ -126,6 +144,23 @@
         }
         return undefined;
     },
+
+    amenitiesConditionProperty: async (amenities_id) => {
+        if (Array.isArray(amenities_id) && amenities_id.length > 0) {
+            return {
+                project_meta_details: {
+                    some: {
+                        project_type_listing: {
+                            id: {
+                                in: amenities_id,
+                            },
+                        },
+                    },
+                },
+            };
+        }
+        return undefined;
+    },
     
 
     amenitiesNumberCondition: async (amenitiesNumbers_id) => {
@@ -135,6 +170,32 @@
                     property_meta_details: {
                         some: {
                             property_type_listings: {
+                                id: id,
+                            },
+                            value: minValue.toString()
+                            
+                        },
+                    },
+                };
+                console.log(condition);
+                return condition;
+            });
+    
+            return {
+                OR: conditions,
+            };
+        }
+        return undefined;
+    },
+
+
+    amenitiesNumberConditionProject: async (amenitiesNumbers_id) => {
+        if (typeof amenitiesNumbers_id === 'object' && amenitiesNumbers_id !== null) {
+            const conditions = Object.entries(amenitiesNumbers_id).map(([id, minValue]) => {
+                const condition = {
+                    project_meta_details: {
+                        some: {
+                            project_type_listing: {
                                 id: id,
                             },
                             value: minValue.toString()
