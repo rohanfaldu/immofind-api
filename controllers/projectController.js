@@ -1051,7 +1051,12 @@ export const getAgentDeveloperProjects = async (req, res) => {
       description: lang === 'fr' ? createdProject.lang_translations_description.fr_string : createdProject.lang_translations_description.en_string,
       state: lang === 'fr' ? createdProject.states.lang.fr_string : createdProject.states.lang.en_string,
       city: lang === 'fr' ? createdProject.cities.lang.fr_string : createdProject.cities.lang.en_string,
-      district: lang === 'fr' ? createdProject.districts.langTranslation.fr_string : createdProject.districts.langTranslation.en_string,
+      district: createdProject.districts
+      ? lang === 'fr'
+        ? createdProject.districts.langTranslation.fr_string
+        : createdProject.districts.langTranslation.en_string
+      : 'No district available', // Or handle as needed
+
       latitude: createdProject.latitude,
       longitude: createdProject.longitude,
       vr_link: createdProject.vr_link,
