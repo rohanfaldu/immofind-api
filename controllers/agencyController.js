@@ -47,6 +47,10 @@ export const createAgency = async (req, res) => {
       cover,
       country_code,
       agency_packages,
+      latitude,
+      longitude,
+      address,
+      city_id
     } = req.body;
 
 
@@ -108,6 +112,10 @@ export const createAgency = async (req, res) => {
         picture,
         cover,
         agency_packages,
+        address : address,
+        latitude : latitude,
+        longitude : longitude,
+        city_id: city_id,
       },
     });
 
@@ -139,6 +147,10 @@ export const createAgency = async (req, res) => {
       cover: newAgency.cover,
       agency_packages: newAgency.agency_packages,
       country_code: newAgency.country_code,
+      address: newAgency.address,
+      latitude: newAgency.latitude,
+      longitude: newAgency.longitude,
+      city_id: newAgency.city_id,
     };
 
     // Return success response
@@ -165,7 +177,7 @@ export const createAgency = async (req, res) => {
 // Get all agencies
 export const getAllAgencies = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.body;
+    const { page = 1, limit = 10, city_id } = req.body;
     const lang = res.getLocale();
 
     // Ensure page and limit are valid numbers
@@ -177,12 +189,19 @@ export const getAllAgencies = async (req, res) => {
 
     // Fetch total count for properties
     
-  
-    const totalCount = await prisma.agencies.count();
+    const filter = {};
+    if (city_id) {
+      filter.city_id = city_id;
+    }
+
+    const totalCount = await prisma.agencies.count({
+      where: filter,
+    });
 
 
     const agencies = await prisma.agencies.findMany({skip,
       take: validLimit,
+      where: filter,
       include: {
         lang_translations_description: true, 
         lang_translations_service_area: true,
@@ -196,6 +215,12 @@ export const getAllAgencies = async (req, res) => {
       return lang === 'fr' ? translation?.fr_string : translation?.en_string;
     };
 
+    const cityName = async (id) => {
+      if (!id) return null;
+      const city = await prisma.cities.findUnique({ where: { id } });
+      console.log('city: ', city);
+      return await fetchTranslation(city?.lang_id); // Return the translation
+    };
     // Prepare the response data
     const agencyResponseData = await Promise.all(
       agencies.map(async (agency) => {
@@ -215,6 +240,7 @@ export const getAllAgencies = async (req, res) => {
           youtube_link: agency.youtube_link,
           pinterest_link: agency.pinterest_link,
           linkedin_link: agency.linkedin_link,
+          city: await cityName(agency.city_id),
           instagram_link: agency.instagram_link,
           whatsup_number: agency.whatsup_number,
           service_area: await fetchTranslation(agency.service_area),
@@ -307,7 +333,11 @@ export const getByUserId = async (req, res) => {
         pinterest_link: true,
         linkedin_link: true,
         instagram_link: true,
-        cover: true
+        cover: true,
+        address: true,
+        latitude: true,
+        longitude: true,
+        city_id: true,
       },
     });
 
@@ -339,7 +369,11 @@ export const getByUserId = async (req, res) => {
       pinterest_link: agencyData?.pinterest_link,
       linkedin_link: agencyData?.linkedin_link,
       instagram_link: agencyData?.instagram_link,
-      cover: agencyData?.cover
+      cover: agencyData?.cover,
+      address: agencyData?.address,
+      latitude: agencyData?.latitude,
+      longitude: agencyData?.longitude,
+      city_id: agencyData?.city_id
     }
 
     const responseData = {
@@ -615,6 +649,20 @@ export const getAgencyById = async (req, res) => {
       };
     });
 
+    const cityName = async (id) => {
+      if (!id) return null;
+      const city = await prisma.cities.findUnique({ where: { id } });
+      console.log('city: ', city);
+      return await fetchTranslation(city?.lang_id); // Return the translation
+    };
+
+    const fetchTranslation = async (id) => {
+      if (!id) return null;
+      const translation = await prisma.langTranslations.findUnique({ where: { id } });
+      return lang === 'fr' ? translation?.fr_string : translation?.en_string;
+    };
+
+
     const responseData = {
       
       id: agency.id,
@@ -630,6 +678,10 @@ export const getAgencyById = async (req, res) => {
       linkedin_link: agency.linkedin_link,
       instagram_link: agency.instagram_link,
       whatsup_number: agency.whatsup_number,
+      city: await cityName(agency.city_id),
+      address: agency.address,
+      latitude: agency.latitude,
+      longitude: agency.longitude,
       service_area:  lang === 'fr' ? agency.lang_translations_service_area?.fr_string : agency.lang_translations_service_area?.en_string,
       service_area_fr: lang === 'fr' ? agency.lang_translations_service_area?.fr_string : "", 
       service_area_en: lang === 'en' ? agency.lang_translations_service_area?.en_string : "", 
@@ -734,7 +786,11 @@ export const updateAgency = async (req, res) => {
       picture,
       cover,
       country_code,
-      agency_packages
+      agency_packages,
+      city_id,
+      address,
+      latitude,
+      longitude,
     } = req.body;
 
     const updatedAgency = await prisma.agencies.update({
@@ -755,7 +811,11 @@ export const updateAgency = async (req, res) => {
         updated_by: user_id,
         updated_at: new Date(),
         country_code,
-        agency_packages
+        agency_packages,
+        city_id: city_id,
+        latitude: latitude,
+        longitude: longitude,
+        address: address,
       },
     });
 
@@ -807,7 +867,11 @@ export const updateAgency = async (req, res) => {
       picture: updatedAgency.picture,
       cover: updatedAgency.cover,
       country_code: updatedAgency.country_code,
-      agency_packages: updatedAgency.agency_packages
+      agency_packages: updatedAgency.agency_packages,
+      city_id: city_id,
+      latitude: latitude,
+      longitude: longitude,
+      address: address,
     };
 
     return res.status(200).json({

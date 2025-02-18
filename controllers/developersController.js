@@ -48,7 +48,11 @@ export const createDeveloper = async (req, res) => {
     license_number,
     whatsup_number,
     agency_packages,
-    cover
+    cover,
+    latitude,
+    longitude,
+    address,
+    city_id
   } = req.body;
 
   try {
@@ -107,7 +111,10 @@ export const createDeveloper = async (req, res) => {
       licenseNumber: license_number,
       cover,
       created_by: createdUserId, // Use createdUserId instead of userId
-
+      address : address,
+      latitude : latitude,
+      longitude : longitude,
+      city_id: city_id,
       
     };
 
@@ -152,7 +159,11 @@ export const createDeveloper = async (req, res) => {
       country_code: developer.country_code,
       license_number: developer.licenseNumber,
       agency_packages: developer.agencyPackageId,
-      cover: developer.cover
+      cover: developer.cover,
+      address: developer.address,
+      latitude: developer.latitude,
+      longitude: developer.longitude,
+      city_id: developer.city_id
     };
 
     // Convert BigInt fields to string for response
@@ -185,7 +196,7 @@ export const createDeveloper = async (req, res) => {
 
 export const getAllDevelopers = async (req, res) => {
   try {
-    const { page = 1, limit = 10 } = req.body;
+    const { page = 1, limit = 10, city_id  } = req.body;
     const lang = res.getLocale();
 
     const validPage = Math.max(1, parseInt(page, 10)); // Default to 1 if invalid
@@ -196,12 +207,19 @@ export const getAllDevelopers = async (req, res) => {
 
     // Fetch total count for properties
     
-  
-    const totalCount = await prisma.developers.count();
+    const filter = {};
+    if (city_id) {
+      filter.city_id = city_id;
+    }
+
+    const totalCount = await prisma.developers.count({
+      where: filter,
+    });
 
 
     const developers = await prisma.developers.findMany({skip,
       take: validLimit,
+      where: filter,
       include: {
         lang_translations_description: true, 
         lang_translations_service_area: true,
@@ -219,9 +237,17 @@ export const getAllDevelopers = async (req, res) => {
     const fetchTranslation = async (id) => {
       if (!id) return null;
       const translation = await prisma.langTranslations.findUnique({ where: { id } });
+      console.log('translation: ', translation);
       return lang === 'fr' ? translation?.fr_string : translation?.en_string;
     };
 
+    const cityName = async (id) => {
+      if (!id) return null;
+      const city = await prisma.cities.findUnique({ where: { id } });
+      console.log('city: ', city);
+      return await fetchTranslation(city?.lang_id); // Return the translation
+    };
+    
     // Prepare the response data
 
     const developerResponseData = await Promise.all(
@@ -231,11 +257,13 @@ export const getAllDevelopers = async (req, res) => {
             id: developer.user_id,
           }
         });
+
         return{
           id: developer.id,
           user_id: developer.user_id,
           credit: developer.credit,
           description: await fetchTranslation(developer.description),
+          city: await cityName(developer.city_id),
           facebook_link: developer.facebookLink,
           twitter_link: developer.twitterLink,
           youtube_link: developer.youtubeLink,
@@ -641,6 +669,13 @@ export const getDeveloperById = async (req, res) => {
       };
     });
 
+    const cityName = async (id) => {
+      if (!id) return null;
+      const city = await prisma.cities.findUnique({ where: { id } });
+      console.log('city: ', city);
+      return await fetchTranslation(city?.lang_id); // Return the translation
+    };
+
     const responseData = {
       id: developer.id,
         user_id: developer.user_id,
@@ -658,6 +693,10 @@ export const getDeveloperById = async (req, res) => {
         license_number: developer.licenseNumber,
         agency_packages: developer.agencyPackageId,
         picture: developer.picture,
+        city: await cityName(developer.city_id),
+        address: developer.address,
+        latitude: developer.latitude,
+        longitude: developer.longitude,
         cover: developer.cover,
         meta_id: developer.meta_id,
         is_deleted: developer.is_deleted,
@@ -750,7 +789,11 @@ export const getByUserId = async (req, res) => {
         pinterestLink: true,
         linkedinLink: true,
         instagramLink: true,
-        cover: true
+        cover: true,
+        address: true,
+        latitude: true,
+        longitude: true,
+        city_id: true,
       },
     });
 
@@ -782,7 +825,11 @@ export const getByUserId = async (req, res) => {
       pinterest_link: developerData?.pinterestLink,
       linkedin_link: developerData?.linkedinLink,
       instagram_link: developerData?.instagramLink,
-      cover: developerData?.cover
+      cover: developerData?.cover,
+      address: developerData?.address,
+      latitude: developerData?.latitude,
+      longitude: developerData?.longitude,
+      city_id: developerData?.city_id
     }
 
     const responseData = {
@@ -848,7 +895,11 @@ export const updateDeveloper = async (req, res) => {
       tax_number,
       license_number,
       agency_packages,
-      cover
+      cover,
+      city_id,
+      address,
+      latitude,
+      longitude,
     } = req.body;
 
     // Check if the developer exists
@@ -878,7 +929,11 @@ export const updateDeveloper = async (req, res) => {
         updated_by: user_id,
         updated_at: new Date(),
         agencyPackageId: agency_packages,
-        cover: cover
+        cover: cover,
+        city_id: city_id,
+        latitude: latitude,
+        longitude: longitude,
+        address: address,
       },
     });
 
@@ -931,7 +986,7 @@ export const updateDeveloper = async (req, res) => {
       country_code: developer.country_code,
       license_number: developer.licenseNumber,
       agency_packages: developer.agencyPackageId,
-      cover: developer.cover
+      cover: developer.cover,
     };
 
     const safeResponse = transformBigIntToString(responseData);
