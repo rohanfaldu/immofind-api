@@ -196,7 +196,7 @@ export const createDeveloper = async (req, res) => {
 
 export const getAllDevelopers = async (req, res) => {
   try {
-    const { page = 1, limit = 10, city_id  } = req.body;
+    const { page = 1, limit = 10, city_id, user_name  } = req.body;
     const lang = res.getLocale();
 
     const validPage = Math.max(1, parseInt(page, 10)); // Default to 1 if invalid
@@ -212,6 +212,13 @@ export const getAllDevelopers = async (req, res) => {
       filter.city_id = city_id;
     }
 
+    if (user_name) {
+      filter.users = { 
+        // Use a case-insensitive partial match:
+        user_name: { contains: user_name, mode: 'insensitive' }
+      };
+    }
+
     const totalCount = await prisma.developers.count({
       where: filter,
     });
@@ -225,13 +232,6 @@ export const getAllDevelopers = async (req, res) => {
         lang_translations_service_area: true,
       },});
 
-    // If no agencies found
-    if (!developers || developers.length === 0) {
-      return res.status(404).json({
-        status: false,
-        message: res.__('messages.noDevelopersFound'),
-      });
-    }
 
     // Helper function to fetch translations
     const fetchTranslation = async (id) => {

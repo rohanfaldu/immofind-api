@@ -177,7 +177,7 @@ export const createAgency = async (req, res) => {
 // Get all agencies
 export const getAllAgencies = async (req, res) => {
   try {
-    const { page = 1, limit = 10, city_id } = req.body;
+    const { page = 1, limit = 10, city_id, user_name } = req.body;
     const lang = res.getLocale();
 
     // Ensure page and limit are valid numbers
@@ -192,6 +192,12 @@ export const getAllAgencies = async (req, res) => {
     const filter = {};
     if (city_id) {
       filter.city_id = city_id;
+    }
+    if (user_name) {
+      filter.users = { 
+        // Use a case-insensitive partial match:
+        user_name: { contains: user_name, mode: 'insensitive' }
+      };
     }
 
     const totalCount = await prisma.agencies.count({
