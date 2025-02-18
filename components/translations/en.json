@@ -212,6 +212,8 @@
 		"neighborhoodDeletedSuccessfully": "Neighborhood deleted successfully.",
 		"noDistrictsFound": "District not found.",
 		"propertyCountFetchedSuccessfully": "Property count fetched successfully.",
-		"noDevelopersFound": "messages.noDevelopersFound"
+		"noDevelopersFound": "messages.noDevelopersFound",
+		"commentFetchSuccessfully": "messages.commentFetchSuccessfully",
+		"commentAddedSuccessfully": "messages.commentAddedSuccessfully"
 	}
 }
