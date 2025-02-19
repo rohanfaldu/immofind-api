@@ -286,7 +286,7 @@ export const getAllDevelopers = async (req, res) => {
           cover: developer.cover,
           publishing_status_id: developer.publishingStatusId,
           sub_user_id: developer.sub_user_id,
-          country_code: developer.country_code,
+          country_code: developer.country_code, 
           user_name: userInfo?.user_name,
           full_name: userInfo?.full_name,
           image: userInfo?.image,
