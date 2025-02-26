@@ -214,6 +214,7 @@
 		"propertyCountFetchedSuccessfully": "Property count fetched successfully.",
 		"noDevelopersFound": "messages.noDevelopersFound",
 		"commentFetchSuccessfully": "messages.commentFetchSuccessfully",
-		"commentAddedSuccessfully": "messages.commentAddedSuccessfully"
+		"commentAddedSuccessfully": "messages.commentAddedSuccessfully",
+		"likedPropertyListedSuccessfully": "Liked property listed successfully."
 	}
 }

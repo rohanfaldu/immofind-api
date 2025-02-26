@@ -13,10 +13,16 @@ export const getList = async (req, res) => {
         const whereCondition = (userInfo !== 'admin')?{ user_id: req.user.id }:{};
         const totalProjectCount = await prisma.projectDetails.count({where: whereCondition});
         const totalPropertyCount = await prisma.propertyDetails.count({where: whereCondition});
+        const likeCount = await prisma.propertyLike.count({
+            where: {
+                property_publisher: req.user.id  // Adjust this based on your actual field name
+            }
+        });
         const responseData = {
             total_users: totalUsersCount,
             project_count: totalProjectCount,
-            property_count: totalPropertyCount  
+            property_count: totalPropertyCount,
+            property_like_count: likeCount
         }
         response.success(res, res.__('messages.dashboardList'), responseData);
     } catch (error) {

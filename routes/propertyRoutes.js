@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllProperty, createProperty, unlikeProperty, getLikedProperty, likeProperty, updateProperty, getAgentDeveloperProperty, deleteProperty,statusUpdateProperty, getPropertyById, getPropertyByIdWithId, propertyComment, getPropertyComment} from '../controllers/propertyController.js';
+import { getAllProperty, createProperty, unlikeProperty, getLikedProperty,getUserLikedData, likeProperty, updateProperty, getAgentDeveloperProperty, deleteProperty,statusUpdateProperty, getPropertyById, getPropertyByIdWithId, propertyComment, getPropertyComment} from '../controllers/propertyController.js';
 import { authorize, optionalAuthenticate } from '../middleware/authorization.js'; // Import the authorization middleware
 const router = express.Router();
 
@@ -20,5 +20,6 @@ router.post('/getbycommentid', getPropertyComment);
 router.post('/like', authorize, likeProperty);   // Like a property
 router.delete('/:propertyId/like', authorize, unlikeProperty);
 router.post('/get-liked-property', authorize, getLikedProperty);
+router.post('/get-liked-property-user', authorize, getUserLikedData);
 // router.delete('/:propertyId/like', authorize, unlikeProperty);
 export default router;

@@ -118,6 +118,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
         district: property.districts?.name || null,
         meta_details: metaDetails,
         type,
+        like_count: property.like_count,
       };
     });
 
@@ -279,6 +280,69 @@ export const likeProperty = async (req, res) => {
   }
 };
 
+export const getUserLikedData = async (req, res) => {
+  const { propertyId, page, limit } = req.body; // Get the property ID from the request parameters
+  try {
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
+    const skip = (validPage - 1) * validLimit;
+
+    const totalCount = await prisma.propertyLike.count({
+      where: {
+        property_id: propertyId,
+      },
+    });
+
+    const likedProperties = await prisma.propertyLike.findMany({
+      where: {
+        property_id: propertyId,
+      },
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+            email_address: true,
+            id: true,
+            mobile_number: true
+          },
+        },
+      },
+      skip,
+      take: validLimit,
+    });
+
+
+    const transformedProperties = likedProperties.map(property => ({
+      ...property,
+      users: {
+        ...property.users,
+        mobile_number: property.users?.mobile_number ? String(property.users.mobile_number) : null,
+      }
+    }));
+    
+    const responsePayload = {
+      list: transformedProperties,
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+    };
+
+
+    return response.success(
+      res,
+      res.__('messages.likedPropertyListedSuccessfully'),
+      responsePayload,
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError')
+    );
+  }
+}
 
 
 export const unlikeProperty = async (req, res) => {
