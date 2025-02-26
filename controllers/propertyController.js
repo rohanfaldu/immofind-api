@@ -1212,6 +1212,22 @@ export const getPropertyById = async (req, res) => {
       };
     });
 
+
+    let likedPropertyIds = [];
+    if (req.user?.id) {
+    const likedProperties = await prisma.propertyLike.findMany({
+      where: {
+        user_id: req.user.id,
+      },
+      select: {
+        property_id: true,
+      },
+    });
+
+    likedPropertyIds = likedProperties.map((like) => like.property_id);
+  }
+
+
     const responsePayload = {
       id: property.id,
       user_name: property.users?.full_name || null,
@@ -1251,7 +1267,7 @@ export const getPropertyById = async (req, res) => {
       images: property.images_data,
       meta_details: metaDetails,
       currency: property.currency?.name || null,
-      
+      like: likedPropertyIds.includes(property.id),
       type_details: {
         id: property.property_types?.id || null,
         title: lang === 'fr' ? property.property_types?.lang_translations?.fr_string : property.property_types?.lang_translations?.en_string,
