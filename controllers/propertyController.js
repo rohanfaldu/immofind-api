@@ -398,21 +398,29 @@ export const getLikedProperty = async (req, res) => {
     });
 
 
-       const likedProperties = await prisma.propertyLike.findMany({
-            skip,
-            take: validLimit,
-            orderBy: { created_at: 'desc' },
-            where: { user_id: userId },
-            include: { 
-              property: {
-                include: {
-                  lang_translations_property_details_descriptionTolang_translations: true,
-                  lang_translations: true,
-
-                },
-              },
-            },
-        });
+    const likedProperties = await prisma.propertyLike.findMany({
+      skip,
+      take: validLimit,
+      orderBy: { created_at: 'desc' },
+      where: { user_id: userId },
+      include: { 
+        property: {
+          include: {
+            lang_translations_property_details_descriptionTolang_translations: true,
+            lang_translations: true,
+            property_meta_details: {
+              include: {
+                property_type_listings: {
+                  include: {
+                    lang_translations: true
+                  }
+                }
+              }
+            }
+          },
+        },
+      },
+  });
 
         const simplifiedData = likedProperties.map(like => {
           const property = like.property;
@@ -425,6 +433,27 @@ export const getLikedProperty = async (req, res) => {
             ? property.lang_translations_property_details_descriptionTolang_translations?.fr_string || '' 
             : property.lang_translations_property_details_descriptionTolang_translations?.en_string || '';
         
+            const metaDetails = property.property_meta_details.map((meta) => {
+              const langObj =
+                lang === 'fr'
+                  ? meta.property_type_listings?.lang_translations?.fr_string
+                  : meta.property_type_listings?.lang_translations?.en_string;
+        
+              return {
+                id: meta.property_type_listings?.id || null,
+                type: meta.property_type_listings?.type || null,
+                key: meta.property_type_listings?.key || null,
+                icon: meta.property_type_listings?.icon || null,
+                name: langObj,
+                value: meta.value,
+              };
+            });
+
+            const bathRooms =
+            metaDetails.find((meta) => meta.key === 'bathrooms')?.value || "0";
+
+            const bedRooms = 
+            metaDetails.find((meta) => meta.key === 'bedrooms')?.value || "0";
           return {
             ...like,
             property: {
@@ -457,6 +486,8 @@ export const getLikedProperty = async (req, res) => {
               longitude: property.longitude,
               slug: property.slug,
               like_count: property.like_count,
+              bathRooms,
+              bedRooms,
               // Exclude lang_translations and lang_translations_property_details_descriptionTolang_translations
             },
           };
