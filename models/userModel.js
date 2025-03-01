@@ -119,13 +119,23 @@ const UserModel = {
             return userInfo;
         }
     },
-    getAllUserd: async (type) => {
+    getAllUserd: async (type, startDate, endDate) => {
+        let dateFilter = {};
+            if (startDate && endDate) {
+            dateFilter = {
+                created_at: {
+                gte: new Date(startDate), // Greater than or equal to start date
+                lte: new Date(endDate),   // Less than or equal to end date
+                },
+            };
+        }
         const userInfo = await prisma.users.findMany({
             where: {
                 is_deleted: false,
                 roles: {
                     name: type,  // Ensure the variable `type` has a correct role name
                 },
+                ...dateFilter,
             },
             include: {
                 roles: {

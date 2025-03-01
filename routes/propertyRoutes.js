@@ -1,5 +1,5 @@
 import express from 'express';
-import { getAllProperty, createProperty, unlikeProperty, getLikedProperty,getUserLikedData, likeProperty, updateProperty, getAgentDeveloperProperty, deleteProperty,statusUpdateProperty, getPropertyById, getPropertyByIdWithId, propertyComment, getPropertyComment} from '../controllers/propertyController.js';
+import { getAllProperty, createProperty, getUserViewedData, getUserCommentedData, viewProperty, unlikeProperty, getLikedProperty,getUserLikedData, likeProperty, updateProperty, getAgentDeveloperProperty, deleteProperty,statusUpdateProperty, getPropertyById, getPropertyByIdWithId, propertyComment, getPropertyComment} from '../controllers/propertyController.js';
 import { authorize, optionalAuthenticate } from '../middleware/authorization.js'; // Import the authorization middleware
 const router = express.Router();
 
@@ -17,9 +17,12 @@ router.post('/statusUpdate', authorize, statusUpdateProperty);
 router.post('/comment', authorize, propertyComment);
 router.post('/getbycommentid', getPropertyComment);
 
-router.post('/like', authorize, likeProperty);   // Like a property
+router.post('/like', authorize, likeProperty);
+router.post('/view', authorize, viewProperty);
 router.delete('/:propertyId/like', authorize, unlikeProperty);
 router.post('/get-liked-property', authorize, getLikedProperty);
 router.post('/get-liked-property-user', authorize, getUserLikedData);
+router.post('/get-viewed-property-user', authorize, getUserViewedData);
+router.post('/get-commented-property-user', authorize, getUserCommentedData);
 // router.delete('/:propertyId/like', authorize, unlikeProperty);
 export default router;

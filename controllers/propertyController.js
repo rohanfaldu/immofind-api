@@ -40,7 +40,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
 
     const { page = 1, limit = 10 } = req.body;
     const lang = res.getLocale();
-    const whereCondition = (userInfo !== 'admin')?{ user_id: req.user.id }:{};
+    const whereCondition = (userInfo !== 'admin') ? { user_id: req.user.id } : {};
 
     const include = {
       ...userInclude,
@@ -51,15 +51,14 @@ export const getAgentDeveloperProperty = async (req, res) => {
       ...propertyTypesInclude,
     };
 
-    const orderBy = {created_at: 'desc'};
-
+    const orderBy = { created_at: 'desc' };
 
     const paginationResult = await commonFunction.pagination(page, limit, whereCondition, orderBy, include, 'propertyDetails');
 
     const { totalCount, validPage: currentPage, validLimit: itemsPerPage, finding: properties } = paginationResult;
 
-
-    const simplifiedProperties = properties.map((property) => {
+    // Use Promise.all to wait for all the async operations inside map
+    const simplifiedProperties = await Promise.all(properties.map(async (property) => {
       const description =
         lang === 'fr'
           ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
@@ -95,6 +94,18 @@ export const getAgentDeveloperProperty = async (req, res) => {
         metaDetails.find((meta) => meta.key === 'rooms')?.value || "0";
       const propertyType = res.__('messages.propertyType') + " " + property.transaction;
 
+      const viewProperty = await prisma.propertyView.count({
+        where: {
+          property_id: property.id  
+        }
+      });
+
+      const commentsProperty = await prisma.propertyComment.count({
+        where: {
+          property_id: property.id  
+        }
+      });
+      
       return {
         id: property.id,
         user_name: property.users?.full_name || null,
@@ -119,8 +130,10 @@ export const getAgentDeveloperProperty = async (req, res) => {
         meta_details: metaDetails,
         type,
         like_count: property.like_count,
+        view_count: viewProperty,
+        comment_count: commentsProperty,
       };
-    });
+    }));
 
     const responsePayload = {
       totalCount,
@@ -149,7 +162,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
 
 export const propertyComment = async (req, res) => {
   try {
-    const { propertyId, comment, rating } = req.body;
+    const { propertyId, comment, rating, property_owner_id } = req.body;
     const userId = req.user.id;
 
     const existingComment = await prisma.PropertyComment.findFirst({
@@ -172,6 +185,7 @@ export const propertyComment = async (req, res) => {
         user_id: userId,
         rating: rating,
         comment: comment,
+        property_owner_id: property_owner_id,
       },
     });
 
@@ -280,22 +294,235 @@ export const likeProperty = async (req, res) => {
   }
 };
 
-export const getUserLikedData = async (req, res) => {
-  const { propertyId, page, limit } = req.body; // Get the property ID from the request parameters
+
+export const viewProperty = async (req, res) => {
+  const { propertyId, propertyPublisherId } = req.body;
+  const userId = req.user.id;
+
+  try {
+    // Check if the user has already viewed the property
+    const existingView = await prisma.propertyView.findFirst({
+      where: { user_id: userId, property_id: propertyId },
+    });
+
+    if (!existingView) {
+      // Create a new view record for first-time viewers
+      await prisma.propertyView.create({
+        data: {
+          property_id: propertyId,
+          user_id: userId,
+          property_publisher: propertyPublisherId,
+          view_count: 1, // Initial view count
+        },
+      });
+    } else {
+      // Update the existing record by incrementing the view count
+      await prisma.propertyView.updateMany({
+        where: {
+          user_id: userId,
+          property_id: propertyId,
+        },
+        data: { 
+          view_count: { increment: 1 },
+        },
+      });
+    }
+
+    return response.success(
+      res,
+      res.__('messages.propertyViewedSuccessfully')
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(res, res.__('messages.internalServerError'));
+  }
+};
+
+
+
+
+
+export const getUserViewedData = async (req, res) => {
+  const { propertyId, page, limit, startDate, endDate } = req.body; // Get the property ID from the request parameters
   try {
     const validPage = Math.max(1, parseInt(page, 10));
     const validLimit = Math.max(1, parseInt(limit, 10));
     const skip = (validPage - 1) * validLimit;
 
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        created_at: {
+          gte: new Date(startDate), // Greater than or equal to start date
+          lte: new Date(endDate),   // Less than or equal to end date
+        },
+      };
+    }
+    
+    const totalCount = await prisma.propertyView.count({
+      where: {
+        property_id: propertyId,
+        ...dateFilter,
+      },
+    });
+
+    const likedProperties = await prisma.propertyView.findMany({
+      where: {
+        property_id: propertyId,
+        ...dateFilter,
+      },
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+            email_address: true,
+            id: true,
+            mobile_number: true
+          },
+        },
+      },
+      skip,
+      take: validLimit,
+    });
+
+
+    const transformedProperties = likedProperties.map(property => ({
+      ...property,
+      users: {
+        ...property.users,
+        mobile_number: property.users?.mobile_number ? String(property.users.mobile_number) : null,
+      }
+    }));
+    
+    const responsePayload = {
+      list: transformedProperties,
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+    };
+
+
+    return response.success(
+      res,
+      res.__('messages.likedPropertyListedSuccessfully'),
+      responsePayload,
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError')
+    );
+  }
+}
+
+export const getUserCommentedData = async (req, res) => {
+  const { propertyId, page, limit, startDate, endDate } = req.body; // Get date range
+
+  try {
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
+    const skip = (validPage - 1) * validLimit;
+
+    // Construct date filter condition
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        created_at: {
+          gte: new Date(startDate), // Greater than or equal to start date
+          lte: new Date(endDate),   // Less than or equal to end date
+        },
+      };
+    }
+
+    const totalCount = await prisma.propertyComment.count({
+      where: {
+        property_id: propertyId,
+        ...dateFilter, // Apply date filter
+      },
+    });
+
+    const commentedProperties = await prisma.propertyComment.findMany({
+      where: {
+        property_id: propertyId,
+        ...dateFilter, // Apply date filter
+      },
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+            email_address: true,
+            id: true,
+            mobile_number: true
+          },
+        },
+      },
+      skip,
+      take: validLimit,
+    });
+
+    const transformedProperties = commentedProperties.map(property => ({
+      ...property,
+      users: {
+        ...property.users,
+        mobile_number: property.users?.mobile_number ? String(property.users.mobile_number) : null,
+      }
+    }));
+
+    const responsePayload = {
+      list: transformedProperties,
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+    };
+
+    return response.success(
+      res,
+      res.__('messages.likedPropertyListedSuccessfully'),
+      responsePayload,
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError')
+    );
+  }
+};
+
+
+export const getUserLikedData = async (req, res) => {
+  const { propertyId, page, limit, startDate, endDate } = req.body; // Get the property ID from the request parameters
+  try {
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
+    const skip = (validPage - 1) * validLimit;
+
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        created_at: {
+          gte: new Date(startDate), // Greater than or equal to start date
+          lte: new Date(endDate),   // Less than or equal to end date
+        },
+      };
+    }
+
     const totalCount = await prisma.propertyLike.count({
       where: {
         property_id: propertyId,
+        ...dateFilter
       },
     });
 
     const likedProperties = await prisma.propertyLike.findMany({
       where: {
         property_id: propertyId,
+        ...dateFilter
       },
       include: {
         users: {

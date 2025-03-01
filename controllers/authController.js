@@ -321,8 +321,8 @@ export const createNormalUser = async (req, res) => {
 };
 
 export const getallUser = async (req, res) => {
-    const { type } = req.body;
-    const userData = await UserModel.getAllUserd(type);
+    const { type, startDate, endDate } = req.body;
+    const userData = await UserModel.getAllUserd(type, startDate, endDate);
     const userList = {
         count : userData.length,
         user_data : userData
