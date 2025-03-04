@@ -11,8 +11,8 @@ export const getList = async (req, res) => {
         const totalDeveloperUsersCount = await prisma.users.count({ where: { roles: { name: 'developer' } } });
         const totalUsersCount = await prisma.users.count();
         const whereCondition = (userInfo !== 'admin')?{ user_id: req.user.id }:{};
-        const totalProjectCount = await prisma.projectDetails.count({where: whereCondition});
-        const totalPropertyCount = await prisma.propertyDetails.count({where: {status: true}});
+        const totalProjectCount = await prisma.projectDetails.count({where: { ...whereCondition }});
+        const totalPropertyCount = await prisma.propertyDetails.count({where: { ...whereCondition, status: true }});
         const likeCount = await prisma.propertyLike.count({
             where: {
                 property_publisher: req.user.id  // Adjust this based on your actual field name
@@ -28,6 +28,7 @@ export const getList = async (req, res) => {
                 property_owner_id: req.user.id  // Adjust this based on your actual field name
             }
         });
+        const visitCount = await prisma.propertyVisit.count({});
         const activeDeveloper = await prisma.users.count({where: {role_id: "c326e1e2-6f82-4af4-ba25-06029eba688f"}});
         const activeAgency = await prisma.users.count({where: {role_id: "c326e1e2-6f82-4af4-ba25-06029eba6569"}});
         const responseData = {
@@ -39,6 +40,7 @@ export const getList = async (req, res) => {
             property_comment_count: commentCount,
             active_developer: activeDeveloper,
             active_agency: activeAgency,
+            property_visit_count: visitCount,
         }
         response.success(res, res.__('messages.dashboardList'), responseData);
     } catch (error) {

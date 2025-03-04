@@ -746,7 +746,7 @@ export const getLikedProperty = async (req, res) => {
 
 export const getAllProperty = async (req, res) => {
   try {
-    const { page = 1, limit = 10, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude} = req.body;
+    const { page = 1, limit = 10, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude, startDate, endDate} = req.body;
     console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
     const lang = res.getLocale();
 
@@ -783,10 +783,21 @@ export const getAllProperty = async (req, res) => {
     };
 
 
-
+    let dateFilter = {};
+    if (startDate && endDate) {
+    dateFilter = {
+        created_at: {
+        gte: new Date(startDate), // Greater than or equal to start date
+        lte: new Date(endDate),   // Less than or equal to end date
+        },
+    };
+}
 
     const totalCount = await prisma.propertyDetails.count({
-      where: combinedCondition,
+      where: {
+        ...combinedCondition,
+        ...dateFilter
+      },
     });
 
     const properties = await prisma.propertyDetails.findMany({
@@ -795,7 +806,10 @@ export const getAllProperty = async (req, res) => {
       orderBy:{
         created_at: 'desc',
       },
-      where: combinedCondition,
+      where: {
+          ...combinedCondition,
+          ...dateFilter
+      },
       include: {
         ...userInclude,
         ...langTranslationsInclude,
