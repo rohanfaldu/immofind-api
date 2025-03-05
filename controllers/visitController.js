@@ -513,3 +513,29 @@ export const declinePendingVisit = async (req, res) => {
             );
         }
 }
+
+
+export const visitReschedule = async (req, res) => {
+    const { visitId, dateAndTime, visitType } = req.body;
+    try {
+        const visit = await prisma.propertyVisit.update({
+            where: { id: visitId },
+            data: {
+                scheduled_date: dateAndTime,
+                visit_type: visitType,
+            },
+        });
+
+        return response.success(    
+            res,    
+            res.__('messages.visitDeclinedSuccessfully'),
+            visit
+        );
+        } catch (error) {
+            console.error(error);
+            return response.error(
+                res,    
+                res.__('messages.internalServerError')
+            );
+        }
+}
