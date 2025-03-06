@@ -38,9 +38,9 @@ export const getAgentDeveloperProperty = async (req, res) => {
   try {
     const userInfo = await commonFunction.getLoginUser(req.user.id);
 
-    const { page = 1, limit = 10 } = req.body;
+    const { page = 1, limit = 10, flag } = req.body;  // Extract flag from request
     const lang = res.getLocale();
-    const whereCondition = (userInfo !== 'admin') ? { user_id: req.user.id } : {};
+    const whereCondition = userInfo !== 'admin' ? { user_id: req.user.id } : {};
 
     const include = {
       ...userInclude,
@@ -57,8 +57,8 @@ export const getAgentDeveloperProperty = async (req, res) => {
 
     const { totalCount, validPage: currentPage, validLimit: itemsPerPage, finding: properties } = paginationResult;
 
-    // Use Promise.all to wait for all the async operations inside map
-    const simplifiedProperties = await Promise.all(properties.map(async (property) => {
+    // Use Promise.all to wait for all async operations inside map
+    let simplifiedProperties = await Promise.all(properties.map(async (property) => {
       const description =
         lang === 'fr'
           ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
@@ -105,7 +105,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
           property_id: property.id  
         }
       });
-      
+
       return {
         id: property.id,
         user_name: property.users?.full_name || null,
@@ -135,9 +135,18 @@ export const getAgentDeveloperProperty = async (req, res) => {
       };
     }));
 
+    // Apply flag-based filtering
+    if (flag === 'like') {
+      simplifiedProperties = simplifiedProperties.filter(property => property.like_count > 0);
+    } else if (flag === 'comment') {
+      simplifiedProperties = simplifiedProperties.filter(property => property.comment_count > 0);
+    } else if (flag === 'view') {
+      simplifiedProperties = simplifiedProperties.filter(property => property.view_count > 0);
+    }
+
     const responsePayload = {
-      totalCount,
-      totalPages: Math.ceil(totalCount / itemsPerPage),
+      totalCount: simplifiedProperties.length, // Update total count after filtering
+      totalPages: Math.ceil(simplifiedProperties.length / itemsPerPage),
       currentPage,
       itemsPerPage,
       list: simplifiedProperties,
@@ -159,6 +168,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
     );
   }
 };
+
 
 export const propertyComment = async (req, res) => {
   try {
