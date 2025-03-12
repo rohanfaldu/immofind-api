@@ -38,7 +38,7 @@ export const getAllProjects = async (req, res) => {
   try {
     const lang = res.getLocale();
     // Validate and parse pagination inputs
-    const { page = 1, limit = 10, title, city_id, district_id, neighborhoods_id, minPrice, maxPrice, amenities_id_array, amenities_id_object_with_value } = req.body;
+    const { page = 1, limit = 10, user_id, title, city_id, district_id, neighborhoods_id, minPrice, maxPrice, amenities_id_array, amenities_id_object_with_value } = req.body;
     const validPage = Math.max(1, parseInt(page, 10));
     const validLimit = Math.max(1, parseInt(limit, 10));
     const skip = (validPage - 1) * validLimit;
@@ -57,6 +57,7 @@ export const getAllProjects = async (req, res) => {
     const combinedCondition = {
       AND: [
         { OR: otherConditions.filter(Boolean) },
+        user_id ? { user_id: user_id } : {}, // Filter by user_id if provided
       ],
     };
     
@@ -77,6 +78,7 @@ export const getAllProjects = async (req, res) => {
           select: {
             full_name: true,
             image: true,
+            id: true,
           },
         },
         lang_translations_title: {
@@ -224,6 +226,7 @@ export const getAllProjects = async (req, res) => {
       id: project.id,
       user_name: project.users?.full_name || null,
       user_image: project.users?.image || null,
+      user_id: project.users?.id || null,
       title: lang === 'fr' ? project.lang_translations_title?.fr_string : project.lang_translations_title?.en_string,
       description: lang === 'fr' ? project.lang_translations_description?.fr_string : project.lang_translations_description?.en_string,
       state: lang === 'fr' ? project.states?.lang?.fr_string : project.states?.lang?.en_string,

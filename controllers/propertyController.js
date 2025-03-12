@@ -756,7 +756,7 @@ export const getLikedProperty = async (req, res) => {
 
 export const getAllProperty = async (req, res) => {
   try {
-    const { page = 1, limit = 10, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude, startDate, endDate} = req.body;
+    const { page = 1, limit = 10, user_id, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude, startDate, endDate} = req.body;
     console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
     const lang = res.getLocale();
 
@@ -789,6 +789,7 @@ export const getAllProperty = async (req, res) => {
       AND: [
         { AND: transactionConditions.filter(Boolean) },
         { OR: otherConditions.filter(Boolean) },
+        user_id ? { user_id: user_id } : {},
       ],
     };
 
