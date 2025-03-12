@@ -121,15 +121,16 @@ const UserModel = {
     },
     getAllUserd: async (type, startDate, endDate) => {
         let dateFilter = {};
-            if (startDate && endDate) {
+        if (startDate && endDate) {
             dateFilter = {
                 created_at: {
-                gte: new Date(startDate), // Greater than or equal to start date
-                lte: new Date(endDate),   // Less than or equal to end date
+                    gte: new Date(startDate), // Greater than or equal to start date
+                    lte: new Date(endDate),   // Less than or equal to end date
                 },
             };
         }
-        const userInfo = await prisma.users.findMany({
+    
+        const users = await prisma.users.findMany({
             where: {
                 is_deleted: false,
                 roles: {
@@ -140,16 +141,34 @@ const UserModel = {
             include: {
                 roles: {
                     select: {
-                      name: true, // Select only the role name
+                        name: true, // Select only the role name
                     },
                 },
             },
             orderBy: {
                 created_at: 'desc', // Order by creation date in descending order (newest first)
-              },
+            },
         });
-        return  await commonFunction.bigIntiger(userInfo);
+    
+        // Fetch property counts for each user
+        const userDataWithPropertyCount = await Promise.all(users.map(async (user) => {
+            const propertyCount = await prisma.propertyDetails.count({
+                where: { user_id: user.id }
+            });
+            const projectCount = await prisma.projectDetails.count({
+                where: { user_id: user.id }
+            });
+    
+            return {
+                ...user,
+                publish_property: propertyCount,
+                publish_project: projectCount
+            };
+        }));
+    
+        return await commonFunction.bigIntiger(userDataWithPropertyCount);
     },
+
     getagencyUsered: async () => {
         const userInfo = await prisma.users.findMany({
             where: {
