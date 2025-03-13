@@ -158,11 +158,23 @@ const UserModel = {
             const projectCount = await prisma.projectDetails.count({
                 where: { user_id: user.id }
             });
-    
+            const userViewCount = await prisma.propertyView.count({
+                where: { user_id: user.id }
+            });
+            const userLikeCount = await prisma.propertyLike.count({
+                where: { user_id: user.id }
+            });
+            const userActivity = await prisma.userActivity.findFirst({
+                where: { user_id: user.id },
+            })
+
             return {
                 ...user,
                 publish_property: propertyCount,
-                publish_project: projectCount
+                publish_project: projectCount,
+                user_view_property: userViewCount,
+                user_like_property: userLikeCount,
+                last_activity_at: userActivity
             };
         }));
     

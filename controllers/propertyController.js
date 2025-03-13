@@ -754,6 +754,161 @@ export const getLikedProperty = async (req, res) => {
   }
 };
 
+export const getUserLikeProperty = async (req, res) => {
+  try {
+    const { page, limit, user_like, startDate, endDate } = req.body;
+
+    console.log(user_like,"user_like")
+    // Validate user_like (ensure it's not null, undefined, or an empty string)
+    if (!user_like || user_like.trim() === "") {
+      return response.error(res, res.__('messages.userIdRequired'));
+    }
+
+    // Ensure valid pagination numbers
+    const validPage = isNaN(parseInt(page, 10)) ? 1 : Math.max(1, parseInt(page, 10));
+    const validLimit = isNaN(parseInt(limit, 10)) ? 10 : Math.max(1, parseInt(limit, 10));
+    const skip = (validPage - 1) * validLimit;
+
+    // Date filter
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        created_at: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      };
+    }
+
+    // Fetch properties
+    const userLikeProperty = await prisma.propertyLike.findMany({
+      where: { user_id: user_like, ...dateFilter },
+      skip,
+      take: validLimit,
+      orderBy: { created_at: 'desc' },
+      include: {
+        property: true,
+        
+      }
+    });
+
+    // Get total count
+    const totalCount = await prisma.propertyLike.count({
+      where: { user_id: user_like, ...dateFilter },
+    });
+
+    // Prepare response
+    const responsePayload = {
+      list: userLikeProperty,
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+    };
+
+    return response.success(
+      res,
+      res.__('messages.likedPropertyFetchedSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(res, res.__('messages.errorFetchingProperties'));
+  }
+};
+export const getUserViewProperty = async (req, res) => {
+  try {
+    const { page, limit, user_like, startDate, endDate } = req.body;
+
+    console.log(user_like,"user_like")
+    // Validate user_like (ensure it's not null, undefined, or an empty string)
+    if (!user_like || user_like.trim() === "") {
+      return response.error(res, res.__('messages.userIdRequired'));
+    }
+
+    // Ensure valid pagination numbers
+    const validPage = isNaN(parseInt(page, 10)) ? 1 : Math.max(1, parseInt(page, 10));
+    const validLimit = isNaN(parseInt(limit, 10)) ? 10 : Math.max(1, parseInt(limit, 10));
+    const skip = (validPage - 1) * validLimit;
+
+    // Date filter
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        created_at: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      };
+    }
+
+    // Fetch properties
+    const userLikeProperty = await prisma.propertyView.findMany({
+      where: { user_id: user_like, ...dateFilter },
+      skip,
+      take: validLimit,
+      orderBy: { created_at: 'desc' },
+      include: {
+        property: true,
+        
+      }
+    });
+
+    // Get total count
+    const totalCount = await prisma.propertyView.count({
+      where: { user_id: user_like, ...dateFilter },
+    });
+
+    // Prepare response
+    const responsePayload = {
+      list: userLikeProperty,
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+    };
+
+    return response.success(
+      res,
+      res.__('messages.likedPropertyFetchedSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(res, res.__('messages.errorFetchingProperties'));
+  }
+};
+
+export const setUserActivity = async (req, res) => {
+  try {
+    const existingActivity = await prisma.userActivity.findFirst({
+      where: { user_id: req.user.id },
+    });
+    console.log(existingActivity, 'existingActivity');
+    let userActivity;
+    if (existingActivity) {
+      // Update the existing record
+      userActivity = await prisma.userActivity.updateMany({
+        where: { user_id: req.user.id },
+        data: { last_activity_at: new Date() },
+      });
+    } else {
+      // Create a new record
+      userActivity = await prisma.userActivity.create({
+        data: {
+          user_id: req.user.id,
+          last_activity_at: new Date(),
+        },
+      });
+    }
+
+    return response.success(res, res.__('messages.propertyActivityUpdatedSuccessfully'), userActivity);
+  } catch (error) {
+    console.error(error);
+    return response.error(res, res.__('messages.errorUpdatingPropertyActivity'));
+  }
+};
+
 export const getAllProperty = async (req, res) => {
   try {
     const { page = 1, limit = 10, user_id, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude, startDate, endDate} = req.body;

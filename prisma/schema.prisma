@@ -446,6 +446,7 @@ model Users {
   propertyLikes        PropertyLike[]    @relation("UserPropertyLikes")
   propertyViews        PropertyView[]    @relation("UserPropertyViews")
   propertyVisit        PropertyVisit[]   @relation("UserPropertyVisit")
+  UserActivity         UserActivity[]    @relation("UserActivity")
   roles                Roles             @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_foreign_key")
 
   @@map("users")
@@ -571,6 +572,16 @@ model PropertyComment {
   @@unique([user_id, property_id])
   @@map("property_comment")
 }
+
+model UserActivity {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String        @db.Uuid
+  last_activity_at    DateTime      @default(now()) @db.Timestamp(6)
+  users               Users         @relation("UserActivity", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("user_activity")
+}
+
 
 enum AgencyType {
   BASIC
