@@ -109,6 +109,253 @@ import { subDays, format, startOfDay, endOfDay } from 'date-fns';
 //     }
 // };
 
+export const getLikes = async (req, res) => {
+    const userId = req.user.id;
+    const { day_before } = req.body;
+
+    try {
+        const daysBefore = day_before || 7; // Default to last 7 days if not provided
+        const startDate = subDays(new Date(), daysBefore); // Calculate the start date
+
+        // Fetch likes data
+        const likesData = await prisma.propertyLike.findMany({
+            where: {
+                property_publisher: userId,
+                created_at: {
+                    gte: startOfDay(startDate), // Get records from startDate to now
+                },
+            },
+            select: {
+                created_at: true,
+            },
+            orderBy: {
+                created_at: 'asc', // Sort by date ascending
+            },
+        });
+
+        // Group by date
+        const likeCountsByDate = likesData.reduce((acc, item) => {
+            const dateKey = format(new Date(item.created_at), 'MM-dd'); // Extract month and day
+            acc[dateKey] = (acc[dateKey] || 0) + 1; // Count occurrences per day
+            return acc;
+        }, {});
+
+        // Prepare response data for the requested days
+        const userLiked = [];
+        for (let i = 0; i <= daysBefore; i++) {
+            const currentDate = format(subDays(new Date(), daysBefore - i), 'MM-dd'); // Format as MM-DD
+            userLiked.push({
+                date: currentDate,
+                count: likeCountsByDate[currentDate] || 0, // Use count if exists, else 0
+            });
+        }
+
+        return response.success(
+            res,
+            res.__('messages.propertyCountFetchedSuccessfully'),
+            userLiked
+        );
+    } catch (error) {
+        console.error(error);
+        return response.error(
+            res,
+            res.__('messages.internalServerError')
+        );
+    }
+}
+export const getComments = async (req, res) => {
+    const userId = req.user.id;
+    const { day_before } = req.body;
+
+    try {
+        const daysBefore = day_before || 7; // Default to last 7 days if not provided
+        const startDate = subDays(new Date(), daysBefore); // Calculate the start date
+
+        // Fetch likes data
+        const likesData = await prisma.propertyComment.findMany({
+            where: {
+                property_owner_id: userId,
+                created_at: {
+                    gte: startOfDay(startDate), // Get records from startDate to now
+                },
+            },
+            select: {
+                created_at: true,
+            },
+            orderBy: {
+                created_at: 'asc', // Sort by date ascending
+            },
+        });
+
+        // Group by date
+        const likeCountsByDate = likesData.reduce((acc, item) => {
+            const dateKey = format(new Date(item.created_at), 'MM-dd'); // Extract month and day
+            acc[dateKey] = (acc[dateKey] || 0) + 1; // Count occurrences per day
+            return acc;
+        }, {});
+
+        // Prepare response data for the requested days
+        const userLiked = [];
+        for (let i = 0; i <= daysBefore; i++) {
+            const currentDate = format(subDays(new Date(), daysBefore - i), 'MM-dd'); // Format as MM-DD
+            userLiked.push({
+                date: currentDate,
+                count: likeCountsByDate[currentDate] || 0, // Use count if exists, else 0
+            });
+        }
+
+        return response.success(
+            res,
+            res.__('messages.propertyCountFetchedSuccessfully'),
+            userLiked
+        );
+    } catch (error) {
+        console.error(error);
+        return response.error(
+            res,
+            res.__('messages.internalServerError')
+        );
+    }
+}
+export const getViews = async (req, res) => {
+    const userId = req.user.id;
+    const { day_before } = req.body;
+
+    try {
+        const daysBefore = day_before || 7; // Default to last 7 days if not provided
+        const startDate = subDays(new Date(), daysBefore); // Calculate the start date
+
+        // Fetch likes data
+        const likesData = await prisma.propertyView.findMany({
+            where: {
+                property_publisher: userId,
+                created_at: {
+                    gte: startOfDay(startDate), // Get records from startDate to now
+                },
+            },
+            select: {
+                created_at: true,
+            },
+            orderBy: {
+                created_at: 'asc', // Sort by date ascending
+            },
+        });
+
+        // Group by date
+        const likeCountsByDate = likesData.reduce((acc, item) => {
+            const dateKey = format(new Date(item.created_at), 'MM-dd'); // Extract month and day
+            acc[dateKey] = (acc[dateKey] || 0) + 1; // Count occurrences per day
+            return acc;
+        }, {});
+
+        // Prepare response data for the requested days
+        const userLiked = [];
+        for (let i = 0; i <= daysBefore; i++) {
+            const currentDate = format(subDays(new Date(), daysBefore - i), 'MM-dd'); // Format as MM-DD
+            userLiked.push({
+                date: currentDate,
+                count: likeCountsByDate[currentDate] || 0, // Use count if exists, else 0
+            });
+        }
+
+        return response.success(
+            res,
+            res.__('messages.propertyCountFetchedSuccessfully'),
+            userLiked
+        );
+    } catch (error) {
+        console.error(error);
+        return response.error(
+            res,
+            res.__('messages.internalServerError')
+        );
+    }
+}
+
+
+
+export const getUserActivity = async (req, res) => {
+    const userId = req.user.id;
+    const { day_before } = req.body;
+
+    try {
+        const daysBefore = day_before || 7; // Default to last 7 days if not provided
+        const startDate = subDays(new Date(), daysBefore); // Calculate the start date
+
+        // Fetch likes, comments, and views in parallel
+        const [likesData, commentsData, viewsData] = await Promise.all([
+            prisma.propertyLike.findMany({
+                where: {
+                    
+                    created_at: {
+                        gte: startOfDay(startDate),
+                    },
+                },
+                select: { created_at: true },
+                orderBy: { created_at: 'asc' },
+            }),
+            prisma.propertyComment.findMany({
+                where: {
+                    // property_owner_id: userId,
+                    created_at: {
+                        gte: startOfDay(startDate),
+                    },
+                },
+                select: { created_at: true },
+                orderBy: { created_at: 'asc' },
+            }),
+            prisma.propertyView.findMany({
+                where: {
+                    // property_publisher: userId,
+                    created_at: {
+                        gte: startOfDay(startDate),
+                    },
+                },
+                select: { created_at: true },
+                orderBy: { created_at: 'asc' },
+            }),
+        ]);
+
+        // Function to group data by date
+        const groupByDate = (data) => {
+            return data.reduce((acc, item) => {
+                const dateKey = format(new Date(item.created_at), 'MM-dd');
+                acc[dateKey] = (acc[dateKey] || 0) + 1;
+                return acc;
+            }, {});
+        };
+
+        // Group likes, comments, and views data by date
+        const likesByDate = groupByDate(likesData);
+        const commentsByDate = groupByDate(commentsData);
+        const viewsByDate = groupByDate(viewsData);
+
+        // Prepare response data for the requested days
+        const activityData = [];
+        for (let i = 0; i <= daysBefore; i++) {
+            const currentDate = format(subDays(new Date(), daysBefore - i), 'MM-dd');
+            activityData.push({
+                date: currentDate,
+                likes: likesByDate[currentDate] || 0,
+                comments: commentsByDate[currentDate] || 0,
+                views: viewsByDate[currentDate] || 0,
+            });
+        }
+
+        return response.success(
+            res,
+            res.__('messages.propertyActivityFetchedSuccessfully'),
+            activityData
+        );
+    } catch (error) {
+        console.error(error);
+        return response.error(
+            res,
+            res.__('messages.internalServerError')
+        );
+    }
+};
+
 
 export const agenciesEngagement = async (req, res) => {
     const userId = req.user.id;
