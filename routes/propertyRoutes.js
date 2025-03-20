@@ -26,6 +26,6 @@ router.post('/get-viewed-property-user', authorize, getUserViewedData);
 router.post('/get-commented-property-user', authorize, getUserCommentedData);
 router.post('/user-like-property', authorize, getUserLikeProperty);
 router.post('/user-view-property', authorize, getUserViewProperty);
-router.post('/user-activity', authorize, setUserActivity);
+router.post('/user-activity', authorize, setUserActivity); 
 // router.delete('/:propertyId/like', authorize, unlikeProperty);
 export default router;
