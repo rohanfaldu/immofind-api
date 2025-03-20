@@ -11,6 +11,7 @@ router.post('/get-likes', authorize, getLikes);
 router.post('/get-comments', authorize, getComments);
 router.post('/get-views', authorize, getViews);
 router.post('/get-all-activity', authorize, getUserActivity);
+// router.post('/get-all-activity', authorize, getUserActivity);
 
 
 export default router;
