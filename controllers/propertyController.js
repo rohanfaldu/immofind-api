@@ -310,33 +310,15 @@ export const viewProperty = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // Check if the user has already viewed the property
-    const existingView = await prisma.propertyView.findFirst({
-      where: { user_id: userId, property_id: propertyId },
+    // Create a new view record every time a user views the property
+    await prisma.propertyView.create({
+      data: {
+        property_id: propertyId,
+        user_id: userId,
+        property_publisher: propertyPublisherId,
+        created_at: new Date(), // Stores the exact date & time of the view
+      },
     });
-
-    if (!existingView) {
-      // Create a new view record for first-time viewers
-      await prisma.propertyView.create({
-        data: {
-          property_id: propertyId,
-          user_id: userId,
-          property_publisher: propertyPublisherId,
-          view_count: 1, // Initial view count
-        },
-      });
-    } else {
-      // Update the existing record by incrementing the view count
-      await prisma.propertyView.updateMany({
-        where: {
-          user_id: userId,
-          property_id: propertyId,
-        },
-        data: { 
-          view_count: { increment: 1 },
-        },
-      });
-    }
 
     return response.success(
       res,
@@ -347,6 +329,7 @@ export const viewProperty = async (req, res) => {
     return response.error(res, res.__('messages.internalServerError'));
   }
 };
+
 
 
 
