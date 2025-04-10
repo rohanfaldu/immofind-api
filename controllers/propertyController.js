@@ -253,7 +253,7 @@ export const getPropertyComment = async (req, res) => {
       currentPage: validPage,
       itemsPerPage: validLimit,
     };
-    console.log(responsePayload,"responsePayload")
+    // console.log(responsePayload,"responsePayload")
 
     return response.success(
       res,
@@ -741,7 +741,7 @@ export const getUserLikeProperty = async (req, res) => {
   try {
     const { page, limit, user_like, startDate, endDate } = req.body;
 
-    console.log(user_like,"user_like")
+    // console.log(user_like,"user_like")
     // Validate user_like (ensure it's not null, undefined, or an empty string)
     if (!user_like || user_like.trim() === "") {
       return response.error(res, res.__('messages.userIdRequired'));
@@ -803,7 +803,7 @@ export const getUserViewProperty = async (req, res) => {
   try {
     const { page, limit, user_like, startDate, endDate } = req.body;
 
-    console.log(user_like,"user_like")
+    // console.log(user_like,"user_like")
     // Validate user_like (ensure it's not null, undefined, or an empty string)
     if (!user_like || user_like.trim() === "") {
       return response.error(res, res.__('messages.userIdRequired'));
@@ -867,7 +867,7 @@ export const setUserActivity = async (req, res) => {
     const existingActivity = await prisma.userActivity.findFirst({
       where: { user_id: req.user.id },
     });
-    console.log(existingActivity, 'existingActivity');
+    // console.log(existingActivity, 'existingActivity');
     let userActivity;
     if (existingActivity) {
       // Update the existing record
@@ -895,7 +895,7 @@ export const setUserActivity = async (req, res) => {
 export const getAllProperty = async (req, res) => {
   try {
     const { page = 1, limit = 10, user_id, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude, startDate, endDate} = req.body;
-    console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
+    // console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
     const lang = res.getLocale();
 
     const validPage = Math.max(1, parseInt(page, 10));
@@ -1193,7 +1193,7 @@ export const getAllProperty = async (req, res) => {
               amenities_score = 100;
           }
       
-          // console.log("Match Percentage:", amenities_score);
+          // // console.log("Match Percentage:", amenities_score);
       } else {
           console.error("Property or property_meta_details is undefined:", property);
       }
@@ -1253,7 +1253,7 @@ export const getAllProperty = async (req, res) => {
             year_amenities_score = (matchedFilters / totalFilters) * 100;
           }
         
-          // console.log(`Match Percentage: ${year_amenities_score}%`);
+          // // console.log(`Match Percentage: ${year_amenities_score}%`);
         } else {
           console.error("Property or property_meta_details is undefined:", property);
         }
@@ -1269,7 +1269,7 @@ export const getAllProperty = async (req, res) => {
             const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins=${origin}&destinations=${destination}&key=${GOOGLE_MAPS_API_KEY}`;
             
             const response = await axios.get(url);
-            // console.log('Distance Matrix Response:', JSON.stringify(response.data, null, 2));
+            // // console.log('Distance Matrix Response:', JSON.stringify(response.data, null, 2));
             
             if (response.data.status === 'OK' && 
                 response.data.rows && 
@@ -1298,7 +1298,7 @@ export const getAllProperty = async (req, res) => {
                 duration: durationText
               };
               
-              console.log('Successfully calculated distance:', property.exact_distance);
+              // console.log('Successfully calculated distance:', property.exact_distance);
             } else {
               location_score = 0;
             }
@@ -1326,7 +1326,7 @@ export const getAllProperty = async (req, res) => {
               duration: 'N/A'
             };
             
-            console.log('Fallback distance calculated:', property.exact_distance);
+            // console.log('Fallback distance calculated:', property.exact_distance);
           }
         }
         
@@ -1356,7 +1356,7 @@ export const getAllProperty = async (req, res) => {
               user_id: property.users.id
             }
           });
-          console.log(developer,"ll")
+          // console.log(developer,"ll")
         
           if (developer) {
             developerSocial = {
@@ -1470,10 +1470,11 @@ export const getAllProperty = async (req, res) => {
     });
 
 
+    // const maxPriceSliderRange = Math.max(
+    //   ...data.map((property) => property.price || 0)
+    // );
 
-    const maxPriceSliderRange = Math.max(
-      ...data.map((property) => property.price || 0)
-    );
+    const maxPriceSliderRange = 10000;
 
     const maxSizeSliderRange = Math.max(
       ...data.map((property) => property.size || 0)

@@ -237,14 +237,14 @@ export const getAllDevelopers = async (req, res) => {
     const fetchTranslation = async (id) => {
       if (!id) return null;
       const translation = await prisma.langTranslations.findUnique({ where: { id } });
-      console.log('translation: ', translation);
+      // console.logg('translation: ', translation);
       return lang === 'fr' ? translation?.fr_string : translation?.en_string;
     };
 
     const cityName = async (id) => {
       if (!id) return null;
       const city = await prisma.cities.findUnique({ where: { id } });
-      console.log('city: ', city);
+      // console.logg('city: ', city);
       return await fetchTranslation(city?.lang_id); // Return the translation
     };
     
@@ -291,10 +291,11 @@ export const getAllDevelopers = async (req, res) => {
           full_name: userInfo?.full_name,
           image: userInfo?.image,
           user_email_adress: userInfo?.email_address,
+          slug: developer.slug,
         }
       })
     );
-
+    console.log(developerResponseData, ">>>>>>>>>>>>>> developerResponseData")
     const safeDevelopers = developerResponseData.map(developer =>
       JSON.parse(
         JSON.stringify(developer, (_, value) =>
@@ -332,9 +333,9 @@ export const getAllDevelopers = async (req, res) => {
 
 export const getDeveloperById = async (req, res) => {
   try {
-    const { developer_id } = req.body;
+    const { developer_slug } = req.body;
     const lang = res.getLocale();
-    if (!developer_id) {
+    if (!developer_slug) {
       return response.error(
         res,
         res.__('messages.developerIdMissing'),
@@ -344,14 +345,14 @@ export const getDeveloperById = async (req, res) => {
     }
 
     const developer = await prisma.developers.findUnique({
-      where: { user_id: developer_id },
+      where: { slug: developer_slug },
       include: {
         lang_translations_description: true, 
         lang_translations_service_area: true,
       }
     });
 
-    console.log(developer,"developer")
+    // console.logg(developer,"developer")
 
     const fetchTranslation = async (id) => {
       if (!id) return null;
@@ -672,7 +673,7 @@ export const getDeveloperById = async (req, res) => {
     const cityName = async (id) => {
       if (!id) return null;
       const city = await prisma.cities.findUnique({ where: { id } });
-      console.log('city: ', city);
+      // console.logg('city: ', city);
       return await fetchTranslation(city?.lang_id); // Return the translation
     };
 
@@ -1064,7 +1065,7 @@ export const deleteDeveloper = async (req, res) => {
       where: { user_id },
     });
 
-    console.log(findMeta,"findMeta")
+    // console.logg(findMeta,"findMeta")
 
     // Perform all deletions in a transaction
     await prisma.$transaction([

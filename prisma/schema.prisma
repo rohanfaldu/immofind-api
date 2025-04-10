@@ -38,6 +38,7 @@ model Agencies {
   country_code                                              String?           @db.VarChar
   description                                               String?           @db.Uuid
   service_area                                              String?           @db.Uuid
+  slug                                                      String?           @unique
   cities                                                    Cities?            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_agency_foreign_key")
   agency_packages_agencies_agency_packagesToagency_packages AgencyPackages?   @relation("agencies_agency_packagesToagency_packages", fields: [agency_packages], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_description                             LangTranslations? @relation("agency_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -493,6 +494,7 @@ model Developers {
   description                    String?           @db.Uuid
   serviceArea                    String?           @db.Uuid
   cover                          String?           @db.VarChar
+  slug                           String?           @unique
   cities                         Cities?            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_developer_foreign_key")
   lang_translations_description  LangTranslations? @relation("developer_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_service_area LangTranslations? @relation("developer_service_area_translation", fields: [serviceArea], references: [id], onDelete: NoAction, onUpdate: NoAction)

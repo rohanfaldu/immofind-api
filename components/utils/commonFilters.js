@@ -172,12 +172,11 @@
                             property_type_listings: {
                                 id: id,
                             },
-                            value: minValue.toString()
+                             value: minValue.toString() == "4" ? { lte: "4"  } : minValue.toString(),
                             
                         },
                     },
                 };
-                console.log(condition);
                 return condition;
             });
     
