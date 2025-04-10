@@ -167,13 +167,6 @@ export const createAgency = async (req, res) => {
   }
 };
 
-
-
-
-
-
-
-
 // Get all agencies
 export const getAllAgencies = async (req, res) => {
   try {
@@ -268,6 +261,7 @@ export const getAllAgencies = async (req, res) => {
           full_name: userInfo?.full_name,
           image: userInfo?.image,
           user_email_adress: userInfo?.email_address,
+          slug: agency.slug,
         }
         
       })
@@ -449,7 +443,7 @@ export const getAgencyById = async (req, res) => {
     // Fetch the agency by its ID using Prisma
     const agency = await prisma.agencies.findUnique({
       where: {
-        user_id: req.params.id,
+        slug: req.params.id,
       },
       include: {
         lang_translations_description: true, 

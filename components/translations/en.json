@@ -215,6 +215,10 @@
 		"noDevelopersFound": "messages.noDevelopersFound",
 		"commentFetchSuccessfully": "messages.commentFetchSuccessfully",
 		"commentAddedSuccessfully": "messages.commentAddedSuccessfully",
-		"likedPropertyListedSuccessfully": "Liked property listed successfully."
+		"likedPropertyListedSuccessfully": "Liked property listed successfully.",
+		"propertyVisitScheduledSuccessfully": "messages.propertyVisitScheduledSuccessfully",
+		"propertyActivityUpdatedSuccessfully": "messages.propertyActivityUpdatedSuccessfully",
+		"propertyViewedSuccessfully": "messages.propertyViewedSuccessfully",
+		"developerIdMissing": "messages.developerIdMissing"
 	}
 }

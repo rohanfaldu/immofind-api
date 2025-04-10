@@ -323,6 +323,8 @@ export const getProjectsById = async (req, res) => {
           select: {
             full_name: true,
             image: true,
+            email_address: true,
+            id: true,
           },
         },
         lang_translations_title: {
@@ -391,7 +393,7 @@ export const getProjectsById = async (req, res) => {
         },
       },
     });
-
+    console.log('>>>>>>>>>>>> project', project);
     // Step 3: Handle case where project is not found
     if (!project) {
       return response.error(res, res.__('messages.projectNotFound'));
@@ -583,12 +585,18 @@ export const getProjectsById = async (req, res) => {
       };
     });
 
-
+    const develoerDetail = await prisma.developers.findFirst({
+      where: { user_id: project.users.id },
+    });
+    console.log(develoerDetail,'>>>>>>>>>>>> develoerDetail');
     // Step 4: Format the project data for the response
     const simplifiedProject = {
       id: project.id,
       user_name: project.users?.full_name || null,
       user_image: project.users?.image || null,
+      user_email_address: project.users?.email_address || null,
+      developer_slug: develoerDetail?.slug || null,
+      user_id:  project.users?.id || null,
       title_en: project.lang_translations_title?.en_string,
       title_fr: project.lang_translations_title?.fr_string,
       description_fr: project.lang_translations_description?.fr_string,
