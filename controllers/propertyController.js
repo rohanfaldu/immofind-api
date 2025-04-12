@@ -1474,7 +1474,7 @@ export const getAllProperty = async (req, res) => {
     //   ...data.map((property) => property.price || 0)
     // );
 
-    const maxPriceSliderRange = 10000;
+    const maxPriceSliderRange = 100000;
 
     const maxSizeSliderRange = Math.max(
       ...data.map((property) => property.size || 0)
