@@ -219,7 +219,7 @@
 		"propertyVisitScheduledSuccessfully": "messages.propertyVisitScheduledSuccessfully",
 		"propertyActivityUpdatedSuccessfully": "messages.propertyActivityUpdatedSuccessfully",
 		"propertyViewedSuccessfully": "messages.propertyViewedSuccessfully",
-		"developerIdMissing": "messages.developerIdMissing"
-		
+		"developerIdMissing": "messages.developerIdMissing",
+		"propertyNotadd": "messages.propertyNotadd"
 	}
 }

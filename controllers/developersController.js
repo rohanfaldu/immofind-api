@@ -376,6 +376,8 @@ export const getDeveloperById = async (req, res) => {
             full_name: true,
             image: true,
             email_address:true,
+            mobile_number: true,
+            country_code: true,
           },
         },
         lang_translations_property_details_descriptionTolang_translations: {
@@ -471,7 +473,6 @@ export const getDeveloperById = async (req, res) => {
         },
       },
     });
-
 
     const projectList = await prisma.projectDetails.findMany({
       where: { user_id: developer.user_id },
@@ -712,6 +713,8 @@ export const getDeveloperById = async (req, res) => {
         full_name: userInfo?.full_name,
         image: userInfo?.image,
         user_email_adress: userInfo?.email_address,
+        user_mobile_number: userInfo?.mobile_number,
+        user_country_code: userInfo?.country_code,
         property_details: simplifiedProperties,
         project_details: simplifiedProject
     };

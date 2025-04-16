@@ -208,6 +208,7 @@
 		"emailAlreadyExists": "L'e-mail existe déjà.",
 		"propertyLikedSuccessfully": "Propriété aimée avec succès.",
 		"propertyUnlikedSuccessfully": "Propriété refusée avec succès.",
-		"likedPropertyFetchedSuccessfully": "Propriété aimée récupérée avec succès."
+		"likedPropertyFetchedSuccessfully": "Propriété aimée récupérée avec succès.",
+		"propertyNotadd": "Propriété comme non créée"
 	}
 }

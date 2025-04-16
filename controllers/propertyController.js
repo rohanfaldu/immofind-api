@@ -274,22 +274,32 @@ export const getPropertyComment = async (req, res) => {
 export const likeProperty = async (req, res) => {
   const { propertyId, propertyPublisherId } = req.body; // Get the property ID from the request parameters
   const userId = req.user.id; // Assuming user ID is available in req.user after authorization
-
+  console.log(userId, '>>>> userId', propertyId, ">>>>  propertyId", propertyPublisherId, '>>> propertyPublisherId')
   try {
     // Create a new like
-    await prisma.propertyLike.create({
-      data: {
+
+    const getLikeUserCount = await prisma.propertyLike.count({
+      where: {
         property_id: propertyId,
         user_id: userId,
         property_publisher: propertyPublisherId,
       },
     });
-
-    // Increment the like count on the property
-    await prisma.propertyDetails.update({
-      where: { id: propertyId },
-      data: { like_count: { increment: 1 } },
-    });
+    
+    if(getLikeUserCount > 0){
+      await prisma.propertyDetails.update({
+        where: { id: propertyId },
+        data: { like_count: { increment: 1 } },
+      });
+    }else{
+      await prisma.propertyLike.create({
+        data: {
+          property_id: propertyId,
+          user_id: userId,
+          property_publisher: propertyPublisherId,
+        },
+      });
+    }
 
     return response.success(
       res,
@@ -571,25 +581,40 @@ export const unlikeProperty = async (req, res) => {
 
   try {
     // Delete the like record using the composite unique key
-    await prisma.propertyLike.delete({
+
+    const getLikeUserCount = await prisma.propertyLike.count({
       where: {
-        user_id_property_id: {
-          user_id: userId,
-          property_id: propertyId,
-        },
+        property_id: propertyId,
+        user_id: userId,
       },
     });
-
-    // Decrement the like count on the property
-    await prisma.propertyDetails.update({
-      where: { id: propertyId },
-      data: { like_count: { decrement: 1 } },
-    });
-
-    return response.success(
-      res,
-      res.__('messages.propertyUnlikedSuccessfully'),
-    );
+    if(getLikeUserCount > 0){
+      await prisma.propertyLike.delete({
+        where: {
+          user_id_property_id: {
+            user_id: userId,
+            property_id: propertyId,
+          },
+        },
+      });
+  
+      // Decrement the like count on the property
+      await prisma.propertyDetails.update({
+        where: { id: propertyId },
+        data: { like_count: { decrement: 1 } },
+      });
+  
+      return response.success(
+        res,
+        res.__('messages.propertyUnlikedSuccessfully'),
+      );
+    } else{
+      return response.success(
+        res,
+        res.__('messages.propertyNotadd'),
+      );
+    }
+    
   } catch (error) {
     console.error(error);
     return response.error(
