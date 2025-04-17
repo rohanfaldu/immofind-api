@@ -220,6 +220,7 @@
 		"propertyActivityUpdatedSuccessfully": "messages.propertyActivityUpdatedSuccessfully",
 		"propertyViewedSuccessfully": "messages.propertyViewedSuccessfully",
 		"developerIdMissing": "messages.developerIdMissing",
-		"propertyNotadd": "messages.propertyNotadd"
+		"propertyNotadd": "messages.propertyNotadd",
+		"propertyActivityFetchedSuccessfully": "messages.propertyActivityFetchedSuccessfully"
 	}
 }

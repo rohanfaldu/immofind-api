@@ -1428,6 +1428,7 @@ export const getAllProperty = async (req, res) => {
           latitude: property.latitude,
           longitude: property.longitude,
           direction: property.direction,
+          vr_link: property.vr_link ?? null,
           address: property.address,
           size: property.size,
           price: property.price,
@@ -1774,6 +1775,7 @@ export const getPropertyByIdWithId = async (req, res) => {
       currency: property.currency?.id || null,
       neighborhood: property.neighborhoods?.id || null,
       project_id: property.project_id,
+      vr_link: property.vr_link,
       type_details: {
         id: property.property_types?.id || null,
         title: lang === 'fr' ? property.property_types?.lang_translations?.fr_string : property.property_types?.lang_translations?.en_string,
