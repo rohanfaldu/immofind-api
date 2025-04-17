@@ -555,6 +555,8 @@ export const getProjectsById = async (req, res) => {
         email_address:property.users?.email_address || null,
         description,
         title,
+        title_en: property.lang_translations.en_string ?? null,
+        title_fr: property.lang_translations.fr_string ?? null,
         transaction: propertyType,
         transaction_type: property.transaction,
         picture: property.picture,
