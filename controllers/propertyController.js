@@ -1359,10 +1359,10 @@ export const getAllProperty = async (req, res) => {
         const price_weight = 0.30
         // const location_weight = 0.25
         const surface_area = 0.10
-        const property_type = 0.10
-        const amenities = 0.10
-        const roomAmenities = 0.10
-        const yearAmenities = 0.05
+        const property_type = 0
+        const amenities = 0.20
+        const roomAmenities = 0.15
+        const yearAmenities = 0
 
         //location score static, 
         const final_score = (price_score * price_weight + location_score + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities + roomAmenities * room_amenities_score + yearAmenities *year_amenities_score)
