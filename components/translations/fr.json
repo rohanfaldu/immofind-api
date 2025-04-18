@@ -209,6 +209,7 @@
 		"propertyLikedSuccessfully": "Propriété aimée avec succès.",
 		"propertyUnlikedSuccessfully": "Propriété refusée avec succès.",
 		"likedPropertyFetchedSuccessfully": "Propriété aimée récupérée avec succès.",
-		"propertyNotadd": "Propriété comme non créée"
+		"propertyNotadd": "Propriété comme non créée",
+		"oldPasswordWrong": "L'ancien mot de passe de l'utilisateur était erroné"
 	}
 }

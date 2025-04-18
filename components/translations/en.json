@@ -221,6 +221,7 @@
 		"propertyViewedSuccessfully": "messages.propertyViewedSuccessfully",
 		"developerIdMissing": "messages.developerIdMissing",
 		"propertyNotadd": "messages.propertyNotadd",
-		"propertyActivityFetchedSuccessfully": "messages.propertyActivityFetchedSuccessfully"
+		"propertyActivityFetchedSuccessfully": "messages.propertyActivityFetchedSuccessfully",
+		"oldPasswordWrong": "User old Password was wrong"
 	}
 }
