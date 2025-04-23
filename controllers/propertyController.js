@@ -270,7 +270,6 @@ export const getPropertyComment = async (req, res) => {
 }
 
 
-
 export const likeProperty = async (req, res) => {
   const { propertyId, propertyPublisherId } = req.body; // Get the property ID from the request parameters
   const userId = req.user.id; // Assuming user ID is available in req.user after authorization
@@ -2213,3 +2212,55 @@ export const statusUpdateProperty = async (req, res) => {
     return await response.serverError(res, res.__('messages.errorstatusUpdateProperty'));
   }
 };
+
+
+export const getAllComment = async (req, res) => {
+  try {
+    const { page, limit } = req.body;
+
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
+    const skip = (validPage - 1) * validLimit;
+
+    const totalCount = await prisma.propertyComment.count();
+
+    const comments = await prisma.propertyComment.findMany({
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+            email_address: true,
+            id: true,
+          },
+        },
+      },
+      skip,
+      take: validLimit,
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    const responsePayload = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      list: comments,
+    };
+    // console.log(responsePayload,"responsePayload")
+
+    return response.success(
+      res,
+      res.__('messages.commentFetchSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError')
+    );
+  }
+}

@@ -6,8 +6,8 @@ const router = express.Router();
 
 // Routes
 router.post('/create', authorize, createAuthor);
-router.get('/get-all', authorize, getAllAuthors);
-router.get('/get/:id', authorize, getAuthorById);
+router.post('/getall', authorize, getAllAuthors);
+router.post('/get/:id', authorize, getAuthorById);
 router.put('/update/:id', authorize, updateAuthor);
 router.delete('/delete/:id', authorize, deleteAuthor);
 

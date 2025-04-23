@@ -9,8 +9,8 @@ const router = express.Router();
 router.post('/create', authorize, createBlog);
 router.post('/edit/:id', authorize, editBlog);
 router.post('/delete/:id', authorize, deleteBlog);
-router.post('/getbyid', authorize, getBlogDetailById);
-router.post('/index', authorize, getBlogList);
+router.post('/getbyid', getBlogDetailById);
+router.post('/getall', getBlogList);
 
 
 

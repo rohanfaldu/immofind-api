@@ -41,8 +41,9 @@ app.use(session({ secret: 'we-api', resave: false, saveUninitialized: true }));
 
 // app.use(passport.initialize());
 // app.use(passport.session());
-app.use(express.json());
 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 const getLangFileName = fileURLToPath(import.meta.url);
 const getLangDirName = path.dirname(getLangFileName);
 // Language

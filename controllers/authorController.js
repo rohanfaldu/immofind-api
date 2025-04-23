@@ -59,13 +59,36 @@ export const createAuthor = async (req, res) => {
 // Get All Authors
 export const getAllAuthors = async (req, res) => {
   try {
-    const lang = res.getLocale().toLowerCase(); // e.g., 'en' or 'fr'
 
-    const authors = await prisma.author.findMany({
-      include: {
+    const {
+      page = 1,
+      limit = 10,
+      search = '',
+      author_id = ''
+    } = req.body;
+
+    const lang = res.getLocale(); // Only once!
+
+    // Safely parse and validate page/limit
+    const pageNumber = Math.max(1, parseInt(page, 10) || 1);
+    const limitNumber = Math.max(1, parseInt(limit, 10) || 10);
+    const skip = (pageNumber - 1) * limitNumber;
+
+    let whereClause = {
         lang_translations_auth: true, // include full translation object
-      },
-    });
+    };
+
+    const totalCount = await prisma.author.count();
+
+    const authors = await prisma.author.findMany(
+      {
+        skip: skip,
+        take: limitNumber,
+        orderBy: {
+          created_at: 'desc'
+        },
+        include: whereClause,
+      });
 
     const formattedAuthors = authors.map(author => {
       let translatedName = null;
@@ -87,8 +110,15 @@ export const getAllAuthors = async (req, res) => {
 
       };
     });
+    const totalPages = Math.ceil(totalCount / limitNumber);
+    return response.success(res, res.__('messages.getAuthorSuccessfully'), {
+      totalCount: totalCount,
+      totalPages,
+      currentPage: pageNumber,
+      limit: limitNumber,
+      list: formattedAuthors
+    });
 
-    return response.success(res, res.__('messages.getAuthorSuccessfully'), formattedAuthors);
   } catch (error) {
     console.error(error);
     return response.error(res, res.__('messages.getchAuthorError'));

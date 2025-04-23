@@ -235,6 +235,7 @@
 		"deleteBlogError": "Une erreur s'est produite lors de la suppression du blog",
 		"fetchBlogDetailsError": "Une erreur s'est produite lors de la récupération des détails du blog",
 		"fetchBlogListError": "Une erreur s'est produite lors de la récupération de la liste des blogs",
-		"propertyRecommendedSuccess": "messages.propertyRecommendedSuccess"
+		"propertyRecommendedSuccess": "messages.propertyRecommendedSuccess",
+		"blogAlreadyExist": "Le blog existe déjà"
 	}
 }
