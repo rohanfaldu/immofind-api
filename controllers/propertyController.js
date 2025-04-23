@@ -15,7 +15,7 @@ import {
   propertyTypesInclude,
   cityInclude,
   stateInclude,
-  neighborhoodInclude
+  neighborhoodInclude,
 } from "../components/utils/commonIncludes.js";
 import commonFilter from "../components/utils/commonFilters.js"
 
@@ -931,7 +931,7 @@ export const getAllProperty = async (req, res) => {
     const otherConditions = [
       await commonFilter.titleCondition(title),
       await commonFilter.descriptionCondition(description),
-      await commonFilter.cityCondition(city_id),
+      await commonFilter.cityDistrictNeightborhoodCondition(city_id),
       await commonFilter.districtCondition(district_id),
       await commonFilter.neighborhoodCondition(neighborhoods_id),
       await commonFilter.addressCondition(address),

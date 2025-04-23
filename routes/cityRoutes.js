@@ -1,5 +1,5 @@
 import express from 'express';
-import { createCity, getCities, getCitiesByStateId, deleteCity, updateCity, getCityById } from '../controllers/cityController.js';
+import { createCity, getCities, getCitiesByStateId, deleteCity, updateCity, getCityById, getallcitydistrictneighborhoods } from '../controllers/cityController.js';
 import { authorize } from '../middleware/authorization.js'; // Import the authorization middleware
 
 const router = express.Router();
@@ -12,5 +12,6 @@ router.post('/getbystate', authorize, getCitiesByStateId); // Protected route
 router.delete('/delete', authorize, deleteCity);
 router.put('/update', authorize, updateCity);
 router.post("/getbycity", authorize, getCityById);
+router.post("/getallcitydistrictneighborhoods", getallcitydistrictneighborhoods);
 
 export default router;

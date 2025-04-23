@@ -62,6 +62,18 @@
             }
             : undefined;
     },
+    cityDistrictNeightborhoodCondition: async (city_id) => {
+        return city_id
+            ? {
+                OR: [
+                    { state_id: city_id },
+                    { city_id: city_id },
+                    { district_id: city_id },
+                    { neighborhoods_id: city_id },
+                ],
+            }
+            : undefined;
+    },
 
     districtCondition: async (district_id) => {
         return district_id
