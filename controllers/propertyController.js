@@ -976,8 +976,12 @@ export const getAllProperty = async (req, res) => {
     const properties = await prisma.propertyDetails.findMany({
       skip,
       take: validLimit,
-      orderBy:{
-        created_at: 'desc',
+      orderBy: {
+        districts: {
+          langTranslation:{
+            en_string: "asc"
+          }
+        }
       },
       where: {
           ...combinedCondition,
@@ -1107,12 +1111,7 @@ export const getAllProperty = async (req, res) => {
           };
         });
 
-        
-        
 
-
-
-    
         const bathRooms =
           metaDetails.find((meta) => meta.key === 'bathrooms')?.value || "0";
         const bedRooms =

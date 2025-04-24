@@ -253,8 +253,6 @@ export const deleteBlog = async (req, res) => {
 };
 
 
-
-
 // Get blog detail //
 export const getBlogDetailById = async (req, res) => {
   const { slug } = req.body;
@@ -452,3 +450,42 @@ export const getBlogList = async (req, res) => {
   }
 };
 
+
+export const getBlogDetailSpecificId = async (req, res) =>{
+  const { id } = req.body;
+  const lang = res.getLocale(); // Example: 'en', 'fr', etc.
+  try {
+    // Find current blog
+    const blogDetail = await prisma.blog.findUnique({
+      where: { id },
+      include:{
+        lang_translations_blog_title:{
+          select:{
+            en_string: true,
+            fr_string: true,
+          }
+        },
+        lang_translations_blog_description:{
+          select:{
+            en_string: true,
+            fr_string: true,
+          }
+        }
+      }
+    });
+    const blogRespose = {
+      id: blogDetail.id,
+      image: blogDetail.image,
+      author_id: blogDetail.author_id,
+      slug: blogDetail.slug,
+      title_en: blogDetail.lang_translations_blog_title.en_string,
+      title_fr: blogDetail.lang_translations_blog_title.fr_string,
+      description_en: blogDetail.lang_translations_blog_description.en_string,
+      description_fr: blogDetail.lang_translations_blog_description.fr_string,
+    }
+    return response.success(res, res.__('messages.blogDetailsFetched'), blogRespose);
+  } catch (error) {
+    console.error('Error fetching blog details:', error);
+    return response.error(res, res.__('messages.fetchBlogDetailsError'));
+  }
+}

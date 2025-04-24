@@ -249,5 +249,6 @@
 		"fetchBlogDetailsError": "Something went wrong while fetch the Blog Details",
 		"propertyRecommendedSuccess": "messages.propertyRecommendedSuccess",
 		"blogAlreadyExist": "Blog already Exist"
-	}
+	},
+	"No Property Found": "No Property Found"
 }

@@ -236,6 +236,8 @@
 		"fetchBlogDetailsError": "Une erreur s'est produite lors de la récupération des détails du blog",
 		"fetchBlogListError": "Une erreur s'est produite lors de la récupération de la liste des blogs",
 		"propertyRecommendedSuccess": "messages.propertyRecommendedSuccess",
-		"blogAlreadyExist": "Le blog existe déjà"
-	}
+		"blogAlreadyExist": "Le blog existe déjà",
+		"commentFetchSuccessfully": "messages.commentFetchSuccessfully"
+	},
+	"No Property Found": "No Property Found"
 }
