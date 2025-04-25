@@ -8,7 +8,7 @@ const router = express.Router();
 router.post('/create', authorize, createAuthor);
 router.post('/getall', authorize, getAllAuthors);
 router.post('/get/:id', authorize, getAuthorById);
-router.put('/update/:id', authorize, updateAuthor);
+router.post('/update/:id', authorize, updateAuthor);
 router.delete('/delete/:id', authorize, deleteAuthor);
 
 
