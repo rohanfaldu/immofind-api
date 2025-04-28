@@ -930,21 +930,21 @@ export const getAllProperty = async (req, res) => {
     const otherConditions = [
       await commonFilter.titleCondition(title),
       await commonFilter.descriptionCondition(description),
-      await commonFilter.cityDistrictNeightborhoodCondition(city_id),
       await commonFilter.districtCondition(district_id),
       await commonFilter.neighborhoodCondition(neighborhoods_id),
       await commonFilter.addressCondition(address),
-      await commonFilter.typeCondition(type_id),
-      await commonFilter.priceCondition(minPrice, maxPrice),
-      await commonFilter.squareFootSize(minSize, maxSize),
       await commonFilter.amenitiesCondition(amenities_id_array),
-      await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value),
       await commonFilter.directionCondition(direction),
       await commonFilter.developerCondition(developer_id),
     ]
-
+    const aaaa = await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value);
     const transactionConditions = [
-      await commonFilter.transactionCondition(transaction)
+      await commonFilter.transactionCondition(transaction),
+      await commonFilter.typeCondition(type_id),
+      await commonFilter.cityDistrictNeightborhoodCondition(city_id),
+      await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value),
+      await commonFilter.priceCondition(minPrice, maxPrice),
+      await commonFilter.squareFootSize(minSize, maxSize),
     ]
 
     const combinedCondition = {
@@ -955,6 +955,9 @@ export const getAllProperty = async (req, res) => {
       ],
     };
 
+    console.log(amenities_id_object_with_value,'>>>>>>>>>>>>> amenities_id_object_with_value');
+    console.log(aaaa,'>>>>>>>>>>>>> amenities_id_object_with_value');
+    console.log(transactionConditions,'>>>>>>>>>>>>> combinedCondition');
 
     let dateFilter = {};
     if (startDate && endDate) {
