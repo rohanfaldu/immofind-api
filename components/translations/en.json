@@ -248,7 +248,8 @@
 		"deleteBlogError": "Something went wrong while deleting the Blog",
 		"fetchBlogDetailsError": "Something went wrong while fetch the Blog Details",
 		"propertyRecommendedSuccess": "messages.propertyRecommendedSuccess",
-		"blogAlreadyExist": "Blog already Exist"
+		"blogAlreadyExist": "Blog already Exist",
+		"propertyRecommendedError": "messages.propertyRecommendedError"
 	},
 	"No Property Found": "No Property Found"
 }
