@@ -937,7 +937,7 @@ export const getAllProperty = async (req, res) => {
       await commonFilter.directionCondition(direction),
       await commonFilter.developerCondition(developer_id),
     ]
-    const aaaa = await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value);
+    
     const transactionConditions = [
       await commonFilter.transactionCondition(transaction),
       await commonFilter.typeCondition(type_id),
