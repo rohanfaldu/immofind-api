@@ -1358,6 +1358,12 @@ export const getAllProperty = async (req, res) => {
         });
 
         let developerSocial = null;
+        let agency_id = null;
+        let agency_image = null;
+        let agency_name = null;
+        let developer_id = null;
+        let developer_image = null;
+        let developer_name = null;
 
         if (user_role.name === "developer") {
           const developer = await prisma.developers.findUnique({
@@ -1365,8 +1371,11 @@ export const getAllProperty = async (req, res) => {
               user_id: property.users.id
             }
           });
-          // console.log(developer,"ll")
-
+          
+          developer_id = developer?.id || null;
+          developer_image = property.users?.image || null;
+          developer_name = property.users?.full_name || null;
+          
           if (developer) {
             developerSocial = {
               twitter: developer.twitterLink || null,
@@ -1380,6 +1389,10 @@ export const getAllProperty = async (req, res) => {
               user_id: property.users.id
             }
           });
+          
+          agency_id = agency?.id || null;
+          agency_image = property.users?.image || null;
+          agency_name = property.users?.full_name || null;
 
           if (agency) {
             developerSocial = {
@@ -1419,6 +1432,12 @@ export const getAllProperty = async (req, res) => {
           created_at: property.created_at,
           bathRooms,
           bedRooms,
+          agency_id,
+          agency_image,
+          agency_name,
+          developer_id,
+          developer_image,
+          developer_name,
           district:
             property.districts?.langTranslation &&
             (lang === "fr"
