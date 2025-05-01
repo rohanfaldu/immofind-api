@@ -193,7 +193,7 @@
             });
     
             return {
-                AND: conditions,
+                OR: conditions,
             };
         }
         return undefined;
