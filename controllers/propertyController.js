@@ -927,6 +927,30 @@ export const getAllProperty = async (req, res) => {
 
     const skip = (validPage - 1) * validLimit;
 
+    let amenities_id_array_with_value = [];
+
+    for (const [id, value] of Object.entries(amenities_id_object_with_value)) {
+      try {
+        const property_type_listings = await prisma.propertyTypeListings.findUnique({
+          where: {
+            id: id,
+          },
+          select: {
+            key: true,
+          },
+        });
+        if (property_type_listings) {
+          amenities_id_array_with_value.push({
+            id: id,
+            slug: property_type_listings.key,
+            value: value,
+          });
+        }
+      } catch (error) {
+        console.error(`Error fetching property_type_listings for id ${id}:`, error);
+      }
+    }
+
     const otherConditions = [
       await commonFilter.titleCondition(title),
       await commonFilter.descriptionCondition(description),
@@ -938,23 +962,24 @@ export const getAllProperty = async (req, res) => {
       await commonFilter.developerCondition(developer_id),
       await commonFilter.priceCondition(minPrice, maxPrice),
       await commonFilter.squareFootSize(minSize, maxSize),
-      await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value),
     ]
     const transactionConditions = [
       await commonFilter.transactionCondition(transaction),
       await commonFilter.typeCondition(type_id),
       await commonFilter.cityDistrictNeightborhoodCondition(city_id),
     ]
-
+    const bedRoomCondition = await commonFilter.amenitiesOnlyBedRoomCondition(amenities_id_array_with_value);
+    // Combine them into your final Prisma condition
     const combinedCondition = {
       AND: [
         { AND: transactionConditions.filter(Boolean) },
         { OR: otherConditions.filter(Boolean) },
         user_id ? { user_id: user_id } : {},
+        bedRoomCondition,
       ],
     };
 
-
+    
     let dateFilter = {};
     if (startDate && endDate) {
       dateFilter = {
@@ -998,6 +1023,8 @@ export const getAllProperty = async (req, res) => {
         ...propertyTypesInclude
       },
     });
+
+   //console.log('Combined Condition:', JSON.stringify(combinedCondition, null, 2));
 
 
     const isFrench = lang === 'fr';
