@@ -928,26 +928,27 @@ export const getAllProperty = async (req, res) => {
     const skip = (validPage - 1) * validLimit;
 
     let amenities_id_array_with_value = [];
-
-    for (const [id, value] of Object.entries(amenities_id_object_with_value)) {
-      try {
-        const property_type_listings = await prisma.propertyTypeListings.findUnique({
-          where: {
-            id: id,
-          },
-          select: {
-            key: true,
-          },
-        });
-        if (property_type_listings) {
-          amenities_id_array_with_value.push({
-            id: id,
-            slug: property_type_listings.key,
-            value: value,
+    if ( typeof amenities_id_object_with_value === 'object' && amenities_id_object_with_value !== null && Object.keys(amenities_id_object_with_value).length > 0 ) {
+      for (const [id, value] of Object.entries(amenities_id_object_with_value)) {
+        try {
+          const property_type_listings = await prisma.propertyTypeListings.findUnique({
+            where: {
+              id: id,
+            },
+            select: {
+              key: true,
+            },
           });
+          if (property_type_listings) {
+            amenities_id_array_with_value.push({
+              id: id,
+              slug: property_type_listings.key,
+              value: value,
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching property_type_listings for id ${id}:`, error);
         }
-      } catch (error) {
-        console.error(`Error fetching property_type_listings for id ${id}:`, error);
       }
     }
 
@@ -975,7 +976,7 @@ export const getAllProperty = async (req, res) => {
         { AND: transactionConditions.filter(Boolean) },
         { OR: otherConditions.filter(Boolean) },
         user_id ? { user_id: user_id } : {},
-        bedRoomCondition,
+        bedRoomCondition
       ],
     };
 
