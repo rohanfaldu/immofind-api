@@ -1590,7 +1590,7 @@ export const getAllProperty = async (req, res) => {
 
 
 export const getPropertyById = async (req, res) => {
-  try {
+  // try {
     const { property_slug } = req.body;
     if (!property_slug) {
       return response.error(res, res.__('messages.invalidPropertyId'));
@@ -1632,6 +1632,11 @@ export const getPropertyById = async (req, res) => {
       };
     });
 
+    const user_role = await prisma.roles.findUnique({
+      where: {
+        id: property.users?.role_id,
+      }
+    });
 
     let likedPropertyIds = [];
     if (req.user?.id) {
@@ -1646,6 +1651,51 @@ export const getPropertyById = async (req, res) => {
 
       likedPropertyIds = likedProperties.map((like) => like.property_id);
     }
+    let developerSocial = null;
+        let agency_id = null;
+        let agency_image = null;
+        let agency_name = null;
+        let developer_id = null;
+        let developer_image = null;
+        let developer_name = null;
+
+        if (user_role.name === "developer") {
+          const developer = await prisma.developers.findUnique({
+            where: {
+              user_id: property.users.id
+            }
+          });
+          
+          developer_id = developer?.id || null;
+          developer_image = property.users?.image || null;
+          developer_name = property.users?.full_name || null;
+          
+          if (developer) {
+            developerSocial = {
+              twitter: developer.twitterLink || null,
+              facebook: developer.facebookLink || null,
+              instagram: developer.instagramLink || null
+            };
+          }
+        } else if (user_role.name === "agency") {
+          const agency = await prisma.agencies.findUnique({
+            where: {
+              user_id: property.users.id
+            }
+          });
+          
+          agency_id = agency?.id || null;
+          agency_image = property.users?.image || null;
+          agency_name = property.users?.full_name || null;
+
+          if (agency) {
+            developerSocial = {
+              twitter: agency.twitter_link || null,
+              facebook: agency.facebook_link || null,
+              instagram: agency.instagram_link || null
+            };
+          }
+        }
 
 
     const responsePayload = {
@@ -1667,6 +1717,12 @@ export const getPropertyById = async (req, res) => {
       size: property.size,
       price: property.price,
       created_at: property.created_at,
+      agency_id,
+      agency_image,
+      agency_name,
+      developer_id,
+      developer_image,
+      developer_name,
       district:
         lang === "fr"
           ? property.districts?.langTranslation?.fr_string
@@ -1699,14 +1755,14 @@ export const getPropertyById = async (req, res) => {
       res.__('messages.propertyFetchSuccessfully'),
       responsePayload
     );
-  } catch (error) {
-    console.error('Error fetching property by ID:', error);
+  // } catch (error) {
+  //   console.error('Error fetching property by ID:', error);
 
-    return response.error(
-      res,
-      res.__('messages.errorFetchingProperties')
-    );
-  }
+  //   return response.error(
+  //     res,
+  //     res.__('messages.errorFetchingProperties')
+  //   );
+  // }
 };
 
 export const getPropertyByIdWithId = async (req, res) => {
