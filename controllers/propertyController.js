@@ -938,12 +938,12 @@ export const getAllProperty = async (req, res) => {
       await commonFilter.developerCondition(developer_id),
       await commonFilter.priceCondition(minPrice, maxPrice),
       await commonFilter.squareFootSize(minSize, maxSize),
+      await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value),
     ]
     const transactionConditions = [
       await commonFilter.transactionCondition(transaction),
       await commonFilter.typeCondition(type_id),
       await commonFilter.cityDistrictNeightborhoodCondition(city_id),
-      await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value),
     ]
 
     const combinedCondition = {
