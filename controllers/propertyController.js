@@ -936,15 +936,15 @@ export const getAllProperty = async (req, res) => {
       await commonFilter.amenitiesCondition(amenities_id_array),
       await commonFilter.directionCondition(direction),
       await commonFilter.developerCondition(developer_id),
-      await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value),
+      await commonFilter.priceCondition(minPrice, maxPrice),
+      await commonFilter.squareFootSize(minSize, maxSize),
     ]
     
     const transactionConditions = [
       await commonFilter.transactionCondition(transaction),
       await commonFilter.typeCondition(type_id),
       await commonFilter.cityDistrictNeightborhoodCondition(city_id),
-      await commonFilter.priceCondition(minPrice, maxPrice),
-      await commonFilter.squareFootSize(minSize, maxSize),
+      await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value),
     ]
 
     const combinedCondition = {
@@ -1142,11 +1142,11 @@ export const getAllProperty = async (req, res) => {
         }
 
         let price_score = 100;
-        let location_score = 25;
+        let location_score = 100;
         let surface_are_score = 100;
         let property_type_score = 100;
-        let amenities_score = 100;
-        let room_amenities_score = 100; // Initialize matchPercentage with 0
+        let amenities_score = 20;
+        let room_amenities_score = 0; // Initialize matchPercentage with 0
         let year_amenities_score = 100;
 
         // Price calculation
@@ -1165,10 +1165,10 @@ export const getAllProperty = async (req, res) => {
           surface_are_score = 100;
         } else if (property.size > maxSize) {
           const percentAbove = ((property.size - maxSize) / maxSize) * 100;
-          surface_score = (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
+          surface_are_score = (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
         } else if (property.size < minSize) {
           const percentBelow = ((minSize - property.size) / minSize) * 100;
-          surface_score = (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
+          surface_are_score = (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
         }
 
 
@@ -1340,16 +1340,16 @@ export const getAllProperty = async (req, res) => {
         }
 
 
-        const price_weight = 0.30
-        // const location_weight = 0.25
-        const surface_area = 0.10
+        const price_weight = 0.35
+        const location_weight = 0.30
+        const surface_area = 0.15
         const property_type = 0
         const amenities = 0.20
         const roomAmenities = 0.15
         const yearAmenities = 0
 
         //location score static, 
-        const final_score = (price_score * price_weight + location_score + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities + roomAmenities * room_amenities_score + yearAmenities * year_amenities_score)
+        const final_score = (price_score * price_weight + location_score * location_weight + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities +  yearAmenities * year_amenities_score)
 
         const user_role = await prisma.roles.findUnique({
           where: {
@@ -1471,10 +1471,13 @@ export const getAllProperty = async (req, res) => {
             surface_area: surface_are_score * surface_area,
             property_type: property_type_score * property_type,
             amenities: amenities_score * amenities,
-            room_amenities: roomAmenities * room_amenities_score,
+            room_amenities: 0,
             construction_year_amenities: yearAmenities * year_amenities_score,
             total_percentage: Math.ceil(parseFloat(final_score.toFixed(2))),
             exact_distance: property.exact_distance || null
+          },
+          other_data:{
+            surface_area: surface_are_score
           }
         };
       })
