@@ -1592,14 +1592,14 @@ export const getAllProperty = async (req, res) => {
     }));
 
     const responsePayload = {
-      list: simplifiedProperties,
+      list: simplifiedProperties.filter(property => property.filter_result.total_percentage >= 60),
       property_meta_details: simplifiedListings,
       property_types: simplifiedTypeProperties,
       cities: transformedCities,
       maxPriceSliderRange,
       maxSizeSliderRange,
-      totalCount,
-      totalPages: Math.ceil(totalCount / validLimit),
+      totalCount: simplifiedProperties.filter(property => property.filter_result.total_percentage >= 60).length,
+      totalPages: Math.ceil(simplifiedProperties.filter(property => property.filter_result.total_percentage >= 60).length / validLimit),
       currentPage: validPage,
       itemsPerPage: validLimit,
       developers: developerResponseData
