@@ -958,7 +958,7 @@ export const getAllProperty = async (req, res) => {
       await commonFilter.districtCondition(district_id),
       await commonFilter.neighborhoodCondition(neighborhoods_id),
       await commonFilter.addressCondition(address),
-      await commonFilter.amenitiesCondition(amenities_id_array),
+     // await commonFilter.amenitiesCondition(amenities_id_array),
       await commonFilter.directionCondition(direction),
       await commonFilter.developerCondition(developer_id),
     ]
@@ -979,7 +979,7 @@ export const getAllProperty = async (req, res) => {
         bedRoomCondition
       ],
     };
-
+    console.log(JSON.stringify(combinedCondition, null, 2), '<< combinedCondition');
     
     let dateFilter = {};
     if (startDate && endDate) {
@@ -1242,10 +1242,13 @@ export const getAllProperty = async (req, res) => {
         let price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
         let surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize);
         let amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
+        console.log(property.project_id, "project_id", amenities_score, "amenities_score");
         let location_score = await commonFunction.calculateLocationScore( property.latitude, property.longitude, filter_latitude, filter_longitude );
+        console.log(property?.property_meta_details, 'Meta ')
         let room_amenities_score = await commonFunction.calculateRoomAmenitiesScore( property?.property_meta_details, amenities_id_object_with_value );
+        console.log(amenities_score, "amenities_score")
         let year_amenities_score = await commonFunction.calculateYearScore(   property?.property_meta_details, "year_of_construction", amenities_id_object_with_value );
-        
+        let total_aminities_score = (( amenities_score + room_amenities_score )/ 2);
         const price_weight = 0.35
         const location_weight = 0.30
         const surface_area = 0.15
@@ -1255,7 +1258,7 @@ export const getAllProperty = async (req, res) => {
         const yearAmenities = 0
 
         //location score static, 
-        const final_score = (price_score * price_weight + location_score * location_weight + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities +  yearAmenities * year_amenities_score)
+        const final_score = (price_score * price_weight + location_score * location_weight + surface_are_score * surface_area + property_type_score * property_type + total_aminities_score * amenities +  yearAmenities * year_amenities_score)
 
         const user_role = await prisma.roles.findUnique({
           where: {
@@ -1376,7 +1379,7 @@ export const getAllProperty = async (req, res) => {
             price: price_score * price_weight,
             surface_area: surface_are_score * surface_area,
             property_type: property_type_score * property_type,
-            amenities: amenities_score * amenities,
+            amenities: total_aminities_score * amenities,
             room_amenities: 0,
             construction_year_amenities: yearAmenities * year_amenities_score,
             total_percentage: Math.ceil(parseFloat(final_score.toFixed(2))),

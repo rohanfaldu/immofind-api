@@ -200,38 +200,44 @@
     },
     amenitiesOnlyBedRoomCondition: async (amenitiesNumbersArray) => {
         if (!Array.isArray(amenitiesNumbersArray) || amenitiesNumbersArray.length === 0) {
-          return {};
-        }
-      
-        const roomCondition = [];
-        const otherConditions = [];
-      
-        for (const item of amenitiesNumbersArray) {
-          const condition = {
-            property_meta_details: {
-              some: {
-                property_type_listings: {
-                  id: item.id,
-                },
-                value: item.value.toString() === "4" ? { lte: "4" } : item.value.toString(),
-              },
-            },
-          };
-      
-          if (item.slug === "rooms") {
-            roomCondition.push(condition);
-          } else {
-            otherConditions.push(condition);
+            return {};
           }
-        }
-      
-        if (roomCondition.length > 0) {
-          return {
-            AND: [...roomCondition, ...(otherConditions.length > 0 ? [{ OR: otherConditions }] : [])],
-          };
-        } else {
+          
+          const roomConditions = [];
+          const otherConditions = [];
+          
+          for (const item of amenitiesNumbersArray) {
+            const condition = {
+              property_meta_details: {
+                some: {
+                  property_type_listings: {
+                    id: item.id,
+                  },
+                  value: item.value.toString() === "4" ? { lte: "4" } : item.value.toString(),
+                },
+              },
+            };
+          
+            if (item.slug === "rooms") {
+              roomConditions.push(condition); // Only consider 'rooms' for AND
+            } else {
+              otherConditions.push(condition); // Everything else for OR
+            }
+          }
+          
+          if (roomConditions.length > 0) {
+            return {
+              AND: roomConditions,
+            };
+          }
+          
+          if (otherConditions.length > 0) {
+            return {
+              OR: otherConditions,
+            };
+          }
+          
           return {};
-        }
       },      
 
 

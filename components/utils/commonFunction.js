@@ -5,6 +5,10 @@ import { PrismaClient } from '@prisma/client';
 // Load environment variables
 dotenv.config();
 const prisma = new PrismaClient();
+const getPropertyMetaByKey = async (metaDetails) => {
+    return metaDetails
+        .filter(meta => meta.property_type_listings?.type === "number");
+}
 const commonFunction = {
     capitalize: async (str) => {
         const text = str.toLowerCase().split(' ').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')
@@ -171,34 +175,39 @@ const commonFunction = {
         if (!propertyMetaDetails) {
             console.error("propertyMetaDetails is undefined");
             return 0;
-        }
-
-        const bedRooms = propertyMetaDetails
-            .filter(meta => meta.property_type_listings?.type === "number")
-            .find(meta => meta.property_type_listings?.key === "rooms");
-
-        if (!amenitiesIdObjectWithValue || Object.keys(amenitiesIdObjectWithValue).length === 0) {
+          }
+        
+          if (!amenitiesIdObjectWithValue || Object.keys(amenitiesIdObjectWithValue).length === 0) {
             return 100;
-        }
-
-        if (bedRooms) {
-            const propertyId = bedRooms.property_type_listings.id;
-            const propertyValue = bedRooms.value;
-
-            let totalFilters = 0;
-            let matchedFilters = 0;
-
-            for (const [amenityId, amenityValue] of Object.entries(amenitiesIdObjectWithValue)) {
-                totalFilters++;
-                if (propertyId === amenityId && propertyValue === amenityValue) {
-                    matchedFilters++;
-                }
+          }
+        
+          const bedRoomFields = await getPropertyMetaByKey(propertyMetaDetails); // <-- FIXED
+          let totalFilters = 0;
+          let matchedFilters = 0;
+        
+          for (const [amenityId, amenityValue] of Object.entries(amenitiesIdObjectWithValue)) {
+            totalFilters++;
+        
+            let matched = false;
+            
+            for (const meta of bedRoomFields) {
+              if (
+                meta.property_type_listings.id === amenityId &&
+                String(meta.value) === String(amenityValue)
+              ) {
+                matched = true;
+                break;
+              }
             }
-
-            return (matchedFilters / totalFilters) * 100;
-        }
-
-        return 0;
+        
+            if (matched) {
+              matchedFilters++;
+            }
+          }
+          console.log(totalFilters,'>>>>>>>>> totalFilters', matchedFilters, '>>>>>>>>>> matchedFilters')
+          const score = totalFilters > 0 ? (matchedFilters / totalFilters) * 100 : 0;
+          console.log(score, '>>>>>>>>>> score');
+          return parseFloat(score.toFixed(2));
     },
     calculateYearScore: async (propertyMetaDetails, targetKey, amenitiesIdObjectWithValue) => {
         if (!propertyMetaDetails) {
