@@ -105,7 +105,7 @@ const commonFunction = {
         let status = true;
         if((price >= minPriceExtra ) && (minPrice >= price)){
             const extra_price_area = ((minPrice - price) / minPrice * 100);
-            const percentAbove = 100 - extra_surface_area;
+            const percentAbove = 100 - extra_price_area;
             return { score: percentAbove, status, extra: extra_price_area };
         } else if((price >= maxPrice ) && (maxPriceExtra >= price)){
             const extra_price_area =  ((price - maxPrice) / maxPrice * 100);
