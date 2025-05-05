@@ -961,13 +961,13 @@ export const getAllProperty = async (req, res) => {
       await commonFilter.amenitiesCondition(amenities_id_array),
       await commonFilter.directionCondition(direction),
       await commonFilter.developerCondition(developer_id),
-      await commonFilter.priceCondition(minPrice, maxPrice),
-      await commonFilter.squareFootSize(minSize, maxSize),
     ]
     const transactionConditions = [
       await commonFilter.transactionCondition(transaction),
       await commonFilter.typeCondition(type_id),
       await commonFilter.cityDistrictNeightborhoodCondition(city_id),
+      await commonFilter.priceCondition(minPrice, maxPrice),
+      await commonFilter.squareFootSize(minSize, maxSize),
     ]
     const bedRoomCondition = await commonFilter.amenitiesOnlyBedRoomCondition(amenities_id_array_with_value);
     // Combine them into your final Prisma condition
@@ -991,26 +991,99 @@ export const getAllProperty = async (req, res) => {
       };
     }
 
-    const totalCount = await prisma.propertyDetails.count({
-      where: {
-        ...combinedCondition,
-        ...dateFilter
-      },
-    });
+    // const totalCount = await prisma.propertyDetails.count({
+    //   where: {
+    //     ...combinedCondition,
+    //     ...dateFilter
+    //   },
+    // });
+    //console.log(totalCount,'Totalcount')
 
+    /* change filter */
+
+    const getFilteredPropertyIds = async () => {
+      // Get all properties that match the base filters
+      const allProperties = await prisma.propertyDetails.findMany({
+        where: {
+          ...combinedCondition,
+          ...dateFilter
+        },
+        select: {
+          id: true,
+          price: true,
+          size: true,
+          latitude: true, 
+          longitude: true,
+          property_meta_details: {
+            select: {
+              value: true,
+              property_type_listings: {
+                select: {
+                  id: true,
+                  type: true,
+                  key: true
+                }
+              }
+            }
+          }
+        }
+      });
+    
+      // Calculate scores and filter based on total percentage
+      const validPropertyIds = [];
+    
+      for (const property of allProperties) {
+        const price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
+        const surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize);
+        const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
+        const location_score = await commonFunction.calculateLocationScore( property.latitude, property.longitude, filter_latitude, filter_longitude );
+        const property_type_score = 100;
+        const weights = {
+          price: 0.35,
+          location: 0.30,
+          surface_area: 0.15,
+          property_type: 0,
+          amenities: 0.20,
+          room_amenities: 0.15,
+          year_amenities: 0
+        };
+    
+        // Calculate final score with weights
+        const final_score = 
+          price_score * weights.price + 
+          location_score * weights.location + 
+          surface_are_score * weights.surface_area + 
+          property_type_score * weights.property_type + 
+          amenities_score * weights.amenities;
+    
+        // Calculate total percentage
+        const total_percentage = Math.ceil(parseFloat(final_score.toFixed(2)));
+    
+        // Only add properties that meet the threshold
+        if (total_percentage >= 50) {
+          validPropertyIds.push(property.id);
+        }
+      }
+    
+      return validPropertyIds;
+    };
+    const validPropertyIds = await getFilteredPropertyIds();
+    const totalCount = validPropertyIds.length;
+    const totalPages = Math.ceil(totalCount / validLimit);
+    const paginatedIds = validPropertyIds.slice(skip, skip + validLimit);
+  
     const properties = await prisma.propertyDetails.findMany({
-      skip,
-      take: validLimit,
+      where: {
+        id: {
+          in: paginatedIds
+        }
+      },
       orderBy: {
         districts: {
           langTranslation: {
             en_string: "asc"
           }
         }
-      },
-      where: {
-        ...combinedCondition,
-        ...dateFilter
       },
       include: {
         ...userInclude,
@@ -1024,10 +1097,6 @@ export const getAllProperty = async (req, res) => {
         ...propertyTypesInclude
       },
     });
-
-   //console.log('Combined Condition:', JSON.stringify(combinedCondition, null, 2));
-
-
     const isFrench = lang === 'fr';
     const cities = await prisma.cities.findMany({
       where: {
@@ -1168,205 +1237,15 @@ export const getAllProperty = async (req, res) => {
           }
         }
 
-        let price_score = 100;
-        let location_score = 100;
-        let surface_are_score = 100;
         let property_type_score = 100;
-        let amenities_score = 20;
-        let room_amenities_score = 0; // Initialize matchPercentage with 0
-        let year_amenities_score = 100;
 
-        // Price calculation
-        if (property.price >= minPrice && property.price <= maxPrice) {
-          price_score = 100;
-        } else if (property.price > maxPrice) {
-          const percentAbove = ((property.price - maxPrice) / maxPrice) * 100;
-          price_score = (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
-        } else if (property.price < minPrice) {
-          const percentBelow = ((minPrice - property.price) / minPrice) * 100;
-          price_score = (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
-        }
-
-        // Surface area calculation
-        if (property.size >= minSize && property.size <= maxSize) {
-          surface_are_score = 100;
-        } else if (property.size > maxSize) {
-          const percentAbove = ((property.size - maxSize) / maxSize) * 100;
-          surface_are_score = (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
-        } else if (property.size < minSize) {
-          const percentBelow = ((minSize - property.size) / minSize) * 100;
-          surface_are_score = (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
-        }
-
-
-        //Boolean amenities filter 
-        if (property && property.property_meta_details) {
-          const booleanIdsSet = new Set(
-            property.property_meta_details
-              .filter(meta => meta.property_type_listings?.type === "boolean")
-              .map(meta => meta.property_type_listings?.id)
-          );
-
-          let matchedAmenities = [];
-
-          // Handle case when amenities_id_array is an empty string or undefined
-          if (!amenities_id_array || amenities_id_array === "") {
-            amenities_score = 100; // Default score for empty or undefined amenities_id_array
-          } else if (Array.isArray(amenities_id_array)) {
-            const allMatch = amenities_id_array.every(id => booleanIdsSet.has(id));
-
-            if (allMatch) {
-              amenities_score = 100;
-            } else {
-              matchedAmenities = amenities_id_array.filter(id => booleanIdsSet.has(id));
-              const totalRequested = amenities_id_array.length;
-              const totalMatched = matchedAmenities.length;
-              amenities_score = (totalMatched / totalRequested) * 100;
-            }
-          } else {
-            amenities_score = 100;
-          }
-
-          // // console.log("Match Percentage:", amenities_score);
-        } else {
-          console.error("Property or property_meta_details is undefined:", property);
-        }
-
-
-
-        //Bedrooms amenities filter
-        if (property && property.property_meta_details) {
-          const bedRooms = property.property_meta_details
-            .filter(meta => meta.property_type_listings?.type === "number")
-            .find(meta => meta.property_type_listings.key === "rooms");
-
-          if (!amenities_id_object_with_value || Object.keys(amenities_id_object_with_value).length === 0) {
-            room_amenities_score = 100;
-          } else if (bedRooms) {
-            const propertyId = bedRooms.property_type_listings.id;
-            const propertyValue = bedRooms.value;
-
-            let totalFilters = 0;
-            let matchedFilters = 0;
-            for (const [amenityId, amenityValue] of Object.entries(amenities_id_object_with_value)) {
-              totalFilters++;
-
-              if (propertyId === amenityId && propertyValue === amenityValue) {
-                matchedFilters++;
-              }
-            }
-
-            room_amenities_score = (matchedFilters / totalFilters) * 100;
-          }
-        } else {
-          console.error("Property or property_meta_details is undefined:", property);
-        }
-
-        //Year of construction calculation
-        if (property && property.property_meta_details) {
-          const yearOfConstruction = property.property_meta_details
-            .filter(meta => meta.property_type_listings?.type === "number")
-            .find(meta => meta.property_type_listings.key === "year_of_construction");
-
-          if (!amenities_id_object_with_value || Object.keys(amenities_id_object_with_value).length === 0) {
-            year_amenities_score = 100;
-          } else if (yearOfConstruction) {
-            const propertyId = yearOfConstruction.property_type_listings.id;
-            const propertyValue = yearOfConstruction.value;
-
-            let totalFilters = 0;
-            let matchedFilters = 0;
-            for (const [amenityId, amenityValue] of Object.entries(amenities_id_object_with_value)) {
-              totalFilters++;
-
-              if (propertyId === amenityId && propertyValue === amenityValue) {
-                matchedFilters++;
-              }
-            }
-
-            year_amenities_score = (matchedFilters / totalFilters) * 100;
-          }
-
-          // // console.log(`Match Percentage: ${year_amenities_score}%`);
-        } else {
-          console.error("Property or property_meta_details is undefined:", property);
-        }
-
-
-        //location calculation
-        // let location_score = 100;
-    //    console.log(filter_latitude,' >>>> latitude >>>>>>> ',filter_longitude,' >>>> longiitude >>>>>>> ',property.latitude,' >>>> latitude >>>>>>> ',property.longitude);
-        if (filter_latitude && filter_longitude && property.latitude && property.longitude) {
-          try {
-            // Format coordinates properly as strings
-            const origin = `${filter_latitude},${filter_longitude}`;
-            const destination = `${property.latitude},${property.longitude}`;
-           // console.log(destination, '>>>> Distance');
-            const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins=${origin}&destinations=${destination}&key=${GOOGLE_MAPS_API_KEY}`;
-
-            const response = await axios.get(url);
-            // // console.log('Distance Matrix Response:', JSON.stringify(response.data, null, 2));
-
-            if (response.data.status === 'OK' &&
-              response.data.rows &&
-              response.data.rows[0] &&
-              response.data.rows[0].elements &&
-              response.data.rows[0].elements[0] &&
-              response.data.rows[0].elements[0].status === 'OK') {
-
-              const element = response.data.rows[0].elements[0];
-              const distanceInMeters = element.distance.value;
-              const distanceInKm = distanceInMeters / 1000;
-              const durationText = element.duration.text;
-
-              // Calculate score based on actual driving distance
-              if (distanceInKm <= 9) {
-                location_score = ((10 - distanceInKm) * 10) * 25 / 100;
-              } else {
-                location_score = 0;
-              }
-
-
-              // Add the exact distance and duration to the property object
-              property.exact_distance = {
-                text: element.distance.text,
-                value: distanceInKm,
-                duration: durationText
-              };
-
-              // console.log('Successfully calculated distance:', property.exact_distance);
-            } else {
-              location_score = 0;
-            }
-          } catch (error) {
-            console.error('Error calculating distance:', error.message);
-            // Fallback to straight-line distance calculation
-            const R = 6371; // Earth's radius in kilometers
-            const lat1 = parseFloat(filter_latitude);
-            const lon1 = parseFloat(filter_longitude);
-            const lat2 = parseFloat(property.latitude);
-            const lon2 = parseFloat(property.longitude);
-
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a =
-              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const distance = R * c;
-
-            property.exact_distance = {
-              text: `${distance.toFixed(2)} km (straight-line)`,
-              value: parseFloat(distance.toFixed(2)),
-              duration: 'N/A'
-            };
-
-            // console.log('Fallback distance calculated:', property.exact_distance);
-          }
-        }
-
-
+        let price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
+        let surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize);
+        let amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
+        let location_score = await commonFunction.calculateLocationScore( property.latitude, property.longitude, filter_latitude, filter_longitude );
+        let room_amenities_score = await commonFunction.calculateRoomAmenitiesScore( property?.property_meta_details, amenities_id_object_with_value );
+        let year_amenities_score = await commonFunction.calculateYearScore(   property?.property_meta_details, "year_of_construction", amenities_id_object_with_value );
+        
         const price_weight = 0.35
         const location_weight = 0.30
         const surface_area = 0.15
@@ -1493,7 +1372,7 @@ export const getAllProperty = async (req, res) => {
           project_details: responseProjectData,
           like: likedPropertyIds.includes(property.id),
           filter_result: {
-            location: location_score,
+            location: location_score * location_weight,
             price: price_score * price_weight,
             surface_area: surface_are_score * surface_area,
             property_type: property_type_score * property_type,
@@ -1592,14 +1471,14 @@ export const getAllProperty = async (req, res) => {
     }));
 
     const responsePayload = {
-      list: simplifiedProperties.filter(property => property.filter_result.total_percentage >= 60),
+      list: simplifiedProperties,
       property_meta_details: simplifiedListings,
       property_types: simplifiedTypeProperties,
       cities: transformedCities,
       maxPriceSliderRange,
       maxSizeSliderRange,
-      totalCount: simplifiedProperties.filter(property => property.filter_result.total_percentage >= 60).length,
-      totalPages: Math.ceil(simplifiedProperties.filter(property => property.filter_result.total_percentage >= 60).length / validLimit),
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
       currentPage: validPage,
       itemsPerPage: validLimit,
       developers: developerResponseData
@@ -2353,4 +2232,245 @@ export const getAllComment = async (req, res) => {
       res.__('messages.internalServerError')
     );
   }
+}
+
+export const getTestAllProperty = async (req, res) => {
+
+  const { page = 1, limit = 10, user_id, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude, startDate, endDate } = req.body;
+  // console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
+  const lang = res.getLocale();
+
+  const validPage = Math.max(1, parseInt(page, 10));
+  const validLimit = Math.max(1, parseInt(limit, 10));
+
+  const skip = (validPage - 1) * validLimit;
+
+  let amenities_id_array_with_value = [];
+  if ( typeof amenities_id_object_with_value === 'object' && amenities_id_object_with_value !== null && Object.keys(amenities_id_object_with_value).length > 0 ) {
+    for (const [id, value] of Object.entries(amenities_id_object_with_value)) {
+      try {
+        const property_type_listings = await prisma.propertyTypeListings.findUnique({
+          where: {
+            id: id,
+          },
+          select: {
+            key: true,
+          },
+        });
+        if (property_type_listings) {
+          amenities_id_array_with_value.push({
+            id: id,
+            slug: property_type_listings.key,
+            value: value,
+          });
+        }
+      } catch (error) {
+        console.error(`Error fetching property_type_listings for id ${id}:`, error);
+      }
+    }
+  }
+
+  const otherConditions = [
+    await commonFilter.titleCondition(title),
+    await commonFilter.descriptionCondition(description),
+    await commonFilter.districtCondition(district_id),
+    await commonFilter.neighborhoodCondition(neighborhoods_id),
+    await commonFilter.addressCondition(address),
+    await commonFilter.amenitiesCondition(amenities_id_array),
+    await commonFilter.directionCondition(direction),
+    await commonFilter.developerCondition(developer_id),
+  ]
+  const transactionConditions = [
+    await commonFilter.transactionCondition(transaction),
+    await commonFilter.typeCondition(type_id),
+    await commonFilter.cityDistrictNeightborhoodCondition(city_id),
+    await commonFilter.priceCondition(minPrice, maxPrice),
+    await commonFilter.squareFootSize(minSize, maxSize),
+  ]
+  const bedRoomCondition = await commonFilter.amenitiesOnlyBedRoomCondition(amenities_id_array_with_value);
+  // Combine them into your final Prisma condition
+  const combinedCondition = {
+    AND: [
+      { AND: transactionConditions.filter(Boolean) },
+      { OR: otherConditions.filter(Boolean) },
+      user_id ? { user_id: user_id } : {},
+      bedRoomCondition
+    ],
+  };
+
+  
+  let dateFilter = {};
+  if (startDate && endDate) {
+    dateFilter = {
+      created_at: {
+        gte: new Date(startDate), // Greater than or equal to start date
+        lte: new Date(endDate),   // Less than or equal to end date
+      },
+    };
+  }
+
+  const totalCount1 = await prisma.propertyDetails.count({
+    where: {
+      ...combinedCondition,
+      ...dateFilter
+    },
+  });
+    console.log(totalCount1,"totalCountProperty")
+
+  // console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
+  const getFilteredPropertyIds = async () => {
+    // Get all properties that match the base filters
+    const allProperties = await prisma.propertyDetails.findMany({
+      where: {
+        ...combinedCondition,
+        ...dateFilter
+      },
+      select: {
+        id: true,
+        price: true,
+        size: true,
+        latitude: true, 
+        longitude: true,
+        property_meta_details: {
+          select: {
+            value: true,
+            property_type_listings: {
+              select: {
+                id: true,
+                type: true,
+                key: true
+              }
+            }
+          }
+        }
+      }
+    });
+  
+    // Calculate scores and filter based on total percentage
+    const validPropertyIds = [];
+  
+    for (const property of allProperties) {
+      const price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
+      const surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize);
+      const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
+      const location_score = await commonFunction.calculateLocationScore( property.latitude, property.longitude, filter_latitude, filter_longitude );
+      const property_type_score = 100;
+      const weights = {
+        price: 0.35,
+        location: 0.30,
+        surface_area: 0.15,
+        property_type: 0,
+        amenities: 0.20,
+        room_amenities: 0.15,
+        year_amenities: 0
+      };
+  
+      // Calculate final score with weights
+      const final_score = 
+        price_score * weights.price + 
+        location_score * weights.location + 
+        surface_are_score * weights.surface_area + 
+        property_type_score * weights.property_type + 
+        amenities_score * weights.amenities;
+  
+      // Calculate total percentage
+      const total_percentage = Math.ceil(parseFloat(final_score.toFixed(2)));
+  
+      // Only add properties that meet the threshold
+      if (total_percentage >= 60) {
+        validPropertyIds.push(property.id);
+      }
+    }
+  
+    return validPropertyIds;
+  };
+  
+  const validPropertyIds = await getFilteredPropertyIds();
+  const totalCount = validPropertyIds.length;
+  const totalPages = Math.ceil(totalCount / validLimit);
+  const paginatedIds = validPropertyIds.slice(skip, skip + validLimit);
+  const properties = await prisma.propertyDetails.findMany({
+    where: {
+      id: {
+        in: paginatedIds
+      }
+    },
+    orderBy: {
+      districts: {
+        langTranslation: {
+          en_string: "asc"
+        }
+      }
+    },
+    include: {
+      ...userInclude,
+      ...langTranslationsInclude,
+      ...districtsInclude,
+      ...propertyMetaDetailsInclude,
+      ...currencyInclude,
+      ...cityInclude,
+      ...stateInclude,
+      ...neighborhoodInclude,
+      ...propertyTypesInclude
+    }
+  });
+  
+  // Step 7: Process properties as before to create simplified properties
+  // This is your existing code for mapping properties
+  const simplifiedProperties = await Promise.all(
+    properties.map(async (property) => {
+      const price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
+      const surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize);
+      const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
+
+      // Continue with the rest of your mapping logic...
+      let location_score = 100;
+      let property_type_score = 100;
+      const weights = await commonFunction.calculationWeight();
+
+      const final_scoreq = 
+      price_score * weights.price + 
+      location_score * weights.location + 
+      surface_are_score * weights.surface_area + 
+      property_type_score * weights.property_type + 
+      amenities_score * weights.amenities;
+    
+    
+      // Return the property object
+      return {
+        id: property.id,
+        // Other property fields...
+        filter_result: {
+          location: location_score * weights.location,
+          price: price_score * weights.price,
+          surface_area: surface_are_score * weights.surface_area,
+          property_type: property_type_score * weights.property_type,
+          amenities: amenities_score * weights.amenities,
+          room_amenities: 0 * weights.room_amenities,
+          construction_year_amenities: 0,
+          total_percentage: final_scoreq,
+          exact_distance: 0
+        },
+        other_data: {
+          surface_area: surface_are_score
+        }
+      };
+    })
+  );
+
+
+  // Step 8: Create response payload with correct pagination
+  const responsePayload = {
+    list: simplifiedProperties,
+    totalCount: totalCount,
+    totalPages: totalPages,
+    currentPage: validPage,
+    itemsPerPage: validLimit,
+  };
+  
+  return response.success(
+    res, 
+    res.__('messages.propertyFetchSuccessfully'), 
+    responsePayload
+  );
 }

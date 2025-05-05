@@ -1,11 +1,12 @@
 import express from 'express';
-import { getAllProperty, createProperty, setUserActivity, getUserViewProperty, getUserViewedData, getUserLikeProperty, getUserCommentedData, viewProperty, unlikeProperty, getLikedProperty,getUserLikedData, likeProperty, updateProperty, getAgentDeveloperProperty, deleteProperty,statusUpdateProperty, getPropertyById, getPropertyByIdWithId, propertyComment, getPropertyComment, getAllComment} from '../controllers/propertyController.js';
+import { getAllProperty, getTestAllProperty, createProperty, setUserActivity, getUserViewProperty, getUserViewedData, getUserLikeProperty, getUserCommentedData, viewProperty, unlikeProperty, getLikedProperty,getUserLikedData, likeProperty, updateProperty, getAgentDeveloperProperty, deleteProperty,statusUpdateProperty, getPropertyById, getPropertyByIdWithId, propertyComment, getPropertyComment, getAllComment} from '../controllers/propertyController.js';
 import { authorize, optionalAuthenticate } from '../middleware/authorization.js'; // Import the authorization middleware
 const router = express.Router();
 
 
 // Routes
 router.post('/', optionalAuthenticate, getAllProperty);
+router.post('/all', optionalAuthenticate, getTestAllProperty);
 router.post('/getbyid', getPropertyById);
 router.post('/getbyIds', authorize, getPropertyByIdWithId);
 router.post('/agent-developer', authorize, getAgentDeveloperProperty);
