@@ -1398,7 +1398,7 @@ export const getAllProperty = async (req, res) => {
             amenities: total_aminities_score * amenities,
             room_amenities: 0,
             construction_year_amenities: yearAmenities * year_amenities_score,
-            total_percentage: final_price_score,
+            total_percentage: final_price_score.toFixed(2),
             exact_distance: property.exact_distance || null
           },
           other_data:{
