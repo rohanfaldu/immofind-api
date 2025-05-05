@@ -251,5 +251,6 @@
 		"blogAlreadyExist": "Blog already Exist",
 		"propertyRecommendedError": "messages.propertyRecommendedError"
 	},
-	"No Property Found": "No Property Found"
+	"No Property Found": "No Property Found",
+	"something went wrong": "something went wrong"
 }

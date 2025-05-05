@@ -101,8 +101,15 @@ const commonFunction = {
             },
         }
     },
-    calculatePriceScore: async (price, minPrice, maxPrice) => {
-        if (price >= minPrice && price <= maxPrice) {
+    calculatePriceScore: async (price, minPrice, maxPrice, minPriceExtra, maxPriceExtra) => {
+        if(minPrice > minPriceExtra){
+            const percentAbove = ((minPrice - price) / minPrice) * 100;
+            return (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
+        } else if(maxPriceExtra > maxPrice){
+            const percentAbove = ((maxPriceExtra - price) / maxPriceExtra) * 100;
+            return (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
+        }  
+        else if (price >= minPrice && price <= maxPrice) {
             return 100;
         } else if (price > maxPrice) {
             const percentAbove = ((price - maxPrice) / maxPrice) * 100;
@@ -112,9 +119,16 @@ const commonFunction = {
             return (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
         }
     },
-    calculateSurfaceScore: async (value, min, max) => {
+    calculateSurfaceScore: async (value, min, max,  minSizeExtra, maxSizeExtra) => {
         const updatMinSize = min ?? 0;
-        if (value >= updatMinSize && value <= max) {
+        if((value > minSizeExtra ) && (min > value)){
+            const percentAbove = ((min - value) / min) * 100;
+            return (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
+        } else if((value > min ) && (maxSizeExtra > value)){
+            const percentAbove = ((maxSizeExtra - value) / maxSizeExtra) * 100;
+            return (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
+        }  
+        else if (value >= updatMinSize && value <= max) {
             return 100;
         } else if (value > max) {
             const percentAbove = ((value - max) / max) * 100;

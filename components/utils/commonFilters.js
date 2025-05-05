@@ -112,26 +112,26 @@
         : undefined;
     },
 
-    priceCondition: async (minPrice, maxPrice) => {
+    priceCondition: async (minPrice, maxPrice,  minPriceExtra, maxPriceExtra) => {
         const priceCondition = {}
-        if (minPrice) {
-          priceCondition.gte = parseFloat(minPrice)
+        if (minPriceExtra) {
+          priceCondition.gte = parseFloat(minPriceExtra)
         }
-        if (maxPrice) {
-          priceCondition.lte = parseFloat(maxPrice)
+        if (maxPriceExtra) {
+          priceCondition.lte = parseFloat(maxPriceExtra)
         }
         return {
           price: priceCondition,
         }
     },
 
-    squareFootSize: async (minSize, maxSize) => {
+    squareFootSize: async (minSize, maxSize,  minSizeExtra, maxSizeExtra) => {
         const sizeCondition = {}
-        if (minSize) {
-            sizeCondition.gte = parseFloat(minSize)
+        if (minSizeExtra) {
+            sizeCondition.gte = parseFloat(minSizeExtra)
         }
-        if (maxSize) {
-            sizeCondition.lte = parseFloat(maxSize)
+        if (maxSizeExtra) {
+            sizeCondition.lte = parseFloat(maxSizeExtra)
         }
         return {
           size: sizeCondition,

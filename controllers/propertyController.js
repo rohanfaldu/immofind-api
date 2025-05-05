@@ -951,6 +951,11 @@ export const getAllProperty = async (req, res) => {
         }
       }
     }
+    const minPriceExtra = (minPrice && parseFloat(minPrice) !== 0) ? parseFloat(minPrice) - (parseFloat(minPrice) * 0.10) : 0;
+    const maxPriceExtra = (maxPrice && parseFloat(maxPrice) !== 0) ? parseFloat(maxPrice) + (parseFloat(maxPrice) * 0.10) : 0;
+
+    const minSizeExtra = (minSize && parseFloat(minSize) !== 0) ? parseFloat(minSize) - (parseFloat(minSize) * 0.10) : 0;
+    const maxSizeExtra = (maxSize && parseFloat(maxSize) !== 0) ? parseFloat(maxSize) + (parseFloat(maxSize) * 0.10) : 0;
 
     const otherConditions = [
       await commonFilter.titleCondition(title),
@@ -966,8 +971,8 @@ export const getAllProperty = async (req, res) => {
       await commonFilter.transactionCondition(transaction),
       await commonFilter.typeCondition(type_id),
       await commonFilter.cityDistrictNeightborhoodCondition(city_id),
-      await commonFilter.priceCondition(minPrice, maxPrice),
-      await commonFilter.squareFootSize(minSize, maxSize),
+      await commonFilter.priceCondition(minPrice, maxPrice, minPriceExtra, maxPriceExtra),
+      await commonFilter.squareFootSize(minSize, maxSize, minSizeExtra, maxSizeExtra),
     ]
     const bedRoomCondition = await commonFilter.amenitiesOnlyBedRoomCondition(amenities_id_array_with_value);
     // Combine them into your final Prisma condition
@@ -1033,8 +1038,8 @@ export const getAllProperty = async (req, res) => {
       const validPropertyIds = [];
     
       for (const property of allProperties) {
-        const price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
-        const surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize);
+        const price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice, minPriceExtra, maxPriceExtra);
+        const surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize, minSizeExtra, maxSizeExtra);
         const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
         const location_score = await commonFunction.calculateLocationScore( property.latitude, property.longitude, filter_latitude, filter_longitude );
         const property_type_score = 100;
@@ -1240,15 +1245,13 @@ export const getAllProperty = async (req, res) => {
         let property_type_score = 100;
 
         let price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
-        let surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize);
+        let surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize, minSizeExtra, maxSizeExtra);
         let amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
-        console.log(property.project_id, "project_id", amenities_score, "amenities_score");
         let location_score = await commonFunction.calculateLocationScore( property.latitude, property.longitude, filter_latitude, filter_longitude );
-        console.log(property?.property_meta_details, 'Meta ')
         let room_amenities_score = await commonFunction.calculateRoomAmenitiesScore( property?.property_meta_details, amenities_id_object_with_value );
-        console.log(amenities_score, "amenities_score")
         let year_amenities_score = await commonFunction.calculateYearScore(   property?.property_meta_details, "year_of_construction", amenities_id_object_with_value );
         let total_aminities_score = (( amenities_score + room_amenities_score )/ 2);
+
         const price_weight = 0.35
         const location_weight = 0.30
         const surface_area = 0.15
@@ -2354,7 +2357,7 @@ export const getTestAllProperty = async (req, res) => {
   
     for (const property of allProperties) {
       const price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
-      const surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize);
+      const surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize,  minSizeExtra, maxSizeExtra);
       const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
       const location_score = await commonFunction.calculateLocationScore( property.latitude, property.longitude, filter_latitude, filter_longitude );
       const property_type_score = 100;
