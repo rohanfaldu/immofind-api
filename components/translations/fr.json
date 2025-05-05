@@ -238,7 +238,5 @@
 		"propertyRecommendedSuccess": "messages.propertyRecommendedSuccess",
 		"blogAlreadyExist": "Le blog existe déjà",
 		"commentFetchSuccessfully": "messages.commentFetchSuccessfully"
-	},
-	"No Property Found": "No Property Found",
-	"something went wrong": "something went wrong"
+	}
 }
