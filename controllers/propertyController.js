@@ -1060,7 +1060,7 @@ export const getAllProperty = async (req, res) => {
         const total_percentage = Math.ceil(parseFloat(final_score.toFixed(2)));
     
         // Only add properties that meet the threshold
-        if (total_percentage > 85) {
+        if (total_percentage > 50) {
           validPropertyIds.push(property.id);
         }
       }
