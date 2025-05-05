@@ -102,40 +102,49 @@ const commonFunction = {
         }
     },
     calculatePriceScore: async (price, minPrice, maxPrice, minPriceExtra, maxPriceExtra) => {
-        if(minPrice > minPriceExtra){
-            const percentAbove = ((minPrice - price) / minPrice) * 100;
-            return (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
-        } else if(maxPriceExtra > maxPrice){
-            const percentAbove = ((maxPriceExtra - price) / maxPriceExtra) * 100;
-            return (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
-        }  
-        else if (price >= minPrice && price <= maxPrice) {
-            return 100;
+        let status = true;
+        if((price >= minPriceExtra ) && (minPrice >= price)){
+            const extra_price_area = ((minPrice - price) / minPrice * 100);
+            const percentAbove = 100 - extra_surface_area;
+            return { score: percentAbove, status, extra: extra_price_area };
+        } else if((price >= maxPrice ) && (maxPriceExtra >= price)){
+            const extra_price_area =  ((price - maxPrice) / maxPrice * 100);
+            const percentAbove = ( 100 - extra_price_area);
+            return { score: percentAbove, status, extra: extra_price_area };
+        }  else if (price >= minPrice && price <= maxPrice) {
+            return { score: 100, status: false, extra: 0 };
         } else if (price > maxPrice) {
             const percentAbove = ((price - maxPrice) / maxPrice) * 100;
-            return (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
+            const score = (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
+            return { score: score, status: false, extra: 0 };
         } else {
             const percentBelow = ((minPrice - price) / minPrice) * 100;
-            return (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
+            const score = (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
+            return { score: score, status: false, extra: 0 };
         }
     },
     calculateSurfaceScore: async (value, min, max,  minSizeExtra, maxSizeExtra) => {
         const updatMinSize = min ?? 0;
-        if((value > minSizeExtra ) && (min > value)){
-            const percentAbove = ((min - value) / min) * 100;
-            return (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
-        } else if((value > min ) && (maxSizeExtra > value)){
-            const percentAbove = ((maxSizeExtra - value) / maxSizeExtra) * 100;
-            return (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
-        }  
-        else if (value >= updatMinSize && value <= max) {
-            return 100;
-        } else if (value > max) {
+        let status = true;
+  
+        if((value >= minSizeExtra ) && (updatMinSize >= value)){
+            const extra_surface_area = ((updatMinSize - value) / updatMinSize * 100);
+            const percentAbove = 100 - extra_surface_area;
+            return { score: percentAbove, status, extra: extra_surface_area };
+        } else if((value >= max ) && (maxSizeExtra >= value)){
+            const extra_surface_area =  ((value - max) / max * 100);
+            const percentAbove = ( 100 - extra_surface_area);
+            return { score: percentAbove, status, extra: extra_surface_area };
+        }else if (value >= updatMinSize && value <= max) {
+            return { score: 100, status: false, extra: 0 };
+        } else if ((value > max) && (value < min )) {
             const percentAbove = ((value - max) / max) * 100;
-            return (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
+            const score = (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
+            return { score: score, status: false, extra: 0 };
         } else {
             const percentBelow = ((updatMinSize - value) / updatMinSize) * 100;
-            return (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
+            const score = (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
+            return { score: score, status: false, extra: 0 };
         }
     },
     calculateAmenitiesScore: async (propertyMetaDetails, amenitiesIdArray) => {

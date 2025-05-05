@@ -1038,8 +1038,10 @@ export const getAllProperty = async (req, res) => {
       const validPropertyIds = [];
     
       for (const property of allProperties) {
-        const price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice, minPriceExtra, maxPriceExtra);
-        const surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize, minSizeExtra, maxSizeExtra);
+        const price_score_response = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice, minPriceExtra, maxPriceExtra);
+        const price_score = price_score_response.score;
+        const surface_are_score_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize, minSizeExtra, maxSizeExtra);
+        const surface_are_score = surface_are_score_score.score;
         const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
         const location_score = await commonFunction.calculateLocationScore( property.latitude, property.longitude, filter_latitude, filter_longitude );
         const property_type_score = 100;
@@ -1244,8 +1246,15 @@ export const getAllProperty = async (req, res) => {
 
         let property_type_score = 100;
 
-        let price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
-        let surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize, minSizeExtra, maxSizeExtra);
+        let price_score_response = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
+        const price_score = price_score_response.score;
+        const price_status = price_score_response.status;
+        const price_extra = price_score_response?.extra || 0;
+
+        let surface_are_score_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize, minSizeExtra, maxSizeExtra);
+        const surface_are_score = surface_are_score_score.score;
+        const surface_are_status = surface_are_score_score.status;
+        const surface_are_extra = surface_are_score_score?.extra || 0;
         let amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
         let location_score = await commonFunction.calculateLocationScore( property.latitude, property.longitude, filter_latitude, filter_longitude );
         let room_amenities_score = await commonFunction.calculateRoomAmenitiesScore( property?.property_meta_details, amenities_id_object_with_value );
@@ -1314,6 +1323,10 @@ export const getAllProperty = async (req, res) => {
             };
           }
         }
+        const score = Math.ceil(parseFloat(final_score.toFixed(2)));
+        const extra_surface_area = surface_are_status ? (score - surface_are_extra) : score;
+        const final_price_score = price_status ? (extra_surface_area - price_extra) : extra_surface_area;
+
         return {
           id: property.id,
           user_name: property.users?.full_name || null,
@@ -1379,13 +1392,13 @@ export const getAllProperty = async (req, res) => {
           like: likedPropertyIds.includes(property.id),
           filter_result: {
             location: location_score * location_weight,
-            price: price_score * price_weight,
-            surface_area: surface_are_score * surface_area,
+            price: ((price_score * price_weight) - price_extra),
+            surface_area: ((surface_are_score * surface_area) - surface_are_extra),
             property_type: property_type_score * property_type,
             amenities: total_aminities_score * amenities,
             room_amenities: 0,
             construction_year_amenities: yearAmenities * year_amenities_score,
-            total_percentage: Math.ceil(parseFloat(final_score.toFixed(2))),
+            total_percentage: final_price_score,
             exact_distance: property.exact_distance || null
           },
           other_data:{
