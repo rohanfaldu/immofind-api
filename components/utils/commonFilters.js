@@ -272,11 +272,11 @@ const commonFilter = {
             };
         }
 
-        if (otherConditions.length > 0) {
-            return {
-                OR: otherConditions,
-            };
-        }
+        // if (otherConditions.length > 0) {
+        //     return {
+        //         OR: otherConditions,
+        //     };
+        // }
 
         return {};
     },

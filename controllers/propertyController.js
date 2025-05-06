@@ -963,7 +963,7 @@ export const getAllProperty = async (req, res) => {
       await commonFilter.districtCondition(district_id),
       await commonFilter.neighborhoodCondition(neighborhoods_id),
       await commonFilter.addressCondition(address),
-     // await commonFilter.amenitiesCondition(amenities_id_array),
+      await commonFilter.amenitiesCondition(amenities_id_array),
       await commonFilter.directionCondition(direction),
       await commonFilter.developerCondition(developer_id),
     ]
@@ -1044,7 +1044,7 @@ export const getAllProperty = async (req, res) => {
         const surface_are_score = surface_are_score_score.score;
         const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
         const { latitude = 0, longitude = 0 } = await commonFilter.getLocationLatLong(city_id) || {};
-        const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude) : 0;
+        const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude) : 100;
         const property_type_score = 100;
         const weights = {
           price: 0.35,
@@ -1258,7 +1258,7 @@ export const getAllProperty = async (req, res) => {
         const surface_are_extra = surface_are_score_score?.extra || 0;
         let amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
         const { latitude = 0, longitude = 0 } = await commonFilter.getLocationLatLong(city_id) || {};
-        const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude ) : 0;
+        const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude ) : 100;
         let room_amenities_score = await commonFunction.calculateRoomAmenitiesScore( property?.property_meta_details, amenities_id_object_with_value );
         let year_amenities_score = await commonFunction.calculateYearScore(   property?.property_meta_details, "year_of_construction", amenities_id_object_with_value );
         let total_aminities_score = (( amenities_score + room_amenities_score )/ 2);
