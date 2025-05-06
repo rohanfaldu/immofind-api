@@ -103,24 +103,30 @@ const commonFunction = {
     },
     calculatePriceScore: async (price, minPrice, maxPrice, minPriceExtra, maxPriceExtra) => {
         let status = true;
+        console.log(price,'  price  ', minPrice, '   minPrice   ', maxPrice, ' maxPrice ', minPriceExtra, ' minPriceExtra  ', maxPriceExtra, 'maxPriceExtra')
         if((price >= minPriceExtra ) && (minPrice >= price)){
+
             const extra_price_area = ((minPrice - price) / minPrice * 100);
             const percentAbove = 100 - extra_price_area;
-            return { score: percentAbove, status, extra: extra_price_area };
+            return { score: percentAbove, status, extra: extra_price_area, flag:1 };
         } else if((price >= maxPrice ) && (maxPriceExtra >= price)){
+            console.log(1)
             const extra_price_area =  ((price - maxPrice) / maxPrice * 100);
             const percentAbove = ( 100 - extra_price_area);
-            return { score: percentAbove, status, extra: extra_price_area };
+            return { score: percentAbove, status, extra: extra_price_area,flag:2 };
         }  else if (price >= minPrice && price <= maxPrice) {
-            return { score: 100, status: false, extra: 0 };
+            console.log(2)
+            return { score: 100, status: false, extra: 0, flag:3 };
         } else if (price > maxPrice) {
+            console.log(3)
             const percentAbove = ((price - maxPrice) / maxPrice) * 100;
             const score = (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
-            return { score: score, status: false, extra: 0 };
+            return { score: score, status: false, extra: 0, flag:4 };
         } else {
+            console.log(4)
             const percentBelow = ((minPrice - price) / minPrice) * 100;
             const score = (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
-            return { score: score, status: false, extra: 0 };
+            return { score: score, status: false, extra: 0, flag:5 };
         }
     },
     calculateSurfaceScore: async (value, min, max,  minSizeExtra, maxSizeExtra) => {

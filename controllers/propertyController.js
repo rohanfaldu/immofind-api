@@ -1246,8 +1246,10 @@ export const getAllProperty = async (req, res) => {
         }
 
         let property_type_score = 100;
+        console.log(property.price,' new price  ', minPrice, ' new  minPrice   ', maxPrice, ' new maxPrice ', minPriceExtra, ' new minPriceExtra  ', maxPriceExtra, ' new maxPriceExtra')
 
-        let price_score_response = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
+        let price_score_response = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice, minPriceExtra, maxPriceExtra);
+        console.log(price_score_response,'>>>>>>>>>>>>>>> price_score_response');
         const price_score = price_score_response.score;
         const price_status = price_score_response.status;
         const price_extra = price_score_response?.extra || 0;
