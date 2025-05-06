@@ -1,47 +1,50 @@
- const commonFilter = {
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+const commonFilter = {
     titleCondition: async (title, lang) => {
         return title
-          ? {
-              OR: [
-                {
-                cities: {
-                    lang: {
-                        [lang === 'fr' ? 'fr_string' : 'en_string']: {
-                        contains: title,
-                        mode: 'insensitive',
+            ? {
+                OR: [
+                    {
+                        cities: {
+                            lang: {
+                                [lang === 'fr' ? 'fr_string' : 'en_string']: {
+                                    contains: title,
+                                    mode: 'insensitive',
+                                },
+                            },
                         },
                     },
-                  },
-                },
-                {
-                lang_translations: {
-                    [lang === 'fr' ? 'fr_string' : 'en_string']: {
-                      contains: title,
-                      mode: 'insensitive',
+                    {
+                        lang_translations: {
+                            [lang === 'fr' ? 'fr_string' : 'en_string']: {
+                                contains: title,
+                                mode: 'insensitive',
+                            },
+                        },
                     },
-                  },
-                },
-              ],
+                ],
             }
-          : undefined;
-      },
+            : undefined;
+    },
 
-      titleConditionProject: async (title, lang) => {
+    titleConditionProject: async (title, lang) => {
         return title
-          ? {
-              OR: [
-                {
-                lang_translations_title: {
-                    [lang === 'fr' ? 'fr_string' : 'en_string']: {
-                      contains: title,
-                      mode: 'insensitive',
+            ? {
+                OR: [
+                    {
+                        lang_translations_title: {
+                            [lang === 'fr' ? 'fr_string' : 'en_string']: {
+                                contains: title,
+                                mode: 'insensitive',
+                            },
+                        },
                     },
-                  },
-                },
-              ],
+                ],
             }
-          : undefined;
-      },
+            : undefined;
+    },
 
 
     descriptionCondition: async (description, lang) => {
@@ -96,7 +99,7 @@
             ? {
                 address: {
                     contains: address,
-                    mode: 'insensitive', 
+                    mode: 'insensitive',
                 },
             }
             : undefined;
@@ -104,28 +107,28 @@
 
     typeCondition: async (type_id) => {
         return type_id
-        ? {
-            property_types: {
-                id: type_id,
-            },
-        }
-        : undefined;
+            ? {
+                property_types: {
+                    id: type_id,
+                },
+            }
+            : undefined;
     },
 
-    priceCondition: async (minPrice, maxPrice,  minPriceExtra, maxPriceExtra) => {
+    priceCondition: async (minPrice, maxPrice, minPriceExtra, maxPriceExtra) => {
         const priceCondition = {}
         if (minPriceExtra) {
-          priceCondition.gte = parseFloat(minPriceExtra)
+            priceCondition.gte = parseFloat(minPriceExtra)
         }
         if (maxPriceExtra) {
-          priceCondition.lte = parseFloat(maxPriceExtra)
+            priceCondition.lte = parseFloat(maxPriceExtra)
         }
         return {
-          price: priceCondition,
+            price: priceCondition,
         }
     },
 
-    squareFootSize: async (minSize, maxSize,  minSizeExtra, maxSizeExtra) => {
+    squareFootSize: async (minSize, maxSize, minSizeExtra, maxSizeExtra) => {
         const sizeCondition = {}
         if (minSizeExtra) {
             sizeCondition.gte = parseFloat(minSizeExtra)
@@ -134,11 +137,49 @@
             sizeCondition.lte = parseFloat(maxSizeExtra)
         }
         return {
-          size: sizeCondition,
+            size: sizeCondition,
         }
     },
 
+    getLocationLatLong: async (id) => {
+        let allData = {
+            latitude: null,
+            longitude: null,
+        };
 
+        if (id) {
+            const neighborhood = await prisma.neighborhoods.findFirst({
+                where: { is_deleted: false, id },
+            });
+
+            if (neighborhood) {
+                allData.latitude = neighborhood.latitude;
+                allData.longitude = neighborhood.longitude;
+            } else {
+                const district = await prisma.districts.findFirst({
+                    where: { is_deleted: false, id },
+                });
+
+                if (district) {
+                    allData.latitude = district.latitude;
+                    allData.longitude = district.longitude;
+                } else {
+                    const city = await prisma.cities.findFirst({
+                        where: { is_deleted: false, id },
+                    });
+
+                    if (city) {
+                        allData.latitude = city.latitude;
+                        allData.longitude = city.longitude;
+                    }
+                }
+            }
+            if (allData.latitude && allData.longitude) {
+                return allData;
+            }
+            return null; 
+        } 
+    },
 
     amenitiesCondition: async (amenities_id) => {
         if (Array.isArray(amenities_id) && amenities_id.length > 0) {
@@ -173,7 +214,7 @@
         }
         return undefined;
     },
-    
+
 
     amenitiesNumberCondition: async (amenitiesNumbers_id) => {
         if (typeof amenitiesNumbers_id === 'object' && amenitiesNumbers_id !== null) {
@@ -184,14 +225,14 @@
                             property_type_listings: {
                                 id: id,
                             },
-                             value: minValue.toString() == "4" ? { lte: "4"  } : minValue.toString(),
-                            
+                            value: minValue.toString() == "4" ? { lte: "4" } : minValue.toString(),
+
                         },
                     },
                 };
                 return condition;
             });
-    
+
             return {
                 OR: conditions,
             };
@@ -201,44 +242,44 @@
     amenitiesOnlyBedRoomCondition: async (amenitiesNumbersArray) => {
         if (!Array.isArray(amenitiesNumbersArray) || amenitiesNumbersArray.length === 0) {
             return {};
-          }
-          
-          const roomConditions = [];
-          const otherConditions = [];
-          
-          for (const item of amenitiesNumbersArray) {
+        }
+
+        const roomConditions = [];
+        const otherConditions = [];
+
+        for (const item of amenitiesNumbersArray) {
             const condition = {
-              property_meta_details: {
-                some: {
-                  property_type_listings: {
-                    id: item.id,
-                  },
-                  value: item.value.toString() === "4" ? { lte: "4" } : item.value.toString(),
+                property_meta_details: {
+                    some: {
+                        property_type_listings: {
+                            id: item.id,
+                        },
+                        value: item.value.toString() === "4" ? { lte: "4" } : item.value.toString(),
+                    },
                 },
-              },
             };
-          
+
             if (item.slug === "rooms") {
-              roomConditions.push(condition); // Only consider 'rooms' for AND
+                roomConditions.push(condition); // Only consider 'rooms' for AND
             } else {
-              otherConditions.push(condition); // Everything else for OR
+                otherConditions.push(condition); // Everything else for OR
             }
-          }
-          
-          if (roomConditions.length > 0) {
+        }
+
+        if (roomConditions.length > 0) {
             return {
-              AND: roomConditions,
+                AND: roomConditions,
             };
-          }
-          
-          if (otherConditions.length > 0) {
+        }
+
+        if (otherConditions.length > 0) {
             return {
-              OR: otherConditions,
+                OR: otherConditions,
             };
-          }
-          
-          return {};
-      },      
+        }
+
+        return {};
+    },
 
 
     amenitiesNumberConditionProject: async (amenitiesNumbers_id) => {
@@ -251,21 +292,21 @@
                                 id: id,
                             },
                             value: minValue.toString()
-                            
+
                         },
                     },
                 };
                 console.log(condition);
                 return condition;
             });
-    
+
             return {
                 OR: conditions,
             };
         }
         return undefined;
     },
-    
+
     directionCondition: async (direction) => {
         return direction
             ? {
@@ -291,7 +332,7 @@
             }
             : undefined;
     }
-        
+
 }
 
 export default commonFilter;

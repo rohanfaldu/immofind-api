@@ -167,31 +167,39 @@ const commonFunction = {
         return score;
     },
     calculateLocationScore: async (propertyLat, propertyLng, filterLat, filterLng) => {
-        let score = 100;
-
+        let score = 0;
         if (propertyLat && propertyLng && filterLat && filterLng) {
             try {
-                const R = 6371; // Radius of Earth in km
-                const lat1 = parseFloat(filterLat);
-                const lon1 = parseFloat(filterLng);
-                const lat2 = parseFloat(propertyLat);
-                const lon2 = parseFloat(propertyLng);
-                const dLat = (lat2 - lat1) * Math.PI / 180;
-                const dLon = (lon2 - lon1) * Math.PI / 180;
-                const a =
-                    Math.sin(dLat / 2) ** 2 +
-                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                    Math.sin(dLon / 2) ** 2;
-                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-                const distance = R * c;
-
-                // Custom scoring: within 9 km = decreasing score, max score for <= 1 km
-                score = distance <= 9 ? ((10 - distance) * 10) * 0.25 : 0;
-            } catch (error) {
+              const R = 6371; // Earth's radius in km
+              const lat1 = parseFloat(filterLat);
+              const lon1 = parseFloat(filterLng);
+              const lat2 = parseFloat(propertyLat);
+              const lon2 = parseFloat(propertyLng);
+          
+              const dLat = (lat2 - lat1) * Math.PI / 180;
+              const dLon = (lon2 - lon1) * Math.PI / 180;
+          
+              const a =
+                Math.sin(dLat / 2) ** 2 +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon / 2) ** 2;
+          
+              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+              const distanceInKm = R * c;
+          
+              console.log(distanceInKm, 'distance');
+          
+              // Updated scoring formula
+              if (distanceInKm <= 19) {
+                score = ((20 - distanceInKm) / 20) * 100;
+              } else {
                 score = 0;
+              }
+          
+            } catch (error) {
+              score = 0;
             }
         }
-
         return score;
     },
     calculateRoomAmenitiesScore: async (propertyMetaDetails, amenitiesIdObjectWithValue) => {
