@@ -402,9 +402,9 @@ export const getProjectsById = async (req, res) => {
     }
 
     const lang = res.getLocale();
-
+    console.log(project.user_id, '>>>>>> Project userid');
       const properties = await prisma.propertyDetails.findMany({
-      where: { project_id: project.id },
+      where: { user_id: project.user_id },
       orderBy: { created_at: 'desc' },
       take: 5,
       include: {

@@ -145,6 +145,7 @@ const commonFilter = {
         let allData = {
             latitude: null,
             longitude: null,
+            location_name: null
         };
 
         if (id) {
@@ -155,6 +156,7 @@ const commonFilter = {
             if (neighborhood) {
                 allData.latitude = neighborhood.latitude;
                 allData.longitude = neighborhood.longitude;
+                allData.location_name = "neighborhood";
             } else {
                 const district = await prisma.districts.findFirst({
                     where: { is_deleted: false, id },
@@ -163,6 +165,7 @@ const commonFilter = {
                 if (district) {
                     allData.latitude = district.latitude;
                     allData.longitude = district.longitude;
+                    allData.location_name = "district";
                 } else {
                     const city = await prisma.cities.findFirst({
                         where: { is_deleted: false, id },
@@ -171,12 +174,14 @@ const commonFilter = {
                     if (city) {
                         allData.latitude = city.latitude;
                         allData.longitude = city.longitude;
+                        allData.location_name = "city";
                     }
                 }
             }
             if (allData.latitude && allData.longitude) {
                 return allData;
             }
+            console.log(id, ">>>>>>>>>>> allData >>>>>>>>>>>>", allData);
             return null; 
         } 
     },

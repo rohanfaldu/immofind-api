@@ -963,7 +963,7 @@ export const getAllProperty = async (req, res) => {
       await commonFilter.districtCondition(district_id),
       await commonFilter.neighborhoodCondition(neighborhoods_id),
       await commonFilter.addressCondition(address),
-      await commonFilter.amenitiesCondition(amenities_id_array),
+     // await commonFilter.amenitiesCondition(amenities_id_array),
       await commonFilter.directionCondition(direction),
       await commonFilter.developerCondition(developer_id),
     ]
@@ -1043,8 +1043,9 @@ export const getAllProperty = async (req, res) => {
         const surface_are_score_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize, minSizeExtra, maxSizeExtra);
         const surface_are_score = surface_are_score_score.score;
         const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
-        const { latitude = 0, longitude = 0 } = await commonFilter.getLocationLatLong(city_id) || {};
-        const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude) : 100;
+        const { latitude = 0, longitude = 0, location_name = null } = await commonFilter.getLocationLatLong(city_id) || {};
+        console.log(property.id ,' Property id ', property.latitude, '  propertyLat  ',  property.longitude, '  propertyLng  ', latitude, '   filterLat   ', longitude, '>>>>> filterLng', location_name, ' >>>>>>>> Location name')
+        const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude, location_name) : 100;
         const property_type_score = 100;
         const weights = {
           price: 0.35,
@@ -1246,10 +1247,7 @@ export const getAllProperty = async (req, res) => {
         }
 
         let property_type_score = 100;
-        console.log(property.price,' new price  ', minPrice, ' new  minPrice   ', maxPrice, ' new maxPrice ', minPriceExtra, ' new minPriceExtra  ', maxPriceExtra, ' new maxPriceExtra')
-
         let price_score_response = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice, minPriceExtra, maxPriceExtra);
-        console.log(price_score_response,'>>>>>>>>>>>>>>> price_score_response');
         const price_score = price_score_response.score;
         const price_status = price_score_response.status;
         const price_extra = price_score_response?.extra || 0;
@@ -1259,8 +1257,8 @@ export const getAllProperty = async (req, res) => {
         const surface_are_status = surface_are_score_score.status;
         const surface_are_extra = surface_are_score_score?.extra || 0;
         let amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
-        const { latitude = 0, longitude = 0 } = await commonFilter.getLocationLatLong(city_id) || {};
-        const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude ) : 100;
+        const { latitude = 0, longitude = 0, location_name = null  } = await commonFilter.getLocationLatLong(city_id) || {};
+        const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude, location_name ) : 100;
         let room_amenities_score = await commonFunction.calculateRoomAmenitiesScore( property?.property_meta_details, amenities_id_object_with_value );
         let year_amenities_score = await commonFunction.calculateYearScore(   property?.property_meta_details, "year_of_construction", amenities_id_object_with_value );
         let total_aminities_score = (( amenities_score + room_amenities_score )/ 2);
