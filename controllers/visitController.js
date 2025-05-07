@@ -176,6 +176,8 @@ export const getUserVisitSchedule = async (req, res) => {
                                 id: true,
                                 full_name: true,
                                 email_address: true,
+                                mobile_number: true,
+                                country_code: true,
                             },
                         }
                     },
