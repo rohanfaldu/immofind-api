@@ -1044,7 +1044,7 @@ export const getAllProperty = async (req, res) => {
         const surface_are_score = surface_are_score_score.score;
         const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
         const { latitude = 0, longitude = 0, location_name = null } = await commonFilter.getLocationLatLong(city_id) || {};
-        console.log(property.id ,' Property id ', property.latitude, '  propertyLat  ',  property.longitude, '  propertyLng  ', latitude, '   filterLat   ', longitude, '>>>>> filterLng', location_name, ' >>>>>>>> Location name')
+        console.log(property ,' Property id ', property.latitude, '  propertyLat  ',  property.longitude, '  propertyLng  ', latitude, '   filterLat   ', longitude, '>>>>> filterLng', location_name, ' >>>>>>>> Location name')
         const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude, location_name) : 100;
         const property_type_score = 100;
         const weights = {

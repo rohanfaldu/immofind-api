@@ -62,3 +62,49 @@ export const savePropertySaveSearches = async (req, res) => {
 }
 
 
+export const getPropertySaveSearches = async (req, res) => {
+    try {
+        const {
+            page = 1,
+            limit = 10,
+            user_id = null,
+          } = req.body;
+      
+        const lang = res.getLocale(); // Only once!
+        
+        if (!isUUID(user_id)) {
+            return await response.badRequest(res, res.__('messages.invalidIdFormat'));
+        }
+
+        // Safely parse and validate page/limit
+        const pageNumber = Math.max(1, parseInt(page, 10) || 1);
+        const limitNumber = Math.max(1, parseInt(limit, 10) || 10);
+        const skip = (pageNumber - 1) * limitNumber;
+    
+        const totalCount = await prisma.propertySaveSearches.count({ where: {user_id} });
+
+        // Validate the ID format
+        
+        const propertySaveSearches = await prisma.propertySaveSearches.findMany({
+            where: { user_id },
+        });
+
+        if (!propertySaveSearches) {
+            return await response.notFound(res, res.__('messages.propertyNotFound'));
+        }
+
+        const totalPages = Math.ceil(totalCount / limitNumber);
+
+        // Send final response
+        return response.success(res, res.__('messages.blogListFetched'), {
+          totalCount: totalCount,
+          totalPages,
+          currentPage: pageNumber,
+          limit: limitNumber,
+          list: propertySaveSearches
+        });
+    } catch (error) {
+        console.error('Error fetching property:', error);
+        return await response.serverError(res, res.__('messages.errorFetchingProperty'));
+    }
+}
