@@ -253,5 +253,7 @@
 		"visitAcceptedSuccessfully": "Visit accepted successfully",
 		"visitDeclinedSuccessfully": "Visit declined successfully",
 		"something went wrong": "something went wrong"
-	}
+	},
+	"something went wrong": "something went wrong",
+	"No Property Found": "No Property Found"
 }

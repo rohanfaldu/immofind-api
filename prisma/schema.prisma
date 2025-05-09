@@ -555,6 +555,7 @@ model PropertyVisit {
   scheduled_date     DateTime?       @db.Timestamp(6)
   is_accepted        Boolean?        @default(false)
   decline_permanent  Boolean?        @default(false)
+  reschedule         Boolean?        @default(false)
   property_publisher String?         @db.Uuid
   property           PropertyDetails @relation("PropertyVisit", fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users              Users           @relation("UserPropertyVisit", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)

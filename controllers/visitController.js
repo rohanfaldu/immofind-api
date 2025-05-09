@@ -47,6 +47,7 @@ export const visitUpdateSchedule = async (req, res) => {
                     scheduled_date: dateAndTime,
                     visit_type: visitType,
                     created_at: new Date(),
+                    reschedule: true,
                 }
             });
 
