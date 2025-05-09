@@ -237,6 +237,10 @@
 		"fetchBlogListError": "Une erreur s'est produite lors de la récupération de la liste des blogs",
 		"propertyRecommendedSuccess": "messages.propertyRecommendedSuccess",
 		"blogAlreadyExist": "Le blog existe déjà",
-		"commentFetchSuccessfully": "messages.commentFetchSuccessfully"
+		"commentFetchSuccessfully": "messages.commentFetchSuccessfully",
+		"propertyRecommendedError": "messages.propertyRecommendedError",
+		"visitAcceptedSuccessfully": "Visit accepted successfully",
+		"visitDeclinedSuccessfully": "Visit declined successfully",
+		"something went wrong": "something went wrong"
 	}
 }

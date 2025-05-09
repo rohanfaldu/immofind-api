@@ -34,6 +34,36 @@ export const visitSchedule = async (req, res) => {
 }
 
 
+export const visitUpdateSchedule = async (req, res) => {
+    const { id, dateAndTime, visitType } = req.body;
+
+    try {
+        await prisma.propertyVisit.update(
+            {
+                where: {
+                    id: id,
+                },
+                data: {
+                    scheduled_date: dateAndTime,
+                    visit_type: visitType,
+                    created_at: new Date(),
+                }
+            });
+
+        return response.success(
+        res,
+        res.__('messages.propertyVisitScheduledSuccessfully'),
+        );
+    } catch (error) {
+        console.error(error);
+        return response.error(
+        res,
+        res.__('messages.internalServerError')
+        );
+    }
+}
+
+
 export const getVisitSchedule = async (req, res) => {
 
     const { page, limit, startDate, endDate } = req.body;
@@ -528,6 +558,53 @@ export const visitReschedule = async (req, res) => {
                 scheduled_date: dateAndTime,
                 visit_type: visitType,
             },
+        });
+
+        return response.success(    
+            res,    
+            res.__('messages.visitDeclinedSuccessfully'),
+            visit
+        );
+        } catch (error) {
+            console.error(error);
+            return response.error(
+                res,    
+                res.__('messages.internalServerError')
+            );
+        }
+}
+
+export const getVisitUserSchedule = async (req, res) => {
+    const { visitId } = req.body;
+    try {
+        const visit = await prisma.propertyVisit.findUnique({
+            where: { id: visitId },
+            include: {
+                property: {
+                    select: {
+                        id: true,
+                        title: true,
+                        slug: true,
+                        lang_translations: {
+                            select: {
+                                en_string: true,
+                                fr_string: true,
+                            },
+                        },
+                        price: true,
+                        users: {
+                            select: {
+                                id: true,
+                                full_name: true,
+                                email_address: true,
+                                mobile_number: true,
+                                country_code: true,
+                            },
+                        }
+                    },
+                },
+                users: true
+            }
         });
 
         return response.success(    
