@@ -2224,6 +2224,11 @@ export const getAllComment = async (req, res) => {
             id: true,
           },
         },
+        property:{
+          select: {
+            slug: true,
+          }
+        }
       },
       skip,
       take: validLimit,
