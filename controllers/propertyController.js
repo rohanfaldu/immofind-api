@@ -1429,11 +1429,11 @@ export const getAllProperty = async (req, res) => {
     });
 
 
-    // const maxPriceSliderRange = Math.max(
-    //   ...data.map((property) => property.price || 0)
-    // );
+    const maxPriceSliderRange = Math.max(
+      ...data.map((property) => property.price || 0)
+    );
 
-    const maxPriceSliderRange = 10000000;
+    //const maxPriceSliderRange = 10000000;
 
     const maxSizeSliderRange = Math.max(
       ...data.map((property) => property.size || 0)
