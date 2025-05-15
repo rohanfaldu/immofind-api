@@ -238,9 +238,9 @@ const commonFunction = {
               matchedFilters++;
             }
           }
-          console.log(totalFilters,'>>>>>>>>> totalFilters', matchedFilters, '>>>>>>>>>> matchedFilters')
+  
           const score = totalFilters > 0 ? (matchedFilters / totalFilters) * 100 : 0;
-          console.log(score, '>>>>>>>>>> score');
+         
           return parseFloat(score.toFixed(2));
     },
     calculateYearScore: async (propertyMetaDetails, targetKey, amenitiesIdObjectWithValue) => {

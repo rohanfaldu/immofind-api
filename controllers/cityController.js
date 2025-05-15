@@ -724,30 +724,15 @@ export const deleteCity = async (req, res) => {
 
 export const getallcitydistrictneighborhoods = async (req, res) => {
   try {
-
     const { page = 1, limit = 10, lang, city_name } = req.body;
     const isFrench = lang === 'fr';
     const validPage = Math.max(1, parseInt(page, 10) || 1);
     const validLimit = Math.max(1, parseInt(limit, 10) || 10);
     const skip = (validPage - 1) * validLimit;
 
-    /* Neighburhood */
+    // Fetch all neighborhoods
     const getAllNeighborhoods = await prisma.neighborhoods.findMany({
-      where: {
-        is_deleted: false,
-        OR: city_name
-          ? [
-            {
-              langTranslation: {
-                OR: [
-                  { fr_string: { contains: city_name, mode: 'insensitive' } },
-                  { en_string: { contains: city_name, mode: 'insensitive' } },
-                ],
-              },
-            },
-          ]
-          : undefined
-      },
+      where: { is_deleted: false },
       select: {
         id: true,
         latitude: true,
@@ -759,27 +744,12 @@ export const getallcitydistrictneighborhoods = async (req, res) => {
             fr_string: isFrench,
           },
         },
-      }
-    });
-    //console.log(getAllNeighborhoods, ' >>>>>>>>>>>>>> Neighburhood');
-
-    /*** District */
-    const getAllDistrict = await prisma.districts.findMany({
-      where: {
-        is_deleted: false,
-        OR: city_name
-          ? [
-            {
-              langTranslation: {
-                OR: [
-                  { fr_string: { contains: city_name, mode: 'insensitive' } },
-                  { en_string: { contains: city_name, mode: 'insensitive' } },
-                ],
-              },
-            },
-          ]
-          : undefined
       },
+    });
+
+    // Fetch all districts
+    const getAllDistrict = await prisma.districts.findMany({
+      where: { is_deleted: false },
       select: {
         id: true,
         latitude: true,
@@ -791,28 +761,12 @@ export const getallcitydistrictneighborhoods = async (req, res) => {
             fr_string: isFrench,
           },
         },
-      }
-    });
-    //console.log(getAllDistrict, ' >>>>>>>>>>>>>> District');
-
-
-    /*** Cities */
-    const getAllCities = await prisma.cities.findMany({
-      where: {
-        is_deleted: false,
-        OR: city_name
-          ? [
-            {
-              lang: {
-                OR: [
-                  { fr_string: { contains: city_name, mode: 'insensitive' } },
-                  { en_string: { contains: city_name, mode: 'insensitive' } },
-                ],
-              },
-            },
-          ]
-          : undefined
       },
+    });
+
+    // Fetch all cities
+    const getAllCities = await prisma.cities.findMany({
+      where: { is_deleted: false },
       select: {
         id: true,
         latitude: true,
@@ -824,54 +778,68 @@ export const getallcitydistrictneighborhoods = async (req, res) => {
             fr_string: isFrench,
           },
         },
-      }
+      },
     });
 
     let allData = [];
 
-    console.log(getAllNeighborhoods.length, ' Count')
-    if (getAllNeighborhoods.length > 0) {
-      getAllNeighborhoods.map((neighborhoodsData) => {
-        const titleNeightburhood = (isFrench) ? neighborhoodsData.langTranslation.fr_string : neighborhoodsData.langTranslation.en_string;
-        allData.push({
-          id: neighborhoodsData.id,
-          slug: "neighborhood",
-          name: titleNeightburhood || ''
-        });
-      })
-    }
+    for (const city of getAllCities) {
+      const cityName = isFrench ? city.lang.fr_string : city.lang.en_string;
 
-    if (getAllDistrict.length > 0) {
-      getAllDistrict.map((districtData) => {
-        const titleDistrict = (isFrench) ? districtData.langTranslation.fr_string : districtData.langTranslation.en_string;
+      const cityDistricts = getAllDistrict.filter(d => d.city_id === city.id);
         allData.push({
-          id: districtData.id,
-          slug: "district",
-          name: titleDistrict || ''
-        });
-      })
-    }
-
-    if (getAllCities.length > 0) {
-      getAllCities.map((citiesData) => {
-        const titleCitie = (isFrench) ? citiesData.lang.fr_string : citiesData.lang.en_string;
-        allData.push({
-          id: citiesData.id,
+          id: city.id,
           slug: "city",
-          name: titleCitie || ''
+          name: cityName || '',
+          latitude: city.latitude,
+          longitude: city.longitude,
         });
-      })
+
+      for (const district of cityDistricts) {
+        const districtName = isFrench ? district.langTranslation.fr_string : district.langTranslation.en_string;
+        const combinedDistrictName = `${cityName}, ${districtName}`;
+
+        const districtNeighborhoods = getAllNeighborhoods.filter(n => n.district_id === district.id);
+
+        //if (districtNeighborhoods.length === 0) {
+          allData.push({
+            id: district.id,
+            slug: "city_district",
+            name: combinedDistrictName,
+            latitude: district.latitude,
+            longitude: district.longitude,
+            city_id: district.city_id,
+          });
+         // continue;
+        //}
+
+        for (const neighborhood of districtNeighborhoods) {
+          const neighborhoodName = isFrench ? neighborhood.langTranslation.fr_string : neighborhood.langTranslation.en_string;
+          const fullName = `${cityName}, ${districtName}, ${neighborhoodName}`;
+
+          allData.push({
+            id: neighborhood.id,
+            slug: "city_district_neighborhood",
+            name: fullName,
+            latitude: neighborhood.latitude,
+            longitude: neighborhood.longitude,
+            district_id: neighborhood.district_id,
+          });
+        }
+      }
     }
 
+    // ✅ Apply `city_name` filter on combined result
+    if (city_name) {
+      const lowerCityName = city_name.toLowerCase();
+      allData = allData.filter(item => item.name.toLowerCase().includes(lowerCityName));
+    }
+
+    // Sort and paginate
     allData.sort((a, b) => a.name.localeCompare(b.name));
-
-    // Total count before pagination
     const totalCount = allData.length;
-
-    // Apply pagination manually
     const paginatedData = allData.slice(skip, skip + validLimit);
 
-    // Prepare final response
     const responseData = {
       totalCount,
       totalPages: Math.ceil(totalCount / validLimit),
@@ -882,7 +850,7 @@ export const getallcitydistrictneighborhoods = async (req, res) => {
 
     return response.success(res, res.__('messages.cityDeletedSuccessfully'), responseData);
   } catch (error) {
-    console.error('Error in deleteCity:', error);
+    console.error('Error in getallcitydistrictneighborhoods:', error);
     return response.error(res, res.__('messages.internalServerError'), { message: error.message });
   }
 }

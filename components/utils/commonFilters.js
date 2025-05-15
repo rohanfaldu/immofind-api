@@ -181,7 +181,6 @@ const commonFilter = {
             if (allData.latitude && allData.longitude) {
                 return allData;
             }
-            console.log(id, ">>>>>>>>>>> allData >>>>>>>>>>>>", allData);
             return null; 
         } 
     },
