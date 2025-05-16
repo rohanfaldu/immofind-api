@@ -1070,19 +1070,22 @@ export const getAllProperty = async (req, res) => {
           property_type_score * weights.property_type + 
           amenities_score * weights.amenities;
 
-        console.log(final_score, 'final_score');
+        
         // Calculate total percentage
         const total_percentage = Math.ceil(parseFloat(final_score.toFixed(2)));
-    
+        console.log(total_percentage, '>>>>>>>> total_percentage >>>>>>>>>', location_score, ' >>>>>>>> location_score >>>>>>>>>>>>> ', property.id, 'property');
         // Only add properties that meet the threshold
         if ((total_percentage > 50) && (location_score != 0) ) {
           validPropertyIds.push(property.id);
         }
       }
-    
+      
       return validPropertyIds;
     };
-    const validPropertyIds = await getFilteredPropertyIds();
+
+     const validPropertyIds = await getFilteredPropertyIds();
+    console.log(validPropertyIds, ' >>>>>>>>>>>>>>>>>>> validPropertyIds')
+   
     const totalCount = validPropertyIds.length;
     const totalPages = Math.ceil(totalCount / validLimit);
     const paginatedIds = validPropertyIds.slice(skip, skip + validLimit);

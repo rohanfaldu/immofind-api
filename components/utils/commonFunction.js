@@ -169,7 +169,7 @@ const commonFunction = {
     calculateLocationScore: async (propertyLat, propertyLng, filterLat, filterLng, location_name) => {
         let score = 0;
             console.log( propertyLat, propertyLng, filterLat, filterLng, 'location_name', location_name, '>>>>>>>>>> name')
-        if (propertyLat && propertyLng && filterLat && filterLng && location_name !== "city") {
+        if (propertyLat && propertyLng && filterLat && filterLng && location_name) {
             try {
               const R = 6371; // Earth's radius in km
               const lat1 = parseFloat(filterLat);
