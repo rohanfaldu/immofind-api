@@ -4,7 +4,6 @@ import sendmail from "../components/utils/sendmail.js";
 import crypto from 'crypto';
 import response from "../components/utils/response.js";
 import jwt from 'jsonwebtoken';
-
 // Initialize Prisma Client
 const prisma = new PrismaClient(); // Assuming response utility is in place
 
