@@ -191,8 +191,8 @@ const commonFunction = {
               console.log(distanceInKm, 'distance');
           
               // Updated scoring formula
-              if (distanceInKm <= 19) {
-                score = ((20 - distanceInKm) / 20) * 100;
+              if (distanceInKm <= 39) {
+                score = ((40 - distanceInKm) / 40) * 100;
               } else {
                 score = 0;
               }
