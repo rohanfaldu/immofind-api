@@ -5,6 +5,7 @@ import crypto from 'crypto';
 import response from "../components/utils/response.js";
 import jwt from 'jsonwebtoken';
 import slugify from 'slugify';
+
 // Initialize Prisma Client
 const prisma = new PrismaClient(); // Assuming response utility is in place
 const generateUniqueSlug = async (baseSlug, attempt = 0) => {
