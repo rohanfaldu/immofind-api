@@ -71,7 +71,7 @@ app.use((req, res, next) => {
 // Use auth routes
 
 app.use(cors({
-    origin: [ process.env.FRONT_END_URL,process.env.BACKEND_END_URL, process.env.LOCAL_BACKEND_END_URL, process.env.LOCAL_FRONTEND_END_URL], // Adjust this to match your frontend URL
+    origin: [ process.env.FRONT_END_URL,process.env.BACKEND_END_URL, process.env.LOCAL_BACKEND_END_URL, process.env.LOCAL_FRONTEND_END_URL, process.env.FRONT_END_SSL_URL], // Adjust this to match your frontend URL
     methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
     allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Methods'], // Add necessary headers
 }));
