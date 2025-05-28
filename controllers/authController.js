@@ -176,10 +176,10 @@ export const updateAgnecyUserDeveloper = async (req, res) => {
             return await response.error(res, res.__('messages.fieldError'));
         }
 
-        const checkPhonember = await commonFunction.checkPhonember(phone_number);
-        if (!checkPhonember) {
-            return await response.error(res, res.__('messages.validPhoneNumber'));
-        }
+        // const checkPhonember = await commonFunction.checkPhonember(phone_number);
+        // if (!checkPhonember) {
+        //     return await response.error(res, res.__('messages.validPhoneNumber'));
+        // }
 
         // Check for existing user by email, excluding the current user
         const existingUserByEmail = await prisma.users.findFirst({
@@ -424,7 +424,7 @@ export const checkUserExists = async (req, res) => {
             token: CreateToken
         };
         const roleName = await commonFunction.getRole(user.roles.name);
-        return await response.success(res, res.__(`messages.${roleName}Exists`), responseData);
+        return await response.success(res, res.__('messages.emailAddresAlreadyExists'), responseData);
     } else {
         return await response.error(res, res.__('messages.userNotFound'));
     }

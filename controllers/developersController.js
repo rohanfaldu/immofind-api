@@ -3,13 +3,21 @@ import User from '../models/userModel.js';
 import response from "../components/utils/response.js";
 import passwordGenerator from "../components/utils/passwordGenerator.js";
 import crypto from 'crypto';
+import slugify from 'slugify';
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
 
 // Create a developer
 import jwt from 'jsonwebtoken';
-
+const generateUniqueSlug = async (baseSlug, attempt = 0) => {
+  const slug = attempt > 0 ? `${baseSlug}-${attempt}` : baseSlug;
+  const existingSlug = await prisma.developers.findUnique({
+    where: { slug: slug || undefined }, // Handle null or undefined slugs
+  });
+  
+  return existingSlug ? generateUniqueSlug(baseSlug, attempt + 1) : slug;
+};
 export const createDeveloper = async (req, res) => {
   // Extract locale and auth data
   const lang = req.getLocale(); // Assuming your app supports locale retrieval
@@ -83,6 +91,9 @@ export const createDeveloper = async (req, res) => {
       return response.error(res, res.__('messages.developerAlreadyExists'), null);
     }
 
+    const baseSlug = slugify(existingUser.full_name, { lower: true, replacement: '_', strict: true });
+    const uniqueSlug = await generateUniqueSlug(baseSlug);
+
     // Create translations
     const descriptionTranslation = await prisma.langTranslations.create({
       data: { en_string: description_en, fr_string: description_fr },
@@ -112,10 +123,10 @@ export const createDeveloper = async (req, res) => {
       cover,
       created_by: createdUserId, // Use createdUserId instead of userId
       address : address,
-      latitude : latitude,
-      longitude : longitude,
+      latitude : latitude ?? 33.5724032,
+      longitude : longitude ?? -7.6693941,
       city_id: city_id,
-      
+      slug: uniqueSlug
     };
 
     // Create developer profile
@@ -683,6 +694,8 @@ export const getDeveloperById = async (req, res) => {
         user_id: developer.user_id,
         credit: developer.credit,
         description: await fetchTranslation(developer.description),
+        description_en: developer.lang_translations_description?.en_string,
+        description_fr: developer.lang_translations_description?.fr_string,
         facebook_link: developer.facebookLink,
         twitter_link: developer.twitterLink,
         youtube_link: developer.youtubeLink,
@@ -935,8 +948,8 @@ export const updateDeveloper = async (req, res) => {
         agencyPackageId: agency_packages,
         cover: cover,
         city_id: city_id,
-        latitude: latitude,
-        longitude: longitude,
+        latitude: latitude ?? 33.5724032,
+        longitude: longitude ?? -7.6693941,
         address: address,
       },
     });

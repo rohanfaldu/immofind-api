@@ -22,7 +22,7 @@ const UserModel = {
                     roles: {
                         connect: {
                             name: data.roles,
-                            status: true, 
+                            status: true,
                         },
                     },
                     full_name: data.full_name,
@@ -53,7 +53,7 @@ const UserModel = {
             include: {
                 roles: {
                     select: {
-                      name: true, // Select only the role name
+                        name: true, // Select only the role name
                     },
                 },
             },
@@ -67,15 +67,15 @@ const UserModel = {
         const userInfo = await prisma.users.findFirst({
             where: {
                 OR: [
-                  email_address ? { email_address: email_address } : undefined,
-                  mobile_number ? { mobile_number: mobile_number } : undefined,
+                    email_address ? { email_address: email_address } : undefined,
+                    mobile_number ? { mobile_number: mobile_number } : undefined,
                 ].filter(Boolean),
                 AND: [{ is_deleted: false }],
-              },
+            },
             include: {
                 roles: {
                     select: {
-                      name: true, // Select only the role name
+                        name: true, // Select only the role name
                     },
                 },
             },
@@ -89,11 +89,11 @@ const UserModel = {
         const userInfo = await prisma.users.findFirst({
             where: {
                 social_id: social_id
-              },
+            },
             include: {
                 roles: {
                     select: {
-                      name: true, // Select only the role name
+                        name: true, // Select only the role name
                     },
                 },
             },
@@ -105,11 +105,11 @@ const UserModel = {
     },
     getUserWithEmailOTP: async (email_address, otp) => {
         const userInfo = await prisma.users.findFirst({
-            where: {email_address: email_address, email_password_code: parseInt(otp, 10)},
+            where: { email_address: email_address, email_password_code: parseInt(otp, 10) },
             include: {
                 roles: {
                     select: {
-                      name: true, // Select only the role name
+                        name: true, // Select only the role name
                     },
                 },
             },
@@ -129,7 +129,7 @@ const UserModel = {
                 },
             };
         }
-    
+
         const users = await prisma.users.findMany({
             where: {
                 is_deleted: false,
@@ -149,7 +149,7 @@ const UserModel = {
                 created_at: 'desc', // Order by creation date in descending order (newest first)
             },
         });
-    
+
         // Fetch property counts for each user
         const userDataWithPropertyCount = await Promise.all(users.map(async (user) => {
             const propertyCount = await prisma.propertyDetails.count({
@@ -167,17 +167,28 @@ const UserModel = {
             const userActivity = await prisma.userActivity.findFirst({
                 where: { user_id: user.id },
             })
+            let slug = null;
 
+            if (user.roles.name === 'developer' || user.roles.name === 'agency') {
+                const model = user.roles.name === 'developer' ? prisma.developers : prisma.agencies;
+
+                const data = await model.findUnique({
+                    where: { user_id: user.id },
+                });
+
+                slug = data?.slug || null;
+            }
             return {
                 ...user,
                 publish_property: propertyCount,
                 publish_project: projectCount,
                 user_view_property: userViewCount,
                 user_like_property: userLikeCount,
-                last_activity_at: userActivity
+                last_activity_at: userActivity,
+                slug: slug
             };
         }));
-    
+
         return await commonFunction.bigIntiger(userDataWithPropertyCount);
     },
 
@@ -186,9 +197,9 @@ const UserModel = {
             where: {
                 is_deleted: false,
                 roles: {
-                    
-                        name: { in: ['agency'] }, // Check for specific role names
-                    
+
+                    name: { in: ['agency'] }, // Check for specific role names
+
                 },
             },
             include: {
@@ -202,16 +213,16 @@ const UserModel = {
                 created_at: 'desc', // Order by creation date in descending order (newest first)
             },
         });
-        return  await commonFunction.bigIntiger(userInfo);
+        return await commonFunction.bigIntiger(userInfo);
     },
     getdeveloperUsered: async () => {
         const userInfo = await prisma.users.findMany({
             where: {
                 is_deleted: false,
                 roles: {
-                    
-                        name: { in: ['developer'] }, // Check for specific role names
-                    
+
+                    name: { in: ['developer'] }, // Check for specific role names
+
                 },
             },
             include: {
@@ -225,15 +236,15 @@ const UserModel = {
                 created_at: 'desc', // Order by creation date in descending order (newest first)
             },
         });
-        return  await commonFunction.bigIntiger(userInfo);
+        return await commonFunction.bigIntiger(userInfo);
     },
     getUserWithPhoneOTP: async (mobile_number, otp) => {
         const userInfo = await prisma.users.findFirst({
-            where: { mobile_number: BigInt(mobile_number), phone_password_code: parseInt(otp, 10)},
+            where: { mobile_number: BigInt(mobile_number), phone_password_code: parseInt(otp, 10) },
             include: {
                 roles: {
                     select: {
-                      name: true, // Select only the role name
+                        name: true, // Select only the role name
                     },
                 },
             },
@@ -242,9 +253,9 @@ const UserModel = {
         if (userInfo) {
             userInfo.mobile_number = Number(userInfo.mobile_number);
             return userInfo;
-        }  
-    },  
-    
+        }
+    },
+
     updateUser: async (where, data) => {
         const user = await prisma.users.update({
             where,
@@ -255,7 +266,7 @@ const UserModel = {
             include: {
                 roles: {
                     select: {
-                      name: true, // Select only the role name
+                        name: true, // Select only the role name
                     },
                 },
             },
@@ -272,11 +283,11 @@ const UserModel = {
         if (!existingUser) {
             return false;
         }
-        
+
         // Proceed with the delete (if it's a hard delete)
         const deletedUser = await prisma.users.delete({
             where: { id },
-          });
+        });
         // const user = await prisma.users.update({
         //     where: { id : id },
         //     data: {

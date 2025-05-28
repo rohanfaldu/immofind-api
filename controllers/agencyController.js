@@ -4,9 +4,17 @@ import sendmail from "../components/utils/sendmail.js";
 import crypto from 'crypto';
 import response from "../components/utils/response.js";
 import jwt from 'jsonwebtoken';
+import slugify from 'slugify';
 // Initialize Prisma Client
 const prisma = new PrismaClient(); // Assuming response utility is in place
+const generateUniqueSlug = async (baseSlug, attempt = 0) => {
+  const slug = attempt > 0 ? `${baseSlug}-${attempt}` : baseSlug;
+  const existingSlug = await prisma.developers.findUnique({
+    where: { slug: slug || undefined }, // Handle null or undefined slugs
+  });
 
+  return existingSlug ? generateUniqueSlug(baseSlug, attempt + 1) : slug;
+};
 // Create an agency
 export const createAgency = async (req, res) => {
   try {
@@ -52,7 +60,7 @@ export const createAgency = async (req, res) => {
       city_id
     } = req.body;
 
-
+    console.log(user_id,'>>>>>>>>>>>>>> user');
     // Check if the user already has an agency
     const existingAgency = await prisma.agencies.findUnique({ where: { user_id } });
     if (existingAgency) {
@@ -86,9 +94,16 @@ export const createAgency = async (req, res) => {
       if (!agencyPackageDetails) {
         return response.error(res, res.__('messages.invalidAgencyPackageTranslation'), null);
       }
-
       agencyPackagesName = agencyPackageDetails;
     }
+    const existingUser = await prisma.users.findUnique({
+      where: { id: user_id },
+      include: { roles: true },
+    });
+
+
+    const baseSlug = slugify(existingUser.full_name, { lower: true, replacement: '_', strict: true });
+    const uniqueSlug = await generateUniqueSlug(baseSlug);
 
     // Create the agency
     const newAgency = await prisma.agencies.create({
@@ -111,10 +126,11 @@ export const createAgency = async (req, res) => {
         picture,
         cover,
         agency_packages,
-        address : address,
-        latitude : latitude,
-        longitude : longitude,
+        address: address,
+        latitude : latitude ?? 33.5724032,
+        longitude : longitude ?? -7.6693941,
         city_id: city_id,
+        slug: uniqueSlug
       },
     });
 
@@ -180,13 +196,13 @@ export const getAllAgencies = async (req, res) => {
     const skip = (validPage - 1) * validLimit;
 
     // Fetch total count for properties
-    
+
     const filter = {};
     if (city_id) {
       filter.city_id = city_id;
     }
     if (user_name) {
-      filter.users = { 
+      filter.users = {
         // Use a case-insensitive partial match:
         user_name: { contains: user_name, mode: 'insensitive' }
       };
@@ -197,15 +213,17 @@ export const getAllAgencies = async (req, res) => {
     });
 
 
-    const agencies = await prisma.agencies.findMany({skip,
+    const agencies = await prisma.agencies.findMany({
+      skip,
       take: validLimit,
       where: filter,
       include: {
-        lang_translations_description: true, 
+        lang_translations_description: true,
         lang_translations_service_area: true,
-      },});
+      },
+    });
 
-  
+
     // Helper function to fetch translations
     const fetchTranslation = async (id) => {
       if (!id) return null;
@@ -228,7 +246,7 @@ export const getAllAgencies = async (req, res) => {
           }
         });
 
-        return{
+        return {
           id: agency.id,
           user_id: agency.user_id,
           credit: agency.credit,
@@ -262,7 +280,7 @@ export const getAllAgencies = async (req, res) => {
           user_email_adress: userInfo?.email_address,
           slug: agency.slug,
         }
-        
+
       })
     );
 
@@ -325,7 +343,7 @@ export const getByUserId = async (req, res) => {
             en_string: true,
           },
         },
-        agency_packages:true,
+        agency_packages: true,
         facebook_link: true,
         twitter_link: true,
         youtube_link: true,
@@ -345,13 +363,13 @@ export const getByUserId = async (req, res) => {
       full_name: usersData?.full_name,
       image: usersData?.image,
       user_email_adress: usersData?.email_address,
-       mobile_number: usersData?.mobile_number?.toString(),
-      password:usersData?.password,
-      country_code:usersData?.country_code
+      mobile_number: usersData?.mobile_number?.toString(),
+      password: usersData?.password,
+      country_code: usersData?.country_code
     }
 
     const agency = {
-      id:agencyData?.id,
+      id: agencyData?.id,
       description_en: agencyData?.lang_translations_description?.en_string,
       description_fr: agencyData?.lang_translations_description?.fr_string,
       whatsup_number: agencyData?.whatsup_number,
@@ -402,38 +420,38 @@ export const getByUserId = async (req, res) => {
 
 // Send password reset email
 export const sendMail = async (req, res) => {
-    const checkEmail = await User.getUser(req.body.email_address, '');
+  const checkEmail = await User.getUser(req.body.email_address, '');
 
-    if (checkEmail) {
-        const code = crypto.randomInt(100000, 999999);
-        const to = req.body.email_address;
-        const subject = "Password Reset Code";
-        const text = `Your password reset code is: ${code}`;
+  if (checkEmail) {
+    const code = crypto.randomInt(100000, 999999);
+    const to = req.body.email_address;
+    const subject = "Password Reset Code";
+    const text = `Your password reset code is: ${code}`;
 
-        try {
-            const emailData = await sendmail.gmail(to, subject, text); // Wait for email to send
+    try {
+      const emailData = await sendmail.gmail(to, subject, text); // Wait for email to send
 
-            if (emailData) {
-                const data = {
-                    reset_password_token: code
-                };
-                const where = {
-                    email_address: req.body.email_address
-                };
-                const userUpdate = await User.updateUser(where, data);
+      if (emailData) {
+        const data = {
+          reset_password_token: code
+        };
+        const where = {
+          email_address: req.body.email_address
+        };
+        const userUpdate = await User.updateUser(where, data);
 
-                if (userUpdate) {
-                    return response.success(res, res.__('messages.passwordResetEmailSent'), null);
-                } else {
-                    return response.error(res, res.__('messages.userDataNotUpdated'), null);
-                }
-            }
-        } catch (error) {
-            return response.error(res, res.__('messages.emailSendFailed'), null);
+        if (userUpdate) {
+          return response.success(res, res.__('messages.passwordResetEmailSent'), null);
+        } else {
+          return response.error(res, res.__('messages.userDataNotUpdated'), null);
         }
-    } else {
-        return response.error(res, res.__('messages.userNotFound'), null);
+      }
+    } catch (error) {
+      return response.error(res, res.__('messages.emailSendFailed'), null);
     }
+  } else {
+    return response.error(res, res.__('messages.userNotFound'), null);
+  }
 };
 
 // Get an agency by ID
@@ -445,7 +463,7 @@ export const getAgencyById = async (req, res) => {
         slug: req.params.id,
       },
       include: {
-        lang_translations_description: true, 
+        lang_translations_description: true,
         lang_translations_service_area: true,
         agency_packages_agencies_agency_packagesToagency_packages: {
           include: {
@@ -473,7 +491,7 @@ export const getAgencyById = async (req, res) => {
           select: {
             full_name: true,
             image: true,
-            email_address:true,
+            email_address: true,
           },
         },
         lang_translations_property_details_descriptionTolang_translations: {
@@ -489,14 +507,14 @@ export const getAgencyById = async (req, res) => {
           },
         },
         districts: {
-        select: {
+          select: {
             langTranslation: {
-            select: {
+              select: {
                 en_string: true,
                 fr_string: true,
+              },
             },
-            },
-        },
+          },
         },
         property_meta_details: {
           select: {
@@ -520,9 +538,9 @@ export const getAgencyById = async (req, res) => {
         },
         currency: {
           select: {
-              name: true,
-              symbol: true,
-              status: true
+            name: true,
+            symbol: true,
+            status: true
           }
         },
         cities: {
@@ -535,7 +553,7 @@ export const getAgencyById = async (req, res) => {
             },
           },
         },
-        states:{
+        states: {
           select: {
             lang: {
               select: {
@@ -547,14 +565,14 @@ export const getAgencyById = async (req, res) => {
         },
         neighborhoods: {
           select: {
-              langTranslation: {
+            langTranslation: {
               select: {
-                  en_string: true,
-                  fr_string: true,
+                en_string: true,
+                fr_string: true,
               },
-              },
+            },
           },
-          },
+        },
         property_types: {
           select: {
             id: true,
@@ -615,7 +633,7 @@ export const getAgencyById = async (req, res) => {
         id: property.id,
         user_name: property.users?.full_name || null,
         user_image: property.users?.image || null,
-        email_address:property.users?.email_address || null,
+        email_address: property.users?.email_address || null,
         description,
         title,
         transaction: propertyType,
@@ -631,11 +649,11 @@ export const getAgencyById = async (req, res) => {
         slug: property.slug,
         bathRooms,
         bedRooms,
-        district: 
-        property.districts?.langTranslation &&
-        (lang === "fr"
-          ? property.districts.langTranslation.fr_string
-          : property.districts.langTranslation.en_string),
+        district:
+          property.districts?.langTranslation &&
+          (lang === "fr"
+            ? property.districts.langTranslation.fr_string
+            : property.districts.langTranslation.en_string),
         images: property.images_data,
         currency: property.currency?.name || null,
         neighborhood,
@@ -661,15 +679,14 @@ export const getAgencyById = async (req, res) => {
       return lang === 'fr' ? translation?.fr_string : translation?.en_string;
     };
 
-
     const responseData = {
-      
+
       id: agency.id,
       user_id: agency.user_id,
       credit: agency.credit,
-      description:  lang === 'fr' ? agency.lang_translations_description?.fr_string : agency.lang_translations_description?.en_string,
-      description_en:  lang === 'en' ? agency.lang_translations_description?.en_string : "",
-      description_fr:  lang === 'fr' ? agency.lang_translations_service_area?.fr_string : "",
+      description: lang === 'fr' ? agency.lang_translations_description?.fr_string : agency.lang_translations_description?.en_string,
+      description_en: lang === 'en' ? agency.lang_translations_description?.en_string : "",
+      description_fr: agency.lang_translations_description?.fr_string,
       facebook_link: agency.facebook_link,
       twitter_link: agency.twitter_link,
       youtube_link: agency.youtube_link,
@@ -681,9 +698,9 @@ export const getAgencyById = async (req, res) => {
       address: agency.address,
       latitude: agency.latitude,
       longitude: agency.longitude,
-      service_area:  lang === 'fr' ? agency.lang_translations_service_area?.fr_string : agency.lang_translations_service_area?.en_string,
-      service_area_fr: lang === 'fr' ? agency.lang_translations_service_area?.fr_string : "", 
-      service_area_en: lang === 'en' ? agency.lang_translations_service_area?.en_string : "", 
+      service_area: lang === 'fr' ? agency.lang_translations_service_area?.fr_string : agency.lang_translations_service_area?.en_string,
+      service_area_fr: lang === 'fr' ? agency.lang_translations_service_area?.fr_string : "",
+      service_area_en: lang === 'en' ? agency.lang_translations_service_area?.en_string : "",
       tax_number: agency.tax_number,
       license_number: agency.license_number,
       agency_packages: agency.agency_packages,
@@ -812,8 +829,8 @@ export const updateAgency = async (req, res) => {
         country_code,
         agency_packages,
         city_id: city_id,
-        latitude: latitude,
-        longitude: longitude,
+        latitude : latitude ?? 33.5724032,
+        longitude : longitude ?? -7.6693941,
         address: address,
       },
     });
