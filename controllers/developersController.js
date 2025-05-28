@@ -3,13 +3,21 @@ import User from '../models/userModel.js';
 import response from "../components/utils/response.js";
 import passwordGenerator from "../components/utils/passwordGenerator.js";
 import crypto from 'crypto';
+import slugify from 'slugify';
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
 
 // Create a developer
 import jwt from 'jsonwebtoken';
-
+const generateUniqueSlug = async (baseSlug, attempt = 0) => {
+  const slug = attempt > 0 ? `${baseSlug}-${attempt}` : baseSlug;
+  const existingSlug = await prisma.developers.findUnique({
+    where: { slug: slug || undefined }, // Handle null or undefined slugs
+  });
+  
+  return existingSlug ? generateUniqueSlug(baseSlug, attempt + 1) : slug;
+};
 export const createDeveloper = async (req, res) => {
   // Extract locale and auth data
   const lang = req.getLocale(); // Assuming your app supports locale retrieval
@@ -83,6 +91,9 @@ export const createDeveloper = async (req, res) => {
       return response.error(res, res.__('messages.developerAlreadyExists'), null);
     }
 
+    const baseSlug = slugify(existingUser.full_name, { lower: true, replacement: '_', strict: true });
+    const uniqueSlug = await generateUniqueSlug(baseSlug);
+
     // Create translations
     const descriptionTranslation = await prisma.langTranslations.create({
       data: { en_string: description_en, fr_string: description_fr },
@@ -112,10 +123,10 @@ export const createDeveloper = async (req, res) => {
       cover,
       created_by: createdUserId, // Use createdUserId instead of userId
       address : address,
-      latitude : latitude,
-      longitude : longitude,
+      latitude : latitude ?? 33.5724032,
+      longitude : longitude ?? -7.6693941,
       city_id: city_id,
-      
+      slug: uniqueSlug
     };
 
     // Create developer profile
@@ -237,14 +248,14 @@ export const getAllDevelopers = async (req, res) => {
     const fetchTranslation = async (id) => {
       if (!id) return null;
       const translation = await prisma.langTranslations.findUnique({ where: { id } });
-      console.log('translation: ', translation);
+      // console.logg('translation: ', translation);
       return lang === 'fr' ? translation?.fr_string : translation?.en_string;
     };
 
     const cityName = async (id) => {
       if (!id) return null;
       const city = await prisma.cities.findUnique({ where: { id } });
-      console.log('city: ', city);
+      // console.logg('city: ', city);
       return await fetchTranslation(city?.lang_id); // Return the translation
     };
     
@@ -291,10 +302,11 @@ export const getAllDevelopers = async (req, res) => {
           full_name: userInfo?.full_name,
           image: userInfo?.image,
           user_email_adress: userInfo?.email_address,
+          slug: developer.slug,
         }
       })
     );
-
+    console.log(developerResponseData, ">>>>>>>>>>>>>> developerResponseData")
     const safeDevelopers = developerResponseData.map(developer =>
       JSON.parse(
         JSON.stringify(developer, (_, value) =>
@@ -332,9 +344,9 @@ export const getAllDevelopers = async (req, res) => {
 
 export const getDeveloperById = async (req, res) => {
   try {
-    const { developer_id } = req.body;
+    const { developer_slug } = req.body;
     const lang = res.getLocale();
-    if (!developer_id) {
+    if (!developer_slug) {
       return response.error(
         res,
         res.__('messages.developerIdMissing'),
@@ -344,14 +356,14 @@ export const getDeveloperById = async (req, res) => {
     }
 
     const developer = await prisma.developers.findUnique({
-      where: { user_id: developer_id },
+      where: { slug: developer_slug },
       include: {
         lang_translations_description: true, 
         lang_translations_service_area: true,
       }
     });
 
-    console.log(developer,"developer")
+    // console.logg(developer,"developer")
 
     const fetchTranslation = async (id) => {
       if (!id) return null;
@@ -375,6 +387,8 @@ export const getDeveloperById = async (req, res) => {
             full_name: true,
             image: true,
             email_address:true,
+            mobile_number: true,
+            country_code: true,
           },
         },
         lang_translations_property_details_descriptionTolang_translations: {
@@ -470,7 +484,6 @@ export const getDeveloperById = async (req, res) => {
         },
       },
     });
-
 
     const projectList = await prisma.projectDetails.findMany({
       where: { user_id: developer.user_id },
@@ -672,7 +685,7 @@ export const getDeveloperById = async (req, res) => {
     const cityName = async (id) => {
       if (!id) return null;
       const city = await prisma.cities.findUnique({ where: { id } });
-      console.log('city: ', city);
+      // console.logg('city: ', city);
       return await fetchTranslation(city?.lang_id); // Return the translation
     };
 
@@ -681,6 +694,8 @@ export const getDeveloperById = async (req, res) => {
         user_id: developer.user_id,
         credit: developer.credit,
         description: await fetchTranslation(developer.description),
+        description_en: developer.lang_translations_description?.en_string,
+        description_fr: developer.lang_translations_description?.fr_string,
         facebook_link: developer.facebookLink,
         twitter_link: developer.twitterLink,
         youtube_link: developer.youtubeLink,
@@ -711,6 +726,8 @@ export const getDeveloperById = async (req, res) => {
         full_name: userInfo?.full_name,
         image: userInfo?.image,
         user_email_adress: userInfo?.email_address,
+        user_mobile_number: userInfo?.mobile_number,
+        user_country_code: userInfo?.country_code,
         property_details: simplifiedProperties,
         project_details: simplifiedProject
     };
@@ -931,8 +948,8 @@ export const updateDeveloper = async (req, res) => {
         agencyPackageId: agency_packages,
         cover: cover,
         city_id: city_id,
-        latitude: latitude,
-        longitude: longitude,
+        latitude: latitude ?? 33.5724032,
+        longitude: longitude ?? -7.6693941,
         address: address,
       },
     });
@@ -1064,7 +1081,7 @@ export const deleteDeveloper = async (req, res) => {
       where: { user_id },
     });
 
-    console.log(findMeta,"findMeta")
+    // console.logg(findMeta,"findMeta")
 
     // Perform all deletions in a transaction
     await prisma.$transaction([

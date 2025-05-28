@@ -72,7 +72,7 @@ export const createCity = async (req, res) => {
 
     try {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      userId = decoded.id; 
+      userId = decoded.id;
     } catch (error) {
       return await response.error(res, res.__('messages.invalidToken'));
     }
@@ -122,113 +122,113 @@ export const createCity = async (req, res) => {
 
 
 
-  export const getCitiesByStateId = async (req, res) => {
-    try {
-      const { state_id, lang } = req.body;
-      if (!state_id) {
-        return response.error(res, res.__('messages.stateIdRequired'));
-      }
-      if (!isUuid(state_id)) {
-        return response.error(
-          res,
-          res.__('messages.invalidStateIdFormat')
-        );
-      }
+export const getCitiesByStateId = async (req, res) => {
+  try {
+    const { state_id, lang } = req.body;
+    if (!state_id) {
+      return response.error(res, res.__('messages.stateIdRequired'));
+    }
+    if (!isUuid(state_id)) {
+      return response.error(
+        res,
+        res.__('messages.invalidStateIdFormat')
+      );
+    }
 
-      const isFrench = lang === 'fr';
+    const isFrench = lang === 'fr';
 
-      // Fetch state by state_id
-      const state = await prisma.states.findUnique({
-        where: {
-          id: state_id, // Use state_id to directly fetch state
-        },
-        select: {
-          id: true,
-          lang: {
-            select: {
-              fr_string: isFrench,
-              en_string: !isFrench,
-            },
+    // Fetch state by state_id
+    const state = await prisma.states.findUnique({
+      where: {
+        id: state_id, // Use state_id to directly fetch state
+      },
+      select: {
+        id: true,
+        lang: {
+          select: {
+            fr_string: isFrench,
+            en_string: !isFrench,
           },
-          latitude: true,
-          longitude: true,
         },
-      });
+        latitude: true,
+        longitude: true,
+      },
+    });
 
-      if (!state) {
-        return response.error(res, res.__('messages.stateNotFound')); // Error if state is not found
-      }
+    if (!state) {
+      return response.error(res, res.__('messages.stateNotFound')); // Error if state is not found
+    }
 
-      // Fetch cities for the state
-      const cities = await prisma.cities.findMany({
-        where: {
-          state_id: state.id, // Match cities by state_id
-          is_deleted: false,
-        },
-        select: {
-          id: true,
-          lang: {
-            select: {
-              fr_string: isFrench,
-              en_string: !isFrench,
-            },
+    // Fetch cities for the state
+    const cities = await prisma.cities.findMany({
+      where: {
+        state_id: state.id, // Match cities by state_id
+        is_deleted: false,
+      },
+      select: {
+        id: true,
+        lang: {
+          select: {
+            fr_string: isFrench,
+            en_string: !isFrench,
           },
-          districts: {
-            select: {
-              id: true,
-              langTranslation: {
-                select: {
-                  fr_string: isFrench,
-                  en_string: !isFrench,
-                },
+        },
+        districts: {
+          select: {
+            id: true,
+            langTranslation: {
+              select: {
+                fr_string: isFrench,
+                en_string: !isFrench,
               },
             },
           },
-          latitude: true,
-          longitude: true,
         },
-      });
+        latitude: true,
+        longitude: true,
+      },
+    });
 
-      if (!cities.length) {
-        return response.error(res, res.__('messages.noCitiesFoundForState')); // Error if no cities are found
-      }
-
-      // Transform the results to include only the necessary language strings
-      const transformedCities = cities.map((city) => ({
-        id: city.id,
-        name: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
-        latitude: city.latitude, // Include latitude
-        longitude: city.longitude, // Include longitude
-        districts: city.districts.map((district) => ({
-          id: district.id,
-          name: district.langTranslation
-            ? (isFrench
-                ? district.langTranslation.fr_string
-                : district.langTranslation.en_string)
-            : null, // Handle missing translations
-        })),
-      }));
-
-      // Include state details in the response
-      const result = {
-        state: {
-          id: state.id,
-          name: isFrench && state.lang ? state.lang.fr_string : state.lang?.en_string, // State name in the requested language
-          latitude: state.latitude, // Include latitude
-          longitude: state.longitude, // Include longitude
-        },
-        cities: transformedCities,
-      };
-
-      return response.success(res, res.__('messages.citiesFetchedSuccessfully'), result); // Success response
-    } catch (error) {
-      console.error('Error fetching cities:', error);
-      return response.error(res, res.__('messages.internalServerError'), {
-        message: error.message,
-        stack: error.stack,
-      }); // Server error
+    if (!cities.length) {
+      return response.error(res, res.__('messages.noCitiesFoundForState')); // Error if no cities are found
     }
-  };
+
+    // Transform the results to include only the necessary language strings
+    const transformedCities = cities.map((city) => ({
+      id: city.id,
+      name: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
+      latitude: city.latitude, // Include latitude
+      longitude: city.longitude, // Include longitude
+      districts: city.districts.map((district) => ({
+        id: district.id,
+        name: district.langTranslation
+          ? (isFrench
+            ? district.langTranslation.fr_string
+            : district.langTranslation.en_string)
+          : null, // Handle missing translations
+      })),
+    }));
+
+    // Include state details in the response
+    const result = {
+      state: {
+        id: state.id,
+        name: isFrench && state.lang ? state.lang.fr_string : state.lang?.en_string, // State name in the requested language
+        latitude: state.latitude, // Include latitude
+        longitude: state.longitude, // Include longitude
+      },
+      cities: transformedCities,
+    };
+
+    return response.success(res, res.__('messages.citiesFetchedSuccessfully'), result); // Success response
+  } catch (error) {
+    console.error('Error fetching cities:', error);
+    return response.error(res, res.__('messages.internalServerError'), {
+      message: error.message,
+      stack: error.stack,
+    }); // Server error
+  }
+};
 
 
 // Get Cities by State Name
@@ -381,7 +381,7 @@ export const getCities = async (req, res) => {
   try {
     const { page = 1, limit = 10, lang, city_name } = req.body;
 
-    const isFrench = lang === 'fr'; 
+    const isFrench = lang === 'fr';
 
     const validPage = Math.max(1, parseInt(page, 10) || 1);
     const validLimit = Math.max(1, parseInt(limit, 10) || 10);
@@ -393,11 +393,11 @@ export const getCities = async (req, res) => {
         is_deleted: false,
         lang: city_name
           ? {
-              OR: [
-                { fr_string: { contains: city_name, mode: 'insensitive' } },
-                { en_string: { contains: city_name, mode: 'insensitive' } },
-              ],
-            }
+            OR: [
+              { fr_string: { contains: city_name, mode: 'insensitive' } },
+              { en_string: { contains: city_name, mode: 'insensitive' } },
+            ],
+          }
           : undefined,
       },
     });
@@ -409,11 +409,11 @@ export const getCities = async (req, res) => {
         is_deleted: false, // Only fetch non-deleted cities
         lang: city_name
           ? {
-              OR: [
-                { fr_string: { contains: city_name, mode: 'insensitive' } },
-                { en_string: { contains: city_name, mode: 'insensitive' } },
-              ],
-            }
+            OR: [
+              { fr_string: { contains: city_name, mode: 'insensitive' } },
+              { en_string: { contains: city_name, mode: 'insensitive' } },
+            ],
+          }
           : undefined,
       },
       orderBy: {
@@ -466,7 +466,7 @@ export const getCities = async (req, res) => {
       city_name: isFrench ? city.lang.fr_string : city.lang.en_string, // City name in the requested language
       latitude: city.latitude, // Include latitude
       longitude: city.longitude, // Include longitude
-      created_at: city.created_at,  
+      created_at: city.created_at,
       state: {
         id: city.states.id,
         state_name: isFrench && city.states.lang ? city.states.lang.fr_string : city.states.lang?.en_string, // State name in the requested language
@@ -477,8 +477,8 @@ export const getCities = async (req, res) => {
         id: district.id,
         district_name: isFrench && district.langTranslation ? district.langTranslation.fr_string : district.langTranslation
           ? (isFrench
-              ? district.langTranslation.fr_string
-              : district.langTranslation.en_string)
+            ? district.langTranslation.fr_string
+            : district.langTranslation.en_string)
           : null,
       })),
     }));
@@ -486,7 +486,7 @@ export const getCities = async (req, res) => {
     return response.success(
       res,
       res.__('messages.citiesFetchedSuccessfully'),
-      { 
+      {
         cities: transformedCities,
         totalCount,
         totalPages: Math.ceil(totalCount / validLimit),
@@ -720,3 +720,137 @@ export const deleteCity = async (req, res) => {
     return response.error(res, res.__('messages.internalServerError'), { message: error.message });
   }
 };
+
+
+export const getallcitydistrictneighborhoods = async (req, res) => {
+  try {
+    const { page = 1, limit = 10, lang, city_name } = req.body;
+    const isFrench = lang === 'fr';
+    const validPage = Math.max(1, parseInt(page, 10) || 1);
+    const validLimit = Math.max(1, parseInt(limit, 10) || 10);
+    const skip = (validPage - 1) * validLimit;
+
+    // Fetch all neighborhoods
+    const getAllNeighborhoods = await prisma.neighborhoods.findMany({
+      where: { is_deleted: false },
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+        district_id: true,
+        langTranslation: {
+          select: {
+            en_string: !isFrench,
+            fr_string: isFrench,
+          },
+        },
+      },
+    });
+
+    // Fetch all districts
+    const getAllDistrict = await prisma.districts.findMany({
+      where: { is_deleted: false },
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+        city_id: true,
+        langTranslation: {
+          select: {
+            en_string: !isFrench,
+            fr_string: isFrench,
+          },
+        },
+      },
+    });
+
+    // Fetch all cities
+    const getAllCities = await prisma.cities.findMany({
+      where: { is_deleted: false },
+      select: {
+        id: true,
+        latitude: true,
+        longitude: true,
+        state_id: true,
+        lang: {
+          select: {
+            en_string: !isFrench,
+            fr_string: isFrench,
+          },
+        },
+      },
+    });
+
+    let allData = [];
+
+    for (const city of getAllCities) {
+      const cityName = isFrench ? city.lang.fr_string : city.lang.en_string;
+
+      const cityDistricts = getAllDistrict.filter(d => d.city_id === city.id);
+        allData.push({
+          id: city.id,
+          slug: "city",
+          name: cityName || '',
+          latitude: city.latitude,
+          longitude: city.longitude,
+        });
+
+      for (const district of cityDistricts) {
+        const districtName = isFrench ? district.langTranslation.fr_string : district.langTranslation.en_string;
+        const combinedDistrictName = `${cityName}, ${districtName}`;
+
+        const districtNeighborhoods = getAllNeighborhoods.filter(n => n.district_id === district.id);
+
+        //if (districtNeighborhoods.length === 0) {
+          allData.push({
+            id: district.id,
+            slug: "city_district",
+            name: combinedDistrictName,
+            latitude: district.latitude,
+            longitude: district.longitude,
+            city_id: district.city_id,
+          });
+         // continue;
+        //}
+
+        for (const neighborhood of districtNeighborhoods) {
+          const neighborhoodName = isFrench ? neighborhood.langTranslation.fr_string : neighborhood.langTranslation.en_string;
+          const fullName = `${cityName}, ${districtName}, ${neighborhoodName}`;
+
+          allData.push({
+            id: neighborhood.id,
+            slug: "city_district_neighborhood",
+            name: fullName,
+            latitude: neighborhood.latitude,
+            longitude: neighborhood.longitude,
+            district_id: neighborhood.district_id,
+          });
+        }
+      }
+    }
+
+    // ✅ Apply `city_name` filter on combined result
+    if (city_name) {
+      const lowerCityName = city_name.toLowerCase();
+      allData = allData.filter(item => item.name.toLowerCase().includes(lowerCityName));
+    }
+
+    // Sort and paginate
+    allData.sort((a, b) => a.name.localeCompare(b.name));
+    const totalCount = allData.length;
+    const paginatedData = allData.slice(skip, skip + validLimit);
+
+    const responseData = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      list: paginatedData,
+    };
+
+    return response.success(res, res.__('messages.cityDeletedSuccessfully'), responseData);
+  } catch (error) {
+    console.error('Error in getallcitydistrictneighborhoods:', error);
+    return response.error(res, res.__('messages.internalServerError'), { message: error.message });
+  }
+}

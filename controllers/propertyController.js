@@ -15,7 +15,7 @@ import {
   propertyTypesInclude,
   cityInclude,
   stateInclude,
-  neighborhoodInclude
+  neighborhoodInclude,
 } from "../components/utils/commonIncludes.js";
 import commonFilter from "../components/utils/commonFilters.js"
 
@@ -30,7 +30,7 @@ const generateUniqueSlug = async (baseSlug, attempt = 0) => {
   const existingSlug = await prisma.projectDetails.findUnique({
     where: { slug: slug || undefined }, // Handle null or undefined slugs
   });
-  
+
   return existingSlug ? generateUniqueSlug(baseSlug, attempt + 1) : slug;
 };
 
@@ -38,9 +38,9 @@ export const getAgentDeveloperProperty = async (req, res) => {
   try {
     const userInfo = await commonFunction.getLoginUser(req.user.id);
 
-    const { page = 1, limit = 10 } = req.body;
+    const { page = 1, limit = 10, flag } = req.body;  // Extract flag from request
     const lang = res.getLocale();
-    const whereCondition = (userInfo !== 'admin') ? { user_id: req.user.id } : {};
+    const whereCondition = userInfo !== 'admin' ? { user_id: req.user.id } : {};
 
     const include = {
       ...userInclude,
@@ -57,8 +57,8 @@ export const getAgentDeveloperProperty = async (req, res) => {
 
     const { totalCount, validPage: currentPage, validLimit: itemsPerPage, finding: properties } = paginationResult;
 
-    // Use Promise.all to wait for all the async operations inside map
-    const simplifiedProperties = await Promise.all(properties.map(async (property) => {
+    // Use Promise.all to wait for all async operations inside map
+    let simplifiedProperties = await Promise.all(properties.map(async (property) => {
       const description =
         lang === 'fr'
           ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
@@ -96,16 +96,16 @@ export const getAgentDeveloperProperty = async (req, res) => {
 
       const viewProperty = await prisma.propertyView.count({
         where: {
-          property_id: property.id  
+          property_id: property.id
         }
       });
 
       const commentsProperty = await prisma.propertyComment.count({
         where: {
-          property_id: property.id  
+          property_id: property.id
         }
       });
-      
+
       return {
         id: property.id,
         user_name: property.users?.full_name || null,
@@ -135,9 +135,18 @@ export const getAgentDeveloperProperty = async (req, res) => {
       };
     }));
 
+    // Apply flag-based filtering
+    if (flag === 'like') {
+      simplifiedProperties = simplifiedProperties.filter(property => property.like_count > 0);
+    } else if (flag === 'comment') {
+      simplifiedProperties = simplifiedProperties.filter(property => property.comment_count > 0);
+    } else if (flag === 'view') {
+      simplifiedProperties = simplifiedProperties.filter(property => property.view_count > 0);
+    }
+
     const responsePayload = {
-      totalCount,
-      totalPages: Math.ceil(totalCount / itemsPerPage),
+      totalCount: simplifiedProperties.length, // Update total count after filtering
+      totalPages: Math.ceil(simplifiedProperties.length / itemsPerPage),
       currentPage,
       itemsPerPage,
       list: simplifiedProperties,
@@ -159,6 +168,7 @@ export const getAgentDeveloperProperty = async (req, res) => {
     );
   }
 };
+
 
 export const propertyComment = async (req, res) => {
   try {
@@ -243,7 +253,7 @@ export const getPropertyComment = async (req, res) => {
       currentPage: validPage,
       itemsPerPage: validLimit,
     };
-    console.log(responsePayload,"responsePayload")
+    // console.log(responsePayload,"responsePayload")
 
     return response.success(
       res,
@@ -260,26 +270,35 @@ export const getPropertyComment = async (req, res) => {
 }
 
 
-
 export const likeProperty = async (req, res) => {
   const { propertyId, propertyPublisherId } = req.body; // Get the property ID from the request parameters
   const userId = req.user.id; // Assuming user ID is available in req.user after authorization
-
+  console.log(userId, '>>>> userId', propertyId, ">>>>  propertyId", propertyPublisherId, '>>> propertyPublisherId')
   try {
     // Create a new like
-    await prisma.propertyLike.create({
-      data: {
+
+    const getLikeUserCount = await prisma.propertyLike.count({
+      where: {
         property_id: propertyId,
         user_id: userId,
         property_publisher: propertyPublisherId,
       },
     });
 
-    // Increment the like count on the property
-    await prisma.propertyDetails.update({
-      where: { id: propertyId },
-      data: { like_count: { increment: 1 } },
-    });
+    if (getLikeUserCount > 0) {
+      await prisma.propertyDetails.update({
+        where: { id: propertyId },
+        data: { like_count: { increment: 1 } },
+      });
+    } else {
+      await prisma.propertyLike.create({
+        data: {
+          property_id: propertyId,
+          user_id: userId,
+          property_publisher: propertyPublisherId,
+        },
+      });
+    }
 
     return response.success(
       res,
@@ -300,33 +319,15 @@ export const viewProperty = async (req, res) => {
   const userId = req.user.id;
 
   try {
-    // Check if the user has already viewed the property
-    const existingView = await prisma.propertyView.findFirst({
-      where: { user_id: userId, property_id: propertyId },
+    // Create a new view record every time a user views the property
+    await prisma.propertyView.create({
+      data: {
+        property_id: propertyId,
+        user_id: userId,
+        property_publisher: propertyPublisherId,
+        created_at: new Date(), // Stores the exact date & time of the view
+      },
     });
-
-    if (!existingView) {
-      // Create a new view record for first-time viewers
-      await prisma.propertyView.create({
-        data: {
-          property_id: propertyId,
-          user_id: userId,
-          property_publisher: propertyPublisherId,
-          view_count: 1, // Initial view count
-        },
-      });
-    } else {
-      // Update the existing record by incrementing the view count
-      await prisma.propertyView.updateMany({
-        where: {
-          user_id: userId,
-          property_id: propertyId,
-        },
-        data: { 
-          view_count: { increment: 1 },
-        },
-      });
-    }
 
     return response.success(
       res,
@@ -337,6 +338,7 @@ export const viewProperty = async (req, res) => {
     return response.error(res, res.__('messages.internalServerError'));
   }
 };
+
 
 
 
@@ -358,7 +360,7 @@ export const getUserViewedData = async (req, res) => {
         },
       };
     }
-    
+
     const totalCount = await prisma.propertyView.count({
       where: {
         property_id: propertyId,
@@ -394,7 +396,7 @@ export const getUserViewedData = async (req, res) => {
         mobile_number: property.users?.mobile_number ? String(property.users.mobile_number) : null,
       }
     }));
-    
+
     const responsePayload = {
       list: transformedProperties,
       totalCount,
@@ -547,7 +549,7 @@ export const getUserLikedData = async (req, res) => {
         mobile_number: property.users?.mobile_number ? String(property.users.mobile_number) : null,
       }
     }));
-    
+
     const responsePayload = {
       list: transformedProperties,
       totalCount,
@@ -578,25 +580,40 @@ export const unlikeProperty = async (req, res) => {
 
   try {
     // Delete the like record using the composite unique key
-    await prisma.propertyLike.delete({
+
+    const getLikeUserCount = await prisma.propertyLike.count({
       where: {
-        user_id_property_id: {
-          user_id: userId,
-          property_id: propertyId,
-        },
+        property_id: propertyId,
+        user_id: userId,
       },
     });
+    if (getLikeUserCount > 0) {
+      await prisma.propertyLike.delete({
+        where: {
+          user_id_property_id: {
+            user_id: userId,
+            property_id: propertyId,
+          },
+        },
+      });
 
-    // Decrement the like count on the property
-    await prisma.propertyDetails.update({
-      where: { id: propertyId },
-      data: { like_count: { decrement: 1 } },
-    });
+      // Decrement the like count on the property
+      await prisma.propertyDetails.update({
+        where: { id: propertyId },
+        data: { like_count: { decrement: 1 } },
+      });
 
-    return response.success(
-      res,
-      res.__('messages.propertyUnlikedSuccessfully'),
-    );
+      return response.success(
+        res,
+        res.__('messages.propertyUnlikedSuccessfully'),
+      );
+    } else {
+      return response.success(
+        res,
+        res.__('messages.propertyNotadd'),
+      );
+    }
+
   } catch (error) {
     console.error(error);
     return response.error(
@@ -621,7 +638,7 @@ export const getLikedProperty = async (req, res) => {
     const skip = (validPage - 1) * validLimit;
 
     const totalCount = await prisma.propertyLike.count({
-        where: { user_id: userId },
+      where: { user_id: userId },
     });
 
 
@@ -630,7 +647,7 @@ export const getLikedProperty = async (req, res) => {
       take: validLimit,
       orderBy: { created_at: 'desc' },
       where: { user_id: userId },
-      include: { 
+      include: {
         property: {
           include: {
             lang_translations_property_details_descriptionTolang_translations: true,
@@ -647,107 +664,262 @@ export const getLikedProperty = async (req, res) => {
           },
         },
       },
-  });
+    });
 
-        const simplifiedData = likedProperties.map(like => {
-          const property = like.property;
-        
-          const title = lang === 'fr' 
-            ? property.lang_translations?.fr_string || property.lang_translations?.en_string 
-            : property.lang_translations?.en_string || property.lang_translations?.fr_string;
-        
-          const description = lang === 'fr' 
-            ? property.lang_translations_property_details_descriptionTolang_translations?.fr_string || '' 
-            : property.lang_translations_property_details_descriptionTolang_translations?.en_string || '';
-        
-            const metaDetails = property.property_meta_details.map((meta) => {
-              const langObj =
-                lang === 'fr'
-                  ? meta.property_type_listings?.lang_translations?.fr_string
-                  : meta.property_type_listings?.lang_translations?.en_string;
-        
-              return {
-                id: meta.property_type_listings?.id || null,
-                type: meta.property_type_listings?.type || null,
-                key: meta.property_type_listings?.key || null,
-                icon: meta.property_type_listings?.icon || null,
-                name: langObj,
-                value: meta.value,
-              };
-            });
+    const simplifiedData = likedProperties.map(like => {
+      const property = like.property;
 
-            const bathRooms =
-            metaDetails.find((meta) => meta.key === 'bathrooms')?.value || "0";
+      const title = lang === 'fr'
+        ? property.lang_translations?.fr_string || property.lang_translations?.en_string
+        : property.lang_translations?.en_string || property.lang_translations?.fr_string;
 
-            const bedRooms = 
-            metaDetails.find((meta) => meta.key === 'bedrooms')?.value || "0";
-          return {
-            ...like,
-            property: {
-              id: property.id,
-              price: property.price,
-              state_id: property.state_id,
-              city_id: property.city_id,
-              district_id: property.district_id,
-              vr_link: property.vr_link,
-              video: property.video,
-              status: property.status,
-              user_id: property.user_id,
-              is_deleted: property.is_deleted,
-              created_at: property.created_at,
-              updated_at: property.updated_at,
-              created_by: property.created_by,
-              updated_by: property.updated_by,
-              project_id: property.project_id,
-              size: property.size,
-              transaction: property.transaction,
-              direction: property.direction,
-              type: property.type,
-              title,
-              description,
-              picture: property.picture,
-              currency_id: property.currency_id,
-              neighborhoods_id: property.neighborhoods_id,
-              address: property.address,
-              latitude: property.latitude,
-              longitude: property.longitude,
-              slug: property.slug,
-              like_count: property.like_count,
-              bathRooms,
-              bedRooms,
-              // Exclude lang_translations and lang_translations_property_details_descriptionTolang_translations
-            },
-          };
-        });
-        
+      const description = lang === 'fr'
+        ? property.lang_translations_property_details_descriptionTolang_translations?.fr_string || ''
+        : property.lang_translations_property_details_descriptionTolang_translations?.en_string || '';
 
+      const metaDetails = property.property_meta_details.map((meta) => {
+        const langObj =
+          lang === 'fr'
+            ? meta.property_type_listings?.lang_translations?.fr_string
+            : meta.property_type_listings?.lang_translations?.en_string;
 
-      const responsePayload = {
-        list: simplifiedData,
-        totalCount,
-        totalPages: Math.ceil(totalCount / validLimit),
-        currentPage: validPage,
-        itemsPerPage: validLimit,
+        return {
+          id: meta.property_type_listings?.id || null,
+          type: meta.property_type_listings?.type || null,
+          key: meta.property_type_listings?.key || null,
+          icon: meta.property_type_listings?.icon || null,
+          name: langObj,
+          value: meta.value,
+        };
+      });
+
+      const bathRooms =
+        metaDetails.find((meta) => meta.key === 'bathrooms')?.value || "0";
+
+      const bedRooms =
+        metaDetails.find((meta) => meta.key === 'bedrooms')?.value || "0";
+      return {
+        ...like,
+        property: {
+          id: property.id,
+          price: property.price,
+          state_id: property.state_id,
+          city_id: property.city_id,
+          district_id: property.district_id,
+          vr_link: property.vr_link,
+          video: property.video,
+          status: property.status,
+          user_id: property.user_id,
+          is_deleted: property.is_deleted,
+          created_at: property.created_at,
+          updated_at: property.updated_at,
+          created_by: property.created_by,
+          updated_by: property.updated_by,
+          project_id: property.project_id,
+          size: property.size,
+          transaction: property.transaction,
+          direction: property.direction,
+          type: property.type,
+          title,
+          description,
+          picture: property.picture,
+          currency_id: property.currency_id,
+          neighborhoods_id: property.neighborhoods_id,
+          address: property.address,
+          latitude: property.latitude,
+          longitude: property.longitude,
+          slug: property.slug,
+          like_count: property.like_count,
+          bathRooms,
+          bedRooms,
+          // Exclude lang_translations and lang_translations_property_details_descriptionTolang_translations
+        },
       };
+    });
 
-      return response.success(
-        res,
-        res.__('messages.likedPropertyFetchedSuccessfully'),
-        responsePayload
-      );
+
+
+    const responsePayload = {
+      list: simplifiedData,
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+    };
+
+    return response.success(
+      res,
+      res.__('messages.likedPropertyFetchedSuccessfully'),
+      responsePayload
+    );
   } catch (error) {
-      console.error(error);
-      return response.error(
-        res,
-        res.__('messages.errorFetchingProperties')
-      );
+    console.error(error);
+    return response.error(
+      res,
+      res.__('messages.errorFetchingProperties')
+    );
+  }
+};
+
+export const getUserLikeProperty = async (req, res) => {
+  try {
+    const { page, limit, user_like, startDate, endDate } = req.body;
+
+    // console.log(user_like,"user_like")
+    // Validate user_like (ensure it's not null, undefined, or an empty string)
+    if (!user_like || user_like.trim() === "") {
+      return response.error(res, res.__('messages.userIdRequired'));
+    }
+
+    // Ensure valid pagination numbers
+    const validPage = isNaN(parseInt(page, 10)) ? 1 : Math.max(1, parseInt(page, 10));
+    const validLimit = isNaN(parseInt(limit, 10)) ? 10 : Math.max(1, parseInt(limit, 10));
+    const skip = (validPage - 1) * validLimit;
+
+    // Date filter
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        created_at: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      };
+    }
+
+    // Fetch properties
+    const userLikeProperty = await prisma.propertyLike.findMany({
+      where: { user_id: user_like, ...dateFilter },
+      skip,
+      take: validLimit,
+      orderBy: { created_at: 'desc' },
+      include: {
+        property: true,
+
+      }
+    });
+
+    // Get total count
+    const totalCount = await prisma.propertyLike.count({
+      where: { user_id: user_like, ...dateFilter },
+    });
+
+    // Prepare response
+    const responsePayload = {
+      list: userLikeProperty,
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+    };
+
+    return response.success(
+      res,
+      res.__('messages.likedPropertyFetchedSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(res, res.__('messages.errorFetchingProperties'));
+  }
+};
+export const getUserViewProperty = async (req, res) => {
+  try {
+    const { page, limit, user_like, startDate, endDate } = req.body;
+
+    // console.log(user_like,"user_like")
+    // Validate user_like (ensure it's not null, undefined, or an empty string)
+    if (!user_like || user_like.trim() === "") {
+      return response.error(res, res.__('messages.userIdRequired'));
+    }
+
+    // Ensure valid pagination numbers
+    const validPage = isNaN(parseInt(page, 10)) ? 1 : Math.max(1, parseInt(page, 10));
+    const validLimit = isNaN(parseInt(limit, 10)) ? 10 : Math.max(1, parseInt(limit, 10));
+    const skip = (validPage - 1) * validLimit;
+
+    // Date filter
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        created_at: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      };
+    }
+
+    // Fetch properties
+    const userLikeProperty = await prisma.propertyView.findMany({
+      where: { user_id: user_like, ...dateFilter },
+      skip,
+      take: validLimit,
+      orderBy: { created_at: 'desc' },
+      include: {
+        property: true,
+
+      }
+    });
+
+    // Get total count
+    const totalCount = await prisma.propertyView.count({
+      where: { user_id: user_like, ...dateFilter },
+    });
+
+    // Prepare response
+    const responsePayload = {
+      list: userLikeProperty,
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+    };
+
+    return response.success(
+      res,
+      res.__('messages.likedPropertyFetchedSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(res, res.__('messages.errorFetchingProperties'));
+  }
+};
+
+export const setUserActivity = async (req, res) => {
+  try {
+    const existingActivity = await prisma.userActivity.findFirst({
+      where: { user_id: req.user.id },
+    });
+    // console.log(existingActivity, 'existingActivity');
+    let userActivity;
+    if (existingActivity) {
+      // Update the existing record
+      userActivity = await prisma.userActivity.updateMany({
+        where: { user_id: req.user.id },
+        data: { last_activity_at: new Date() },
+      });
+    } else {
+      // Create a new record
+      userActivity = await prisma.userActivity.create({
+        data: {
+          user_id: req.user.id,
+          last_activity_at: new Date(),
+        },
+      });
+    }
+
+    return response.success(res, res.__('messages.propertyActivityUpdatedSuccessfully'), userActivity);
+  } catch (error) {
+    console.error(error);
+    return response.error(res, res.__('messages.errorUpdatingPropertyActivity'));
   }
 };
 
 export const getAllProperty = async (req, res) => {
   try {
-    const { page = 1, limit = 10, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude} = req.body;
-    console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
+    const { page = 1, limit = 10, user_id, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude, startDate, endDate } = req.body;
+    // console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
     const lang = res.getLocale();
 
     const validPage = Math.max(1, parseInt(page, 10));
@@ -755,47 +927,182 @@ export const getAllProperty = async (req, res) => {
 
     const skip = (validPage - 1) * validLimit;
 
+    let amenities_id_array_with_value = [];
+    if ( typeof amenities_id_object_with_value === 'object' && amenities_id_object_with_value !== null && Object.keys(amenities_id_object_with_value).length > 0 ) {
+      for (const [id, value] of Object.entries(amenities_id_object_with_value)) {
+        try {
+          const property_type_listings = await prisma.propertyTypeListings.findUnique({
+            where: {
+              id: id,
+            },
+            select: {
+              key: true,
+            },
+          });
+          if (property_type_listings) {
+            amenities_id_array_with_value.push({
+              id: id,
+              slug: property_type_listings.key,
+              value: value,
+            });
+          }
+        } catch (error) {
+          console.error(`Error fetching property_type_listings for id ${id}:`, error);
+        }
+      }
+    }
+    const minPriceExtra = (minPrice && parseFloat(minPrice) !== 0) ? parseFloat(minPrice) - (parseFloat(minPrice) * 0.10) : 0;
+    const maxPriceExtra = (maxPrice && parseFloat(maxPrice) !== 0) ? parseFloat(maxPrice) + (parseFloat(maxPrice) * 0.10) : 0;
+
+    const minSizeExtra = (minSize && parseFloat(minSize) !== 0) ? parseFloat(minSize) - (parseFloat(minSize) * 0.10) : 0;
+    const maxSizeExtra = (maxSize && parseFloat(maxSize) !== 0) ? parseFloat(maxSize) + (parseFloat(maxSize) * 0.10) : 0;
+
     const otherConditions = [
       await commonFilter.titleCondition(title),
       await commonFilter.descriptionCondition(description),
-      await commonFilter.cityCondition(city_id),
       await commonFilter.districtCondition(district_id),
       await commonFilter.neighborhoodCondition(neighborhoods_id),
       await commonFilter.addressCondition(address),
-      await commonFilter.typeCondition(type_id),
-      await commonFilter.priceCondition(minPrice, maxPrice),
-      await commonFilter.squareFootSize(minSize, maxSize),
-      await commonFilter.amenitiesCondition(amenities_id_array),
-      await commonFilter.amenitiesNumberCondition(amenities_id_object_with_value),
+     // await commonFilter.amenitiesCondition(amenities_id_array),
       await commonFilter.directionCondition(direction),
       await commonFilter.developerCondition(developer_id),
     ]
-
     const transactionConditions = [
-      await commonFilter.transactionCondition(transaction)
-    ]
-
+      await commonFilter.transactionCondition(transaction),
+      await commonFilter.typeCondition(type_id),
+      //await commonFilter.cityDistrictNeightborhoodCondition(city_id),
+      await commonFilter.priceCondition(minPrice, maxPrice, minPriceExtra, maxPriceExtra),
+      await commonFilter.squareFootSize(minSize, maxSize, minSizeExtra, maxSizeExtra),
+    ];
+    console.log(transactionConditions, 'transactionConditions >>>>>>>>>')
+    const bedRoomCondition = await commonFilter.amenitiesOnlyBedRoomCondition(amenities_id_array_with_value);
+    // Combine them into your final Prisma condition
     const combinedCondition = {
       AND: [
         { AND: transactionConditions.filter(Boolean) },
         { OR: otherConditions.filter(Boolean) },
+        user_id ? { user_id: user_id } : {},
+        bedRoomCondition
       ],
     };
+    console.log(JSON.stringify(combinedCondition, null, 2), '<< combinedCondition');
+    
+    let dateFilter = {};
+    if (startDate && endDate) {
+      dateFilter = {
+        created_at: {
+          gte: new Date(startDate), // Greater than or equal to start date
+          lte: new Date(endDate),   // Less than or equal to end date
+        },
+      };
+    }
 
+    // const totalCount = await prisma.propertyDetails.count({
+    //   where: {
+    //     ...combinedCondition,
+    //     ...dateFilter
+    //   },
+    // });
+    //console.log(totalCount,'Totalcount')
 
+    /* change filter */
 
+    const getFilteredPropertyIds = async () => {
+      // Get all properties that match the base filters
+      const allProperties = await prisma.propertyDetails.findMany({
+        where: {
+          ...combinedCondition,
+          ...dateFilter
+        },
+        select: {
+          id: true,
+          price: true,
+          size: true,
+          latitude: true, 
+          longitude: true,
+          cities: true,
+          districts: true,
+          property_meta_details: {
+            select: {
+              value: true,
+              property_type_listings: {
+                select: {
+                  id: true,
+                  type: true,
+                  key: true
+                }
+              }
+            }
+          }
+        }
+      }); 
+      
+      // Calculate scores and filter based on total percentage
+      const validPropertyIds = [];
+  
+      for (const property of allProperties) {
+         const { latitude = 0, longitude = 0, location_name = null } = await commonFilter.getLocationLatLong(city_id) || {};
 
-    const totalCount = await prisma.propertyDetails.count({
-      where: combinedCondition,
-    });
+        const price_score_response = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice, minPriceExtra, maxPriceExtra);
+        const price_score = price_score_response.score;
+        const surface_are_score_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize, minSizeExtra, maxSizeExtra);
+        const surface_are_score = surface_are_score_score.score;
+        const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
 
+        const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude, location_name) : 100;
+        console.log(location_score, 'location_score')
+        const property_type_score = 100;
+        const weights = {
+          price: 0.35,
+          location: 0.30,
+          surface_area: 0.15,
+          property_type: 0,
+          amenities: 0.20,
+          room_amenities: 0.15,
+          year_amenities: 0
+        };
+    
+        // Calculate final score with weights
+        const final_score = 
+          price_score * weights.price + 
+          location_score * weights.location + 
+          surface_are_score * weights.surface_area + 
+          property_type_score * weights.property_type + 
+          amenities_score * weights.amenities;
+
+        
+        // Calculate total percentage
+        const total_percentage = Math.ceil(parseFloat(final_score.toFixed(2)));
+        console.log(total_percentage, '>>>>>>>> total_percentage >>>>>>>>>', location_score, ' >>>>>>>> location_score >>>>>>>>>>>>> ', property.id, 'property');
+        // Only add properties that meet the threshold
+        if ((total_percentage > 50) && (location_score != 0) ) {
+          validPropertyIds.push(property.id);
+        }
+      }
+      
+      return validPropertyIds;
+    };
+
+     const validPropertyIds = await getFilteredPropertyIds();
+    console.log(validPropertyIds, ' >>>>>>>>>>>>>>>>>>> validPropertyIds')
+   
+    const totalCount = validPropertyIds.length;
+    const totalPages = Math.ceil(totalCount / validLimit);
+    const paginatedIds = validPropertyIds.slice(skip, skip + validLimit);
+  
     const properties = await prisma.propertyDetails.findMany({
-      skip,
-      take: validLimit,
-      orderBy:{
-        created_at: 'desc',
+      where: {
+        id: {
+          in: paginatedIds
+        }
       },
-      where: combinedCondition,
+      orderBy: {
+        districts: {
+          langTranslation: {
+            en_string: "asc"
+          }
+        }
+      },
       include: {
         ...userInclude,
         ...langTranslationsInclude,
@@ -808,9 +1115,7 @@ export const getAllProperty = async (req, res) => {
         ...propertyTypesInclude
       },
     });
-
-
-    const isFrench = lang === 'fr'; 
+    const isFrench = lang === 'fr';
     const cities = await prisma.cities.findMany({
       where: {
         is_deleted: false,
@@ -845,7 +1150,7 @@ export const getAllProperty = async (req, res) => {
             id: developer.user_id,
           }
         });
-        return{
+        return {
           id: developer.id,
           user_id: developer.user_id,
           user_name: userInfo?.user_name,
@@ -862,24 +1167,24 @@ export const getAllProperty = async (req, res) => {
       city_name: isFrench ? city.lang.fr_string : city.lang.en_string,
       latitude: city.latitude,
       longitude: city.longitude,
-      created_at: city.created_at, 
+      created_at: city.created_at,
       state: city.states.id
     }));
 
 
     let likedPropertyIds = [];
     if (req.user?.id) {
-    const likedProperties = await prisma.propertyLike.findMany({
-      where: {
-        user_id: req.user.id,
-      },
-      select: {
-        property_id: true,
-      },
-    });
+      const likedProperties = await prisma.propertyLike.findMany({
+        where: {
+          user_id: req.user.id,
+        },
+        select: {
+          property_id: true,
+        },
+      });
 
-    likedPropertyIds = likedProperties.map((like) => like.property_id);
-  }
+      likedPropertyIds = likedProperties.map((like) => like.property_id);
+    }
 
 
     const simplifiedProperties = await Promise.all(
@@ -888,28 +1193,28 @@ export const getAllProperty = async (req, res) => {
           lang === 'fr'
             ? property.lang_translations_property_details_descriptionTolang_translations.fr_string
             : property.lang_translations_property_details_descriptionTolang_translations.en_string;
-    
+
         const title =
           lang === 'fr'
             ? property.lang_translations.fr_string
             : property.lang_translations.en_string;
-    
+
         const type =
           lang === 'fr'
             ? property.property_types?.lang_translations?.fr_string
             : property.property_types?.lang_translations?.en_string;
-    
+
         const neighborhood =
           lang === 'fr'
             ? property.neighborhoods?.langTranslation?.fr_string
             : property.neighborhoods?.langTranslation?.en_string;
-    
+
         const metaDetails = property.property_meta_details.map((meta) => {
           const langObj =
             lang === 'fr'
               ? meta.property_type_listings?.lang_translations?.fr_string
               : meta.property_type_listings?.lang_translations?.en_string;
-    
+
           return {
             id: meta.property_type_listings?.id || null,
             type: meta.property_type_listings?.type || null,
@@ -920,32 +1225,27 @@ export const getAllProperty = async (req, res) => {
           };
         });
 
-        
-        
 
-
-
-    
         const bathRooms =
           metaDetails.find((meta) => meta.key === 'bathrooms')?.value || "0";
         const bedRooms =
           metaDetails.find((meta) => meta.key === 'rooms')?.value || "0";
-        
+
         const propertyType = res.__('messages.propertyType') + " " + property.transaction;
         let responseProjectData = null;
-        if(property.project_id !== null){
+        if (property.project_id !== null) {
           const projectDetail = await prisma.projectDetails.findUnique({
             where: { id: property.project_id },
           });
-      
+
           const descriptionData = await prisma.langTranslations.findUnique({
             where: { id: projectDetail.description },
           });
-      
+
           const titleData = await prisma.langTranslations.findUnique({
             where: { id: projectDetail.title },
           });
-  
+
           responseProjectData = {
             id: projectDetail.id,
             icon: projectDetail.icon,
@@ -954,230 +1254,35 @@ export const getAllProperty = async (req, res) => {
             description: lang === 'fr' ? descriptionData.fr_string : descriptionData.en_string,
           }
         }
-        
-        let price_score = 100;
-        let location_score = 25;
-        let surface_are_score = 100;
+
         let property_type_score = 100;
-        let amenities_score = 100;
-        let room_amenities_score = 100; // Initialize matchPercentage with 0
-        let year_amenities_score = 100;
+        let price_score_response = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice, minPriceExtra, maxPriceExtra);
+        const price_score = price_score_response.score;
+        const price_status = price_score_response.status;
+        const price_extra = price_score_response?.extra || 0;
 
-        // Price calculation
-        if (property.price >= minPrice && property.price <= maxPrice) {
-          price_score = 100;
-        } else if (property.price > maxPrice) {
-          const percentAbove = ((property.price - maxPrice) / maxPrice) * 100;
-          if (100 - percentAbove >= 50) {
-            price_score = 100 - percentAbove;
-          } else {
-            price_score = 0;
-          }
-        } else if (property.price < minPrice) {
-          const percentBelow = ((minPrice - property.price) / minPrice) * 100;
-          if (100 - percentBelow >= 50) {
-            price_score = 100 - percentBelow;
-          } else {
-            price_score = 0;
-          }
-        }
+        let surface_are_score_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize, minSizeExtra, maxSizeExtra);
+        const surface_are_score = surface_are_score_score.score;
+        const surface_are_status = surface_are_score_score.status;
+        const surface_are_extra = surface_are_score_score?.extra || 0;
+        let amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
+        const { latitude = 0, longitude = 0, location_name = null  } = await commonFilter.getLocationLatLong(city_id) || {};
+        const location_score = ((latitude != 0 ) && (longitude != 0))? await commonFunction.calculateLocationScore( property.latitude, property.longitude, latitude, longitude, location_name ) : 100;
+        let room_amenities_score = await commonFunction.calculateRoomAmenitiesScore( property?.property_meta_details, amenities_id_object_with_value );
+        let year_amenities_score = await commonFunction.calculateYearScore(   property?.property_meta_details, "year_of_construction", amenities_id_object_with_value );
+        let total_aminities_score = (( amenities_score + room_amenities_score )/ 2);
 
-        // Surface area calculation
-        if (property.size >= minSize && property.size <= maxSize) {
-          surface_are_score = 100;
-        } else if (property.size > maxSize) {
-          const percentAbove = ((property.size - maxSize) / maxSize) * 100;
-          if (100 - percentAbove >= 50) {
-            surface_are_score = 100 - percentAbove;
-          } else {
-            surface_are_score = 0;
-          }
-        } else if (property.size < minSize) {
-          const percentBelow = ((minSize - property.size) / minSize) * 100;
-          if (100 - percentBelow >= 50) {
-            surface_are_score = 100 - percentBelow;
-          } else {
-            surface_are_score = 0;
-          }
-        }
+        const price_weight = 0.35
+        const location_weight = 0.30
+        const surface_area = 0.15
+        const property_type = 0
+        const amenities = 0.20
+        const roomAmenities = 0.15
+        const yearAmenities = 0
 
-
-        //Boolean amenities filter 
-        if (property && property.property_meta_details) {
-          const booleanIdsSet = new Set(
-              property.property_meta_details
-                  .filter(meta => meta.property_type_listings?.type === "boolean")
-                  .map(meta => meta.property_type_listings?.id)
-          );
-      
-          let matchedAmenities = [];
-          
-          // Handle case when amenities_id_array is an empty string or undefined
-          if (!amenities_id_array || amenities_id_array === "") {
-              amenities_score = 100; // Default score for empty or undefined amenities_id_array
-          } else if (Array.isArray(amenities_id_array)) {
-              const allMatch = amenities_id_array.every(id => booleanIdsSet.has(id));
-      
-              if (allMatch) {
-                  amenities_score = 100;
-              } else {
-                  matchedAmenities = amenities_id_array.filter(id => booleanIdsSet.has(id));
-                  const totalRequested = amenities_id_array.length;
-                  const totalMatched = matchedAmenities.length;
-                  amenities_score = (totalMatched / totalRequested) * 100;
-              }
-          } else {
-              amenities_score = 100;
-          }
-      
-          // console.log("Match Percentage:", amenities_score);
-      } else {
-          console.error("Property or property_meta_details is undefined:", property);
-      }
-      
-
-
-        //Bedrooms amenities filter
-        if (property && property.property_meta_details) {
-          const bedRooms = property.property_meta_details
-            .filter(meta => meta.property_type_listings?.type === "number")
-            .find(meta => meta.property_type_listings.key === "rooms");
-        
-          if (!amenities_id_object_with_value || Object.keys(amenities_id_object_with_value).length === 0) {
-            room_amenities_score = 100;
-          } else if(bedRooms){
-            const propertyId = bedRooms.property_type_listings.id;
-            const propertyValue = bedRooms.value;
-        
-            let totalFilters = 0;
-            let matchedFilters = 0;
-            for (const [amenityId, amenityValue] of Object.entries(amenities_id_object_with_value)) {
-              totalFilters++;
-        
-              if (propertyId === amenityId && propertyValue === amenityValue) {
-                matchedFilters++;
-              }
-            }
-        
-            room_amenities_score = (matchedFilters / totalFilters) * 100;
-          }
-        } else {
-          console.error("Property or property_meta_details is undefined:", property);
-        }
-
-        //Year of construction calculation
-        if (property && property.property_meta_details) {
-          const yearOfConstruction = property.property_meta_details
-            .filter(meta => meta.property_type_listings?.type === "number")
-            .find(meta => meta.property_type_listings.key === "year_of_construction");
-        
-          if (!amenities_id_object_with_value || Object.keys(amenities_id_object_with_value).length === 0) {
-            year_amenities_score = 100;
-          } else if(yearOfConstruction){
-            const propertyId = yearOfConstruction.property_type_listings.id;
-            const propertyValue = yearOfConstruction.value;
-        
-            let totalFilters = 0;
-            let matchedFilters = 0;
-            for (const [amenityId, amenityValue] of Object.entries(amenities_id_object_with_value)) {
-              totalFilters++;
-        
-              if (propertyId === amenityId && propertyValue === amenityValue) {
-                matchedFilters++;
-              }
-            }
-        
-            year_amenities_score = (matchedFilters / totalFilters) * 100;
-          }
-        
-          // console.log(`Match Percentage: ${year_amenities_score}%`);
-        } else {
-          console.error("Property or property_meta_details is undefined:", property);
-        }
-
-      
-        //location calculation
-        // let location_score = 100;
-        if (filter_latitude && filter_longitude && property.latitude && property.longitude) {
-          try {
-            // Format coordinates properly as strings
-            const origin = `${filter_latitude},${filter_longitude}`;
-            const destination = `${property.latitude},${property.longitude}`;
-            const url = `https://maps.googleapis.com/maps/api/distancematrix/json?units=metric&origins=${origin}&destinations=${destination}&key=${GOOGLE_MAPS_API_KEY}`;
-            
-            const response = await axios.get(url);
-            // console.log('Distance Matrix Response:', JSON.stringify(response.data, null, 2));
-            
-            if (response.data.status === 'OK' && 
-                response.data.rows && 
-                response.data.rows[0] && 
-                response.data.rows[0].elements && 
-                response.data.rows[0].elements[0] && 
-                response.data.rows[0].elements[0].status === 'OK') {
-              
-              const element = response.data.rows[0].elements[0];
-              const distanceInMeters = element.distance.value;
-              const distanceInKm = distanceInMeters / 1000;
-              const durationText = element.duration.text;
-        
-              // Calculate score based on actual driving distance
-              if (distanceInKm <= 9) {
-                location_score = ((10 - distanceInKm) * 10) * 25 / 100;
-              } else{
-                location_score = 0;
-              }
-              
-        
-              // Add the exact distance and duration to the property object
-              property.exact_distance = {
-                text: element.distance.text,
-                value: distanceInKm,
-                duration: durationText
-              };
-              
-              console.log('Successfully calculated distance:', property.exact_distance);
-            } else {
-              location_score = 0;
-            }
-          } catch (error) {
-            console.error('Error calculating distance:', error.message);
-            // Fallback to straight-line distance calculation
-            const R = 6371; // Earth's radius in kilometers
-            const lat1 = parseFloat(filter_latitude);
-            const lon1 = parseFloat(filter_longitude);
-            const lat2 = parseFloat(property.latitude);
-            const lon2 = parseFloat(property.longitude);
-            
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = 
-              Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-              Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-              Math.sin(dLon / 2) * Math.sin(dLon / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-            const distance = R * c;
-            
-            property.exact_distance = {
-              text: `${distance.toFixed(2)} km (straight-line)`,
-              value: parseFloat(distance.toFixed(2)),
-              duration: 'N/A'
-            };
-            
-            console.log('Fallback distance calculated:', property.exact_distance);
-          }
-        }
-        
     
-        const price_weight = 0.30
-        // const location_weight = 0.25
-        const surface_area = 0.10
-        const property_type = 0.10
-        const amenities = 0.10
-        const roomAmenities = 0.10
-        const yearAmenities = 0.05
-
         //location score static, 
-        const final_score = (price_score * price_weight + location_score + surface_are_score * surface_area + property_type_score * property_type + amenities_score * amenities + roomAmenities * room_amenities_score + yearAmenities *year_amenities_score)
+        const final_score = (price_score * price_weight + location_score * location_weight + surface_are_score * surface_area + property_type_score * property_type + total_aminities_score * amenities +  yearAmenities * year_amenities_score);
 
         const user_role = await prisma.roles.findUnique({
           where: {
@@ -1186,6 +1291,12 @@ export const getAllProperty = async (req, res) => {
         });
 
         let developerSocial = null;
+        let agency_id = null;
+        let agency_image = null;
+        let agency_name = null;
+        let developer_id = null;
+        let developer_image = null;
+        let developer_name = null;
 
         if (user_role.name === "developer") {
           const developer = await prisma.developers.findUnique({
@@ -1193,8 +1304,11 @@ export const getAllProperty = async (req, res) => {
               user_id: property.users.id
             }
           });
-          console.log(developer,"ll")
-        
+          
+          developer_id = developer?.id || null;
+          developer_image = property.users?.image || null;
+          developer_name = property.users?.full_name || null;
+          
           if (developer) {
             developerSocial = {
               twitter: developer.twitterLink || null,
@@ -1208,7 +1322,11 @@ export const getAllProperty = async (req, res) => {
               user_id: property.users.id
             }
           });
-        
+          
+          agency_id = agency?.id || null;
+          agency_image = property.users?.image || null;
+          agency_name = property.users?.full_name || null;
+
           if (agency) {
             developerSocial = {
               twitter: agency.twitter_link || null,
@@ -1217,6 +1335,10 @@ export const getAllProperty = async (req, res) => {
             };
           }
         }
+        const score = Math.ceil(parseFloat(final_score.toFixed(2)));
+        const extra_surface_area = surface_are_status ? (score - surface_are_extra) : score;
+        const final_price_score = price_status ? (extra_surface_area - price_extra) : extra_surface_area;
+
         return {
           id: property.id,
           user_name: property.users?.full_name || null,
@@ -1240,26 +1362,33 @@ export const getAllProperty = async (req, res) => {
           latitude: property.latitude,
           longitude: property.longitude,
           direction: property.direction,
+          vr_link: property.vr_link ?? null,
           address: property.address,
           size: property.size,
           price: property.price,
           created_at: property.created_at,
           bathRooms,
           bedRooms,
-          district: 
+          agency_id,
+          agency_image,
+          agency_name,
+          developer_id,
+          developer_image,
+          developer_name,
+          district:
             property.districts?.langTranslation &&
             (lang === "fr"
               ? property.districts.langTranslation.fr_string
               : property.districts.langTranslation.en_string),
           state:
-          (lang === "fr"
-            ? property.states?.lang?.fr_string
-            : property.states?.lang?.en_string),
+            (lang === "fr"
+              ? property.states?.lang?.fr_string
+              : property.states?.lang?.en_string),
           city:
             lang === "fr"
               ? property.cities?.lang?.fr_string
               : property.cities?.lang?.en_string,
-          neighborhood: 
+          neighborhood:
             lang === "fr"
               ? property.neighborhoods?.lang?.fr_string
               : property.neighborhoods?.lang?.en_string,
@@ -1273,24 +1402,27 @@ export const getAllProperty = async (req, res) => {
           },
           project_details: responseProjectData,
           like: likedPropertyIds.includes(property.id),
-          filter_result:{
-            location: location_score ,
-            price: price_score * price_weight,
-            surface_area: surface_are_score * surface_area,
+          filter_result: {
+            location: location_score * location_weight,
+            price: ((price_score * price_weight) - price_extra),
+            surface_area: ((surface_are_score * surface_area) - surface_are_extra),
             property_type: property_type_score * property_type,
-            amenities: amenities_score * amenities,
-            room_amenities: roomAmenities * room_amenities_score,
+            amenities: total_aminities_score * amenities,
+            room_amenities: 0,
             construction_year_amenities: yearAmenities * year_amenities_score,
-            total_percentage: Math.ceil(parseFloat(final_score.toFixed(2))),
+            total_percentage: Math.round(parseFloat(final_price_score)),
             exact_distance: property.exact_distance || null
+          },
+          other_data:{
+            surface_area: surface_are_score
           }
         };
       })
     );
-    
+
 
     const data = await prisma.propertyDetails.findMany({
-      orderBy:{
+      orderBy: {
         created_at: 'desc',
       },
       include: {
@@ -1307,10 +1439,11 @@ export const getAllProperty = async (req, res) => {
     });
 
 
-
     const maxPriceSliderRange = Math.max(
       ...data.map((property) => property.price || 0)
     );
+
+    //const maxPriceSliderRange = 10000000;
 
     const maxSizeSliderRange = Math.max(
       ...data.map((property) => property.size || 0)
@@ -1325,35 +1458,35 @@ export const getAllProperty = async (req, res) => {
       },
     });
 
-      const propertyTypes = await prisma.propertyTypes.findMany({
-        include: {
-          lang_translations: true,
-        },
-      });
+    const propertyTypes = await prisma.propertyTypes.findMany({
+      include: {
+        lang_translations: true,
+      },
+    });
 
 
-      const simplifiedTypeProperties = await Promise.all(
-        propertyTypes.map(async (property) => {
-          const user = property.created_by
-            ? await prisma.users.findUnique({
-                where: { id: property.created_by },
-                select: { user_name: true },
-              })
-            : null;
-  
-          return {
-            id: property.id,
-            title:
-              property.lang_translations
-                ? lang === 'fr'
-                  ? property.lang_translations.fr_string
-                  : property.lang_translations.en_string
-                : 'No title available',
-            created_by: user ? user.user_name : 'Unknown User',
-            createdAt: property.created_at,
-          };
-        })
-      );
+    const simplifiedTypeProperties = await Promise.all(
+      propertyTypes.map(async (property) => {
+        const user = property.created_by
+          ? await prisma.users.findUnique({
+            where: { id: property.created_by },
+            select: { user_name: true },
+          })
+          : null;
+
+        return {
+          id: property.id,
+          title:
+            property.lang_translations
+              ? lang === 'fr'
+                ? property.lang_translations.fr_string
+                : property.lang_translations.en_string
+              : 'No title available',
+          created_by: user ? user.user_name : 'Unknown User',
+          createdAt: property.created_at,
+        };
+      })
+    );
 
     const simplifiedListings = listings.map((listing) => ({
       id: listing.id,
@@ -1397,7 +1530,7 @@ export const getAllProperty = async (req, res) => {
 
 
 export const getPropertyById = async (req, res) => {
-  try {
+  // try {
     const { property_slug } = req.body;
     if (!property_slug) {
       return response.error(res, res.__('messages.invalidPropertyId'));
@@ -1439,20 +1572,70 @@ export const getPropertyById = async (req, res) => {
       };
     });
 
+    const user_role = await prisma.roles.findUnique({
+      where: {
+        id: property.users?.role_id,
+      }
+    });
 
     let likedPropertyIds = [];
     if (req.user?.id) {
-    const likedProperties = await prisma.propertyLike.findMany({
-      where: {
-        user_id: req.user.id,
-      },
-      select: {
-        property_id: true,
-      },
-    });
+      const likedProperties = await prisma.propertyLike.findMany({
+        where: {
+          user_id: req.user.id,
+        },
+        select: {
+          property_id: true,
+        },
+      });
 
-    likedPropertyIds = likedProperties.map((like) => like.property_id);
-  }
+      likedPropertyIds = likedProperties.map((like) => like.property_id);
+    }
+    let developerSocial = null;
+        let agency_id = null;
+        let agency_image = null;
+        let agency_name = null;
+        let developer_id = null;
+        let developer_image = null;
+        let developer_name = null;
+
+        if (user_role.name === "developer") {
+          const developer = await prisma.developers.findUnique({
+            where: {
+              user_id: property.users.id
+            }
+          });
+          
+          developer_id = developer?.id || null;
+          developer_image = property.users?.image || null;
+          developer_name = property.users?.full_name || null;
+          
+          if (developer) {
+            developerSocial = {
+              twitter: developer.twitterLink || null,
+              facebook: developer.facebookLink || null,
+              instagram: developer.instagramLink || null
+            };
+          }
+        } else if (user_role.name === "agency") {
+          const agency = await prisma.agencies.findUnique({
+            where: {
+              user_id: property.users.id
+            }
+          });
+          
+          agency_id = agency?.id || null;
+          agency_image = property.users?.image || null;
+          agency_name = property.users?.full_name || null;
+
+          if (agency) {
+            developerSocial = {
+              twitter: agency.twitter_link || null,
+              facebook: agency.facebook_link || null,
+              instagram: agency.instagram_link || null
+            };
+          }
+        }
 
 
     const responsePayload = {
@@ -1474,6 +1657,12 @@ export const getPropertyById = async (req, res) => {
       size: property.size,
       price: property.price,
       created_at: property.created_at,
+      agency_id,
+      agency_image,
+      agency_name,
+      developer_id,
+      developer_image,
+      developer_name,
       district:
         lang === "fr"
           ? property.districts?.langTranslation?.fr_string
@@ -1486,11 +1675,11 @@ export const getPropertyById = async (req, res) => {
         lang === "fr"
           ? property.states?.lang?.fr_string
           : property.states?.lang?.en_string,
-      neighborhood: 
+      neighborhood:
         lang === "fr"
           ? property.neighborhoods?.langTranslation?.fr_string
           : property.neighborhoods?.langTranslation?.en_string,
-        
+
       images: property.images_data,
       meta_details: metaDetails,
       currency: property.currency?.name || null,
@@ -1506,14 +1695,14 @@ export const getPropertyById = async (req, res) => {
       res.__('messages.propertyFetchSuccessfully'),
       responsePayload
     );
-  } catch (error) {
-    console.error('Error fetching property by ID:', error);
+  // } catch (error) {
+  //   console.error('Error fetching property by ID:', error);
 
-    return response.error(
-      res,
-      res.__('messages.errorFetchingProperties')
-    );
-  }
+  //   return response.error(
+  //     res,
+  //     res.__('messages.errorFetchingProperties')
+  //   );
+  // }
 };
 
 export const getPropertyByIdWithId = async (req, res) => {
@@ -1578,13 +1767,14 @@ export const getPropertyByIdWithId = async (req, res) => {
       price: property.price,
       created_at: property.created_at,
       district: property.districts?.id || null,
-      city:property.cities?.id || null,
+      city: property.cities?.id || null,
       state: property.states?.id || null,
       images: property.images_data,
       meta_details: metaDetails,
       currency: property.currency?.id || null,
       neighborhood: property.neighborhoods?.id || null,
       project_id: property.project_id,
+      vr_link: property.vr_link,
       type_details: {
         id: property.property_types?.id || null,
         title: lang === 'fr' ? property.property_types?.lang_translations?.fr_string : property.property_types?.lang_translations?.en_string,
@@ -1608,161 +1798,161 @@ export const getPropertyByIdWithId = async (req, res) => {
 
 
 export const createProperty = async (req, res) => {
-    try {
-        const createdBy = req.user.id;
-        const { title_en, title_fr, description_en, description_fr, price, currency_id, neighborhoods_id, district_id, city_id, state_id, latitude,
-                longitude, address, vr_link, picture, video, user_id, type_id, transaction, project_id, size, meta_details, direction} = req.body;
+  try {
+    const createdBy = req.user.id;
+    const { title_en, title_fr, description_en, description_fr, price, currency_id, neighborhoods_id, district_id, city_id, state_id, latitude,
+      longitude, address, vr_link, picture, video, user_id, type_id, transaction, project_id, size, meta_details, direction } = req.body;
 
-        const user = await prisma.users.findFirst({
-          where: { id: user_id, roles: { name: { in: ['developer', 'agency'], }, }, },
-        });
-        
-        if(!user){
-          return response.error(res, res.__('messages.onlyDeveloperAgencyCreat'), null, 400);
-        }
-        
-        const propertyTitleExist = await prisma.propertyDetails.findFirst({
-          where: {
-            OR: [
-              { lang_translations: { en_string: title_en } },
-              { lang_translations: { fr_string: title_fr } },
-            ],
-          },
-        })
-        
-        if(propertyTitleExist){
-          return response.error(res, res.__('messages.propertyExists'), null, 400);
-        }
-        
-        const baseSlug = slugify(title_en, { lower: true, replacement: '_', strict: true });
-        const uniqueSlug = await generateUniqueSlug(baseSlug);
-        const titleTranslation = await prisma.langTranslations.create({
-            data: {
-                en_string: title_en,
-                fr_string: title_fr,
-                created_by: user_id,
-            },
-        });
+    const user = await prisma.users.findFirst({
+      where: { id: user_id, roles: { name: { in: ['developer', 'agency'], }, }, },
+    });
 
-        const descriptionTranslation = await prisma.langTranslations.create({
-            data: {
-                en_string: description_en,
-                fr_string: description_fr,
-                created_by: user_id,
-            },
-        });
- 
-        const newProperty = await prisma.propertyDetails.create({
-            data: {
-                title: titleTranslation.id, 
-                description: descriptionTranslation.id,
-                price: price,
-                slug: uniqueSlug,
-                direction: direction,
-                currency_id: currency_id,
-                neighborhoods_id: neighborhoods_id || null,
-                district_id: district_id || null,
-                city_id: city_id,
-                state_id: state_id,
-                latitude: latitude,
-                longitude: longitude,
-                address: address,
-                project_id: project_id || null,
-                vr_link: vr_link || null,
-                picture: picture || null,
-                video: video || null,
-                user_id: user_id,
-                type: type_id,
-                transaction: transaction,
-                size: size || null,
-                created_by:createdBy,
-                property_meta_details: {
-                    create: meta_details.map((meta) => ({
-                        value: meta.value,
-                        property_type_id: meta.property_type_id,
-                    })),
-                },
-            },
-        });
-
-        const createdProperty = await prisma.propertyDetails.findUnique({
-            where: { id: newProperty.id },
-            include: {
-                ...userInclude,
-                ...langTranslationsInclude,
-                ...districtsInclude,
-                ...propertyMetaDetailsInclude,
-                ...currencyInclude,
-                ...neighborhoodInclude,
-                ...propertyTypesInclude
-            },
-        });
-
-        const lang = res.getLocale();
-        const simplifiedProperty = {
-            id: createdProperty.id,
-            user_name: createdProperty.users?.full_name || null,
-            user_image: createdProperty.users?.image || null,
-            description: lang === 'fr'
-                ? createdProperty.lang_translations_property_details_descriptionTolang_translations.fr_string
-                : createdProperty.lang_translations_property_details_descriptionTolang_translations.en_string,
-            title: lang === 'fr' ? createdProperty.lang_translations.fr_string : createdProperty.lang_translations.en_string,
-            transaction: `${res.__('messages.propertyType')} ${createdProperty.transaction}`,
-            transaction_type: createdProperty.transaction,
-            direction: createdProperty.direction,
-            latitude: createdProperty.latitude,
-            longitude: createdProperty.longitude,
-            address: createdProperty.address,
-            size: createdProperty.size,
-            price: createdProperty.price,
-            picture: createdProperty.picture,
-            bathRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'bathrooms')?.value || "0",
-            bedRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'rooms')?.value || "0",
-            district: createdProperty.districts?.langTranslation
-                ? lang === 'fr'
-                ? createdProperty.districts.langTranslation.fr_string
-                : createdProperty.districts.langTranslation.en_string
-                : null,
-            meta_details: createdProperty.property_meta_details.map((meta) => {
-                const langObj = lang === 'en'
-                    ? meta.property_type_listings?.lang_translations?.en_string
-                    : meta.property_type_listings?.lang_translations?.fr_string;
-
-                return {
-                    id: meta.property_type_listings?.id || null,
-                    type: meta.property_type_listings?.type || null,
-                    key: meta.property_type_listings?.key || null,
-                    name: langObj,
-                    value: meta.value,
-                };
-            }),
-            type: lang === 'fr'
-                ? createdProperty.property_types?.lang_translations?.fr_string
-                : createdProperty.property_types?.lang_translations?.en_string,
-
-            currency: createdProperty.currency
-            ? createdProperty.currency.symbol
-            : null,
-
-
-            neighborhood: createdProperty.neighborhoods?.langTranslation
-                ? lang === 'fr'
-                ? createdProperty.neighborhoods.langTranslation.fr_string
-                : createdProperty.neighborhoods.langTranslation.en_string
-                : null,
-        };
-        return await response.success(res, res.__('messages.propertyCreatedSuccessfully'), simplifiedProperty);
-    } catch (error) {
-        console.error('Error creating property:', error);
-        return await response.serverError(res, res.__('messages.errorCreatingProperty'));
+    if (!user) {
+      return response.error(res, res.__('messages.onlyDeveloperAgencyCreat'), null, 400);
     }
+
+    const propertyTitleExist = await prisma.propertyDetails.findFirst({
+      where: {
+        OR: [
+          { lang_translations: { en_string: title_en } },
+          { lang_translations: { fr_string: title_fr } },
+        ],
+      },
+    })
+
+    if (propertyTitleExist) {
+      return response.error(res, res.__('messages.propertyExists'), null, 400);
+    }
+
+    const baseSlug = slugify(title_en, { lower: true, replacement: '_', strict: true });
+    const uniqueSlug = await generateUniqueSlug(baseSlug);
+    const titleTranslation = await prisma.langTranslations.create({
+      data: {
+        en_string: title_en,
+        fr_string: title_fr,
+        created_by: user_id,
+      },
+    });
+
+    const descriptionTranslation = await prisma.langTranslations.create({
+      data: {
+        en_string: description_en,
+        fr_string: description_fr,
+        created_by: user_id,
+      },
+    });
+
+    const newProperty = await prisma.propertyDetails.create({
+      data: {
+        title: titleTranslation.id,
+        description: descriptionTranslation.id,
+        price: price,
+        slug: uniqueSlug,
+        direction: direction,
+        currency_id: currency_id,
+        neighborhoods_id: neighborhoods_id || null,
+        district_id: district_id || null,
+        city_id: city_id,
+        state_id: state_id,
+        latitude: latitude,
+        longitude: longitude,
+        address: address,
+        project_id: project_id || null,
+        vr_link: vr_link || null,
+        picture: picture || null,
+        video: video || null,
+        user_id: user_id,
+        type: type_id,
+        transaction: transaction,
+        size: size || null,
+        created_by: createdBy,
+        property_meta_details: {
+          create: meta_details.map((meta) => ({
+            value: meta.value,
+            property_type_id: meta.property_type_id,
+          })),
+        },
+      },
+    });
+
+    const createdProperty = await prisma.propertyDetails.findUnique({
+      where: { id: newProperty.id },
+      include: {
+        ...userInclude,
+        ...langTranslationsInclude,
+        ...districtsInclude,
+        ...propertyMetaDetailsInclude,
+        ...currencyInclude,
+        ...neighborhoodInclude,
+        ...propertyTypesInclude
+      },
+    });
+
+    const lang = res.getLocale();
+    const simplifiedProperty = {
+      id: createdProperty.id,
+      user_name: createdProperty.users?.full_name || null,
+      user_image: createdProperty.users?.image || null,
+      description: lang === 'fr'
+        ? createdProperty.lang_translations_property_details_descriptionTolang_translations.fr_string
+        : createdProperty.lang_translations_property_details_descriptionTolang_translations.en_string,
+      title: lang === 'fr' ? createdProperty.lang_translations.fr_string : createdProperty.lang_translations.en_string,
+      transaction: `${res.__('messages.propertyType')} ${createdProperty.transaction}`,
+      transaction_type: createdProperty.transaction,
+      direction: createdProperty.direction,
+      latitude: createdProperty.latitude,
+      longitude: createdProperty.longitude,
+      address: createdProperty.address,
+      size: createdProperty.size,
+      price: createdProperty.price,
+      picture: createdProperty.picture,
+      bathRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'bathrooms')?.value || "0",
+      bedRooms: createdProperty.property_meta_details.find((meta) => meta.property_type_listings.key === 'rooms')?.value || "0",
+      district: createdProperty.districts?.langTranslation
+        ? lang === 'fr'
+          ? createdProperty.districts.langTranslation.fr_string
+          : createdProperty.districts.langTranslation.en_string
+        : null,
+      meta_details: createdProperty.property_meta_details.map((meta) => {
+        const langObj = lang === 'en'
+          ? meta.property_type_listings?.lang_translations?.en_string
+          : meta.property_type_listings?.lang_translations?.fr_string;
+
+        return {
+          id: meta.property_type_listings?.id || null,
+          type: meta.property_type_listings?.type || null,
+          key: meta.property_type_listings?.key || null,
+          name: langObj,
+          value: meta.value,
+        };
+      }),
+      type: lang === 'fr'
+        ? createdProperty.property_types?.lang_translations?.fr_string
+        : createdProperty.property_types?.lang_translations?.en_string,
+
+      currency: createdProperty.currency
+        ? createdProperty.currency.symbol
+        : null,
+
+
+      neighborhood: createdProperty.neighborhoods?.langTranslation
+        ? lang === 'fr'
+          ? createdProperty.neighborhoods.langTranslation.fr_string
+          : createdProperty.neighborhoods.langTranslation.en_string
+        : null,
+    };
+    return await response.success(res, res.__('messages.propertyCreatedSuccessfully'), simplifiedProperty);
+  } catch (error) {
+    console.error('Error creating property:', error);
+    return await response.serverError(res, res.__('messages.errorCreatingProperty'));
+  }
 };
 
 
 export const updateProperty = async (req, res) => {
   const updatedBy = req.user.id;
   const { propertyId, title_en, title_fr, description_en, description_fr, price, currency_id, neighborhoods_id, district_id, city_id,
-          state_id, latitude, longitude, address, vr_link, picture, video, user_id, type_id, transaction, size, meta_details, direction} = req.body;
+    state_id, latitude, longitude, address, vr_link, picture, video, user_id, type_id, transaction, size, meta_details, direction } = req.body;
 
   try {
     if (!propertyId || !isUUID(propertyId)) {
@@ -1787,7 +1977,7 @@ export const updateProperty = async (req, res) => {
       },
     })
 
-    if(propertyTitleExist && propertyTitleExist.id !== existingProperty.id){
+    if (propertyTitleExist && propertyTitleExist.id !== existingProperty.id) {
       return response.error(res, res.__('messages.propertyExists'), null, 400);
     }
 
@@ -1835,12 +2025,12 @@ export const updateProperty = async (req, res) => {
       type: type_id !== undefined ? type_id : existingProperty.type,
       transaction: transaction !== undefined ? transaction : existingProperty.transaction,
       size: size !== undefined ? size : existingProperty.size,
-      updated_by:updatedBy
+      updated_by: updatedBy
     };
 
     const updatedProperty = await prisma.propertyDetails.update({
       where: { id: propertyId },
-      data: 
+      data:
         updateData
     });
 
@@ -1909,13 +2099,13 @@ export const updateProperty = async (req, res) => {
           ? updatedPropertyDetails.districts.langTranslation.fr_string
           : updatedPropertyDetails.districts.langTranslation.en_string),
       city:
-      (lang === "fr"
-        ? updatedPropertyDetails.cities.lang.fr_string
-        : updatedPropertyDetails.cities.lang.en_string),
+        (lang === "fr"
+          ? updatedPropertyDetails.cities.lang.fr_string
+          : updatedPropertyDetails.cities.lang.en_string),
       state:
-      (lang === "fr"
-        ? updatedPropertyDetails.states?.lang?.fr_string
-        : updatedPropertyDetails.states?.lang?.en_string),
+        (lang === "fr"
+          ? updatedPropertyDetails.states?.lang?.fr_string
+          : updatedPropertyDetails.states?.lang?.en_string),
       neighborhood:
         updatedPropertyDetails.neighborhoods?.langTranslation &&
         (lang === "fr"
@@ -1946,34 +2136,34 @@ export const updateProperty = async (req, res) => {
 
 
 export const deleteProperty = async (req, res) => {
-    const { propertyId } = req.params;
+  const { propertyId } = req.params;
 
-    try {
-        if (!propertyId) {
-            return await response.error(res, res.__('messages.propertyIdRequired'));
-        }
-
-        const existingProperty = await prisma.propertyDetails.findUnique({
-            where: { id: propertyId },
-        });
-
-        if (!existingProperty) {
-          return await response.error(res, res.__('messages.propertyNotFound'));
-        }
-
-        await prisma.propertyMetaDetails.deleteMany({
-            where: { property_detail_id: propertyId },
-        });
-
-        await prisma.propertyDetails.delete({
-            where: { id: propertyId },
-        });
-
-        return await response.success(res, res.__('messages.propertyDeletedSuccessfully'), null);
-    } catch (error) {
-        console.error('Error deleting property:', error);
-        return await response.serverError(res, res.__('messages.errorDeletingProperty'));
+  try {
+    if (!propertyId) {
+      return await response.error(res, res.__('messages.propertyIdRequired'));
     }
+
+    const existingProperty = await prisma.propertyDetails.findUnique({
+      where: { id: propertyId },
+    });
+
+    if (!existingProperty) {
+      return await response.error(res, res.__('messages.propertyNotFound'));
+    }
+
+    await prisma.propertyMetaDetails.deleteMany({
+      where: { property_detail_id: propertyId },
+    });
+
+    await prisma.propertyDetails.delete({
+      where: { id: propertyId },
+    });
+
+    return await response.success(res, res.__('messages.propertyDeletedSuccessfully'), null);
+  } catch (error) {
+    console.error('Error deleting property:', error);
+    return await response.serverError(res, res.__('messages.errorDeletingProperty'));
+  }
 };
 
 
@@ -2011,7 +2201,7 @@ export const statusUpdateProperty = async (req, res) => {
     await prisma.propertyMetaDetails.updateMany({
       where: { property_detail_id: id },
       data: {
-        property_detail_id: id 
+        property_detail_id: id
       },
     });
 
@@ -2022,3 +2212,301 @@ export const statusUpdateProperty = async (req, res) => {
     return await response.serverError(res, res.__('messages.errorstatusUpdateProperty'));
   }
 };
+
+
+export const getAllComment = async (req, res) => {
+  try {
+    const { page, limit } = req.body;
+
+    const validPage = Math.max(1, parseInt(page, 10));
+    const validLimit = Math.max(1, parseInt(limit, 10));
+    const skip = (validPage - 1) * validLimit;
+
+    const totalCount = await prisma.propertyComment.count();
+
+    const comments = await prisma.propertyComment.findMany({
+      include: {
+        users: {
+          select: {
+            full_name: true,
+            image: true,
+            email_address: true,
+            id: true,
+          },
+        },
+        property:{
+          select: {
+            slug: true,
+          }
+        }
+      },
+      skip,
+      take: validLimit,
+      orderBy: {
+        created_at: 'desc'
+      }
+    });
+
+    const responsePayload = {
+      totalCount,
+      totalPages: Math.ceil(totalCount / validLimit),
+      currentPage: validPage,
+      itemsPerPage: validLimit,
+      list: comments,
+    };
+    // console.log(responsePayload,"responsePayload")
+
+    return response.success(
+      res,
+      res.__('messages.commentFetchSuccessfully'),
+      responsePayload
+    );
+  } catch (error) {
+    console.error(error);
+    return response.error(
+      res,
+      res.__('messages.internalServerError')
+    );
+  }
+}
+
+export const getTestAllProperty = async (req, res) => {
+
+  const { page = 1, limit = 10, user_id, title, description, city_id, district_id, neighborhoods_id, address, type_id, minPrice, maxPrice, minSize, maxSize, amenities_id_array, amenities_id_object_with_value, direction, developer_id, transaction, filter_latitude, filter_longitude, startDate, endDate } = req.body;
+  // console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
+  const lang = res.getLocale();
+
+  const validPage = Math.max(1, parseInt(page, 10));
+  const validLimit = Math.max(1, parseInt(limit, 10));
+
+  const skip = (validPage - 1) * validLimit;
+
+  let amenities_id_array_with_value = [];
+  if ( typeof amenities_id_object_with_value === 'object' && amenities_id_object_with_value !== null && Object.keys(amenities_id_object_with_value).length > 0 ) {
+    for (const [id, value] of Object.entries(amenities_id_object_with_value)) {
+      try {
+        const property_type_listings = await prisma.propertyTypeListings.findUnique({
+          where: {
+            id: id,
+          },
+          select: {
+            key: true,
+          },
+        });
+        if (property_type_listings) {
+          amenities_id_array_with_value.push({
+            id: id,
+            slug: property_type_listings.key,
+            value: value,
+          });
+        }
+      } catch (error) {
+        console.error(`Error fetching property_type_listings for id ${id}:`, error);
+      }
+    }
+  }
+
+  const otherConditions = [
+    await commonFilter.titleCondition(title),
+    await commonFilter.descriptionCondition(description),
+    await commonFilter.districtCondition(district_id),
+    await commonFilter.neighborhoodCondition(neighborhoods_id),
+    await commonFilter.addressCondition(address),
+    await commonFilter.amenitiesCondition(amenities_id_array),
+    await commonFilter.directionCondition(direction),
+    await commonFilter.developerCondition(developer_id),
+  ]
+  const transactionConditions = [
+    await commonFilter.transactionCondition(transaction),
+    await commonFilter.typeCondition(type_id),
+    await commonFilter.cityDistrictNeightborhoodCondition(city_id),
+    await commonFilter.priceCondition(minPrice, maxPrice),
+    await commonFilter.squareFootSize(minSize, maxSize),
+  ]
+  const bedRoomCondition = await commonFilter.amenitiesOnlyBedRoomCondition(amenities_id_array_with_value);
+  // Combine them into your final Prisma condition
+  const combinedCondition = {
+    AND: [
+      { AND: transactionConditions.filter(Boolean) },
+      { OR: otherConditions.filter(Boolean) },
+      user_id ? { user_id: user_id } : {},
+      bedRoomCondition
+    ],
+  };
+
+  
+  let dateFilter = {};
+  if (startDate && endDate) {
+    dateFilter = {
+      created_at: {
+        gte: new Date(startDate), // Greater than or equal to start date
+        lte: new Date(endDate),   // Less than or equal to end date
+      },
+    };
+  }
+
+  const totalCount1 = await prisma.propertyDetails.count({
+    where: {
+      ...combinedCondition,
+      ...dateFilter
+    },
+  });
+    console.log(totalCount1,"totalCountProperty")
+
+  // console.log('Request Body:', req.body.filter_latitude, req.body.filter_longitude);
+  const getFilteredPropertyIds = async () => {
+    // Get all properties that match the base filters
+    const allProperties = await prisma.propertyDetails.findMany({
+      where: {
+        ...combinedCondition,
+        ...dateFilter
+      },
+      select: {
+        id: true,
+        price: true,
+        size: true,
+        latitude: true, 
+        longitude: true,
+        property_meta_details: {
+          select: {
+            value: true,
+            property_type_listings: {
+              select: {
+                id: true,
+                type: true,
+                key: true
+              }
+            }
+          }
+        }
+      }
+    });
+  
+    // Calculate scores and filter based on total percentage
+    const validPropertyIds = [];
+  
+    for (const property of allProperties) {
+      const price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
+      const surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize,  minSizeExtra, maxSizeExtra);
+      const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
+      const location_score = await commonFunction.calculateLocationScore( property.latitude, property.longitude, filter_latitude, filter_longitude );
+      const property_type_score = 100;
+      const weights = {
+        price: 0.35,
+        location: 0.30,
+        surface_area: 0.15,
+        property_type: 0,
+        amenities: 0.20,
+        room_amenities: 0.15,
+        year_amenities: 0
+      };
+  
+      // Calculate final score with weights
+      const final_score = 
+        price_score * weights.price + 
+        location_score * weights.location + 
+        surface_are_score * weights.surface_area + 
+        property_type_score * weights.property_type + 
+        amenities_score * weights.amenities;
+  
+      // Calculate total percentage
+      const total_percentage = Math.ceil(parseFloat(final_score.toFixed(2)));
+  
+      // Only add properties that meet the threshold
+      if (total_percentage >= 60) {
+        validPropertyIds.push(property.id);
+      }
+    }
+  
+    return validPropertyIds;
+  };
+  
+  const validPropertyIds = await getFilteredPropertyIds();
+  const totalCount = validPropertyIds.length;
+  const totalPages = Math.ceil(totalCount / validLimit);
+  const paginatedIds = validPropertyIds.slice(skip, skip + validLimit);
+  const properties = await prisma.propertyDetails.findMany({
+    where: {
+      id: {
+        in: paginatedIds
+      }
+    },
+    orderBy: {
+      districts: {
+        langTranslation: {
+          en_string: "asc"
+        }
+      }
+    },
+    include: {
+      ...userInclude,
+      ...langTranslationsInclude,
+      ...districtsInclude,
+      ...propertyMetaDetailsInclude,
+      ...currencyInclude,
+      ...cityInclude,
+      ...stateInclude,
+      ...neighborhoodInclude,
+      ...propertyTypesInclude
+    }
+  });
+  
+  // Step 7: Process properties as before to create simplified properties
+  // This is your existing code for mapping properties
+  const simplifiedProperties = await Promise.all(
+    properties.map(async (property) => {
+      const price_score = await commonFunction.calculatePriceScore(property.price, minPrice, maxPrice);
+      const surface_are_score = await commonFunction.calculateSurfaceScore(property.size, minSize, maxSize);
+      const amenities_score = await commonFunction.calculateAmenitiesScore(property?.property_meta_details, amenities_id_array);
+
+      // Continue with the rest of your mapping logic...
+      let location_score = 100;
+      let property_type_score = 100;
+      const weights = await commonFunction.calculationWeight();
+
+      const final_scoreq = 
+      price_score * weights.price + 
+      location_score * weights.location + 
+      surface_are_score * weights.surface_area + 
+      property_type_score * weights.property_type + 
+      amenities_score * weights.amenities;
+    
+    
+      // Return the property object
+      return {
+        id: property.id,
+        // Other property fields...
+        filter_result: {
+          location: location_score * weights.location,
+          price: price_score * weights.price,
+          surface_area: surface_are_score * weights.surface_area,
+          property_type: property_type_score * weights.property_type,
+          amenities: amenities_score * weights.amenities,
+          room_amenities: 0 * weights.room_amenities,
+          construction_year_amenities: 0,
+          total_percentage: final_scoreq,
+          exact_distance: 0
+        },
+        other_data: {
+          surface_area: surface_are_score
+        }
+      };
+    })
+  );
+
+
+  // Step 8: Create response payload with correct pagination
+  const responsePayload = {
+    list: simplifiedProperties,
+    totalCount: totalCount,
+    totalPages: totalPages,
+    currentPage: validPage,
+    itemsPerPage: validLimit,
+  };
+  
+  return response.success(
+    res, 
+    res.__('messages.propertyFetchSuccessfully'), 
+    responsePayload
+  );
+}

@@ -22,6 +22,10 @@ import dashboardListingsRoutes from './routes/dashboardListingsRoutes.js';
 import currencyRoutes from './routes/currencyRoutes.js';
 import propertySaveSearchesRoutes from './routes/propertySaveSearchesRoutes.js';
 import visitRoutes from './routes/visitRoutes.js';
+import authorRoutes from './routes/authorRoutes.js';
+import blogRoutes from './routes/blogRoutes.js';
+import PropertyRecommendedRoutes from './routes/PropertyRecommendedRoutes.js';
+
 import cors from 'cors';
 import i18n from 'i18n';
 import path from 'path';
@@ -32,14 +36,14 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 7000;
 
-
 // Session setup
 app.use(session({ secret: 'we-api', resave: false, saveUninitialized: true }));
 
 // app.use(passport.initialize());
 // app.use(passport.session());
-app.use(express.json());
 
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 const getLangFileName = fileURLToPath(import.meta.url);
 const getLangDirName = path.dirname(getLangFileName);
 // Language
@@ -54,6 +58,15 @@ app.use(i18n.init);
 // Serve the 'uploads' folder as static files
 app.use('/uploads', express.static(path.join(getLangDirName, 'uploads')));
 
+// Custom JSON BigInt Serializer
+app.use((req, res, next) => {
+    res.json = ((originalJson) => (data) => {
+        const replacer = (key, value) => 
+            typeof value === "bigint" ? value.toString() : value;
+        originalJson.call(res, JSON.parse(JSON.stringify(data, replacer)));
+    })(res.json);
+    next();
+});
 
 // Use auth routes
 
@@ -63,15 +76,6 @@ app.use(cors({
     allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Methods'], // Add necessary headers
 }));
 
-
-// app.use((req, res, next) => {
-//     res.header("Access-Control-Allow-Origin", "*"); // Replace with your frontend URL
-//     res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-//     res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-//     res.header("Accept", "*/*");
-//     res.header("Content-Type", "application/json");
-//     next();
-// });
 app.use((req, res, next) => {
     const lang = req.body.lang || 'en';
     res.setLocale(lang);
@@ -95,6 +99,10 @@ app.use('/api/dashboard', dashboardListingsRoutes);
 app.use('/api/currency', currencyRoutes);
 app.use('/api/property-save-searches', propertySaveSearchesRoutes);
 app.use('/api/visit', visitRoutes);
+app.use('/api/author', authorRoutes);
+app.use('/api/blog', blogRoutes);
+app.use('/api/property-recommended', PropertyRecommendedRoutes);
+
 // Home route
 app.get('/', (req, res) => {
     res.send('Welcome to the Immofind API!');

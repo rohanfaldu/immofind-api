@@ -38,7 +38,7 @@ export const getAllProjects = async (req, res) => {
   try {
     const lang = res.getLocale();
     // Validate and parse pagination inputs
-    const { page = 1, limit = 10, title, city_id, district_id, neighborhoods_id, minPrice, maxPrice, amenities_id_array, amenities_id_object_with_value } = req.body;
+    const { page = 1, limit = 10, user_id, title, city_id, district_id, neighborhoods_id, minPrice, maxPrice, amenities_id_array, amenities_id_object_with_value } = req.body;
     const validPage = Math.max(1, parseInt(page, 10));
     const validLimit = Math.max(1, parseInt(limit, 10));
     const skip = (validPage - 1) * validLimit;
@@ -57,6 +57,7 @@ export const getAllProjects = async (req, res) => {
     const combinedCondition = {
       AND: [
         { OR: otherConditions.filter(Boolean) },
+        user_id ? { user_id: user_id } : {}, // Filter by user_id if provided
       ],
     };
     
@@ -77,6 +78,7 @@ export const getAllProjects = async (req, res) => {
           select: {
             full_name: true,
             image: true,
+            id: true,
           },
         },
         lang_translations_title: {
@@ -224,6 +226,7 @@ export const getAllProjects = async (req, res) => {
       id: project.id,
       user_name: project.users?.full_name || null,
       user_image: project.users?.image || null,
+      user_id: project.users?.id || null,
       title: lang === 'fr' ? project.lang_translations_title?.fr_string : project.lang_translations_title?.en_string,
       description: lang === 'fr' ? project.lang_translations_description?.fr_string : project.lang_translations_description?.en_string,
       state: lang === 'fr' ? project.states?.lang?.fr_string : project.states?.lang?.en_string,
@@ -320,6 +323,10 @@ export const getProjectsById = async (req, res) => {
           select: {
             full_name: true,
             image: true,
+            email_address: true,
+            mobile_number:true,
+            country_code: true,
+            id: true,
           },
         },
         lang_translations_title: {
@@ -388,16 +395,16 @@ export const getProjectsById = async (req, res) => {
         },
       },
     });
-
+    console.log('>>>>>>>>>>>> project', project);
     // Step 3: Handle case where project is not found
     if (!project) {
       return response.error(res, res.__('messages.projectNotFound'));
     }
 
     const lang = res.getLocale();
-
+    console.log(project.user_id, '>>>>>> Project userid');
       const properties = await prisma.propertyDetails.findMany({
-      where: { project_id: project.id },
+      where: { user_id: project.user_id },
       orderBy: { created_at: 'desc' },
       take: 5,
       include: {
@@ -550,6 +557,8 @@ export const getProjectsById = async (req, res) => {
         email_address:property.users?.email_address || null,
         description,
         title,
+        title_en: property.lang_translations.en_string ?? null,
+        title_fr: property.lang_translations.fr_string ?? null,
         transaction: propertyType,
         transaction_type: property.transaction,
         picture: property.picture,
@@ -580,12 +589,20 @@ export const getProjectsById = async (req, res) => {
       };
     });
 
-
+    const develoerDetail = await prisma.developers.findFirst({
+      where: { user_id: project.users.id },
+    });
+    console.log(develoerDetail,'>>>>>>>>>>>> develoerDetail');
     // Step 4: Format the project data for the response
     const simplifiedProject = {
       id: project.id,
       user_name: project.users?.full_name || null,
       user_image: project.users?.image || null,
+      user_email_address: project.users?.email_address || null,
+      user_country_code: project.users?.country_code || null,
+      user_mobile_number: project.users?.mobile_number || null,
+      developer_slug: develoerDetail?.slug || null,
+      user_id:  project.users?.id || null,
       title_en: project.lang_translations_title?.en_string,
       title_fr: project.lang_translations_title?.fr_string,
       description_fr: project.lang_translations_description?.fr_string,

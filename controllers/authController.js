@@ -176,10 +176,10 @@ export const updateAgnecyUserDeveloper = async (req, res) => {
             return await response.error(res, res.__('messages.fieldError'));
         }
 
-        const checkPhonember = await commonFunction.checkPhonember(phone_number);
-        if (!checkPhonember) {
-            return await response.error(res, res.__('messages.validPhoneNumber'));
-        }
+        // const checkPhonember = await commonFunction.checkPhonember(phone_number);
+        // if (!checkPhonember) {
+        //     return await response.error(res, res.__('messages.validPhoneNumber'));
+        // }
 
         // Check for existing user by email, excluding the current user
         const existingUserByEmail = await prisma.users.findFirst({
@@ -424,7 +424,7 @@ export const checkUserExists = async (req, res) => {
             token: CreateToken
         };
         const roleName = await commonFunction.getRole(user.roles.name);
-        return await response.success(res, res.__(`messages.${roleName}Exists`), responseData);
+        return await response.success(res, res.__('messages.emailAddresAlreadyExists'), responseData);
     } else {
         return await response.error(res, res.__('messages.userNotFound'));
     }
@@ -691,9 +691,9 @@ export const updatePassword = async (req, res) => {
 
 export const updatePasswordWithOutOTP = async (req, res) => {
     try {
-        const { password } = req.body;
+        const { password, old_password } = req.body;
         
-        if (!password) {
+        if (!password || !old_password) {
             return response.error(res, res.__('messages.fieldError'));
         }
 
@@ -711,14 +711,20 @@ export const updatePasswordWithOutOTP = async (req, res) => {
             return response.error(res, res.__('messages.userNotFound'));
         }
 
-        const hashedPassword = await passwordGenerator.encrypted(password);
+        const isMatch = await passwordGenerator.comparePassword(old_password, checkUser.password);
 
-        const data = { password: hashedPassword };
-        const where = { email_address: userId };
+        if(isMatch){
+            const hashedPassword = await passwordGenerator.encrypted(password);
 
-        const userUpdate = await UserModel.updateUser(where, data);
-        console.log('userUpdate: ', userUpdate);
-        return response.success(res, res.__('messages.passwordUpdateSuccessfully'), null);
+            const data = { password: hashedPassword };
+            const where = { email_address: userId };
+    
+            const userUpdate = await UserModel.updateUser(where, data);
+            console.log('userUpdate: ', userUpdate);
+            return response.success(res, res.__('messages.passwordUpdateSuccessfully'), null);
+        } else{
+            return response.serverError(res, res.__('messages.oldPasswordWrong'), null);
+        }
         
     } catch (error) {
         console.error("Error updating password:", error);

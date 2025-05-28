@@ -38,6 +38,7 @@ model Agencies {
   country_code                                              String?           @db.VarChar
   description                                               String?           @db.Uuid
   service_area                                              String?           @db.Uuid
+  slug                                                      String?           @unique
   cities                                                    Cities?            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_agency_foreign_key")
   agency_packages_agencies_agency_packagesToagency_packages AgencyPackages?   @relation("agencies_agency_packagesToagency_packages", fields: [agency_packages], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_description                             LangTranslations? @relation("agency_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -151,6 +152,9 @@ model LangTranslations {
   property_details_property_details_titleTolang_translations       PropertyDetails[]      @relation("property_details_titleTolang_translations")
   property_type_listings                                           PropertyTypeListings[]
   property_types                                                   PropertyTypes[]
+  lang_translations_blog_title                                     Blog[]   @relation("lang_translation_blog_title") 
+  lang_translations_blog_description                               Blog[]   @relation("lang_translation_blog_description") 
+  lang_translations_auth                                           Author[]
   states                                                           States?
 
   @@map("lang_translations")
@@ -216,7 +220,7 @@ model PropertyDetails {
   propertyViews                                                     PropertyView[]        @relation("PropertyViews")
   propertyVisit                                                     PropertyVisit[]       @relation("PropertyVisit")
   property_meta_details                                             PropertyMetaDetails[]
-
+  property_recommnded                                        PropertyRecommended[]    @relation("property_detail_recommnded_key")
   @@map("property_details")
 }
 
@@ -446,7 +450,9 @@ model Users {
   propertyLikes        PropertyLike[]    @relation("UserPropertyLikes")
   propertyViews        PropertyView[]    @relation("UserPropertyViews")
   propertyVisit        PropertyVisit[]   @relation("UserPropertyVisit")
+  UserActivity         UserActivity[]    @relation("UserActivity")
   roles                Roles             @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_foreign_key")
+  recommended_user     PropertyRecommended[]        @relation("user_property_recommended_key")
 
   @@map("users")
 }
@@ -492,6 +498,7 @@ model Developers {
   description                    String?           @db.Uuid
   serviceArea                    String?           @db.Uuid
   cover                          String?           @db.VarChar
+  slug                           String?           @unique
   cities                         Cities?            @relation(fields: [city_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "city_developer_foreign_key")
   lang_translations_description  LangTranslations? @relation("developer_description_translation", fields: [description], references: [id], onDelete: NoAction, onUpdate: NoAction)
   lang_translations_service_area LangTranslations? @relation("developer_service_area_translation", fields: [serviceArea], references: [id], onDelete: NoAction, onUpdate: NoAction)
@@ -532,12 +539,10 @@ model PropertyView {
   property_id        String          @db.Uuid
   user_id            String          @db.Uuid
   created_at         DateTime?       @default(now()) @db.Timestamp(6)
-  view_count         Int
   property_publisher String          @db.Uuid
   property           PropertyDetails @relation("PropertyViews", fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users              Users           @relation("UserPropertyViews", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
-  @@unique([user_id, property_id])
   @@map("property_view")
 }
 
@@ -548,6 +553,10 @@ model PropertyVisit {
   created_at         DateTime?       @default(now()) @db.Timestamp(6)
   visit_type         String
   scheduled_date     DateTime?       @db.Timestamp(6)
+  is_accepted        Boolean?        @default(false)
+  decline_permanent  Boolean?        @default(false)
+  reschedule         Boolean?        @default(false)
+  property_publisher String?         @db.Uuid
   property           PropertyDetails @relation("PropertyVisit", fields: [property_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
   users              Users           @relation("UserPropertyVisit", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
 
@@ -568,6 +577,54 @@ model PropertyComment {
   @@unique([user_id, property_id])
   @@map("property_comment")
 }
+
+model UserActivity {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id             String        @db.Uuid
+  last_activity_at    DateTime      @default(now()) @db.Timestamp(6)
+  users               Users         @relation("UserActivity", fields: [user_id], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@map("user_activity")
+}
+
+model Author {
+  id                    String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  author_name           String?             @db.Uuid
+  image                 String?
+  created_at DateTime?                      @default(now()) @db.Timestamp(6)
+  updated_at DateTime?                      @default(now()) @db.Timestamp(6)
+  lang_translations_auth    LangTranslations?   @relation(fields: [author_name], references: [id])
+  author_detail                                     Blog[]   @relation("author_blog_detail") 
+  @@map("author")
+}
+
+model Blog {
+  id                                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title                                 String?                 @db.Uuid
+  image                                 String?
+  author_id                             String?                 @db.Uuid
+  description                           String?                 @db.Uuid
+  slug                                  String?                 @unique
+  created_at                            DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at                            DateTime?               @default(now()) @db.Timestamp(6)
+  lang_translations_blog_title          LangTranslations?       @relation("lang_translation_blog_title", fields: [title], references: [id])
+  lang_translations_blog_description    LangTranslations?       @relation("lang_translation_blog_description", fields: [description], references: [id])
+  author_detail                         Author?                 @relation("author_blog_detail", fields: [author_id], references: [id])
+   @@map("blog")
+}
+
+model PropertyRecommended {
+  id                                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  property_id                           String                  @db.Uuid
+  user_id                               String                  @db.Uuid
+  created_at                            DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at                            DateTime?               @default(now()) @db.Timestamp(6)
+  user_property_recommended             Users?                 @relation("user_property_recommended_key", fields:[user_id], references: [id])
+  property_detail_recommnded            PropertyDetails?        @relation("property_detail_recommnded_key", fields:[property_id], references: [id])
+
+  @@map("property_recommended")
+}
+
 
 enum AgencyType {
   BASIC
