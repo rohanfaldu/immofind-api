@@ -26,6 +26,7 @@ import authorRoutes from './routes/authorRoutes.js';
 import blogRoutes from './routes/blogRoutes.js';
 import PropertyRecommendedRoutes from './routes/PropertyRecommendedRoutes.js';
 import LocalizationRoutes from './routes/locationRoutes.js';
+import NotificationRoutes from './routes/notificationRoutes.js';
 import cors from 'cors';
 import i18n from 'i18n';
 import path from 'path';
@@ -103,6 +104,7 @@ app.use('/api/author', authorRoutes);
 app.use('/api/blog', blogRoutes);
 app.use('/api/property-recommended', PropertyRecommendedRoutes);
 app.use('/api/location', LocalizationRoutes);
+app.use('/api/notification', NotificationRoutes);
 
 // Home route
 app.get('/', (req, res) => {

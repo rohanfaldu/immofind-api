@@ -103,41 +103,41 @@ const commonFunction = {
     },
     calculatePriceScore: async (price, minPrice, maxPrice, minPriceExtra, maxPriceExtra) => {
         let status = true;
-        if((price >= minPriceExtra ) && (minPrice >= price)){
+        if ((price >= minPriceExtra) && (minPrice >= price)) {
             const extra_price_area = ((minPrice - price) / minPrice * 100);
             const percentAbove = 100 - extra_price_area;
-            return { score: percentAbove, status, extra: extra_price_area, flag:1 };
-        } else if((price >= maxPrice ) && (maxPriceExtra >= price)){
-            const extra_price_area =  ((price - maxPrice) / maxPrice * 100);
-            const percentAbove = ( 100 - extra_price_area);
-            return { score: percentAbove, status, extra: extra_price_area,flag:2 };
-        }  else if (price >= minPrice && price <= maxPrice) {
-            return { score: 100, status: false, extra: 0, flag:3 };
+            return { score: percentAbove, status, extra: extra_price_area, flag: 1 };
+        } else if ((price >= maxPrice) && (maxPriceExtra >= price)) {
+            const extra_price_area = ((price - maxPrice) / maxPrice * 100);
+            const percentAbove = (100 - extra_price_area);
+            return { score: percentAbove, status, extra: extra_price_area, flag: 2 };
+        } else if (price >= minPrice && price <= maxPrice) {
+            return { score: 100, status: false, extra: 0, flag: 3 };
         } else if (price > maxPrice) {
             const percentAbove = ((price - maxPrice) / maxPrice) * 100;
             const score = (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
-            return { score: score, status: false, extra: 0, flag:4 };
+            return { score: score, status: false, extra: 0, flag: 4 };
         } else {
             const percentBelow = ((minPrice - price) / minPrice) * 100;
             const score = (100 - percentBelow >= 90) ? 100 - percentBelow : 0;
-            return { score: score, status: false, extra: 0, flag:5 };
+            return { score: score, status: false, extra: 0, flag: 5 };
         }
     },
-    calculateSurfaceScore: async (value, min, max,  minSizeExtra, maxSizeExtra) => {
+    calculateSurfaceScore: async (value, min, max, minSizeExtra, maxSizeExtra) => {
         const updatMinSize = min ?? 0;
         let status = true;
-  
-        if((value >= minSizeExtra ) && (updatMinSize >= value)){
+
+        if ((value >= minSizeExtra) && (updatMinSize >= value)) {
             const extra_surface_area = ((updatMinSize - value) / updatMinSize * 100);
             const percentAbove = 100 - extra_surface_area;
             return { score: percentAbove, status, extra: extra_surface_area };
-        } else if((value >= max ) && (maxSizeExtra >= value)){
-            const extra_surface_area =  ((value - max) / max * 100);
-            const percentAbove = ( 100 - extra_surface_area);
+        } else if ((value >= max) && (maxSizeExtra >= value)) {
+            const extra_surface_area = ((value - max) / max * 100);
+            const percentAbove = (100 - extra_surface_area);
             return { score: percentAbove, status, extra: extra_surface_area };
-        }else if (value >= updatMinSize && value <= max) {
+        } else if (value >= updatMinSize && value <= max) {
             return { score: 100, status: false, extra: 0 };
-        } else if ((value > max) && (value < min )) {
+        } else if ((value > max) && (value < min)) {
             const percentAbove = ((value - max) / max) * 100;
             const score = (100 - percentAbove >= 90) ? 100 - percentAbove : 0;
             return { score: score, status: false, extra: 0 };
@@ -168,39 +168,39 @@ const commonFunction = {
     },
     calculateLocationScore: async (propertyLat, propertyLng, filterLat, filterLng, location_name) => {
         let score = 0;
-            console.log( propertyLat, propertyLng, filterLat, filterLng, 'location_name', location_name, '>>>>>>>>>> name')
+        console.log(propertyLat, propertyLng, filterLat, filterLng, 'location_name', location_name, '>>>>>>>>>> name')
         if (propertyLat && propertyLng && filterLat && filterLng && location_name) {
             try {
-              const R = 6371; // Earth's radius in km
-              const lat1 = parseFloat(filterLat);
-              const lon1 = parseFloat(filterLng);
-              const lat2 = parseFloat(propertyLat);
-              const lon2 = parseFloat(propertyLng);
-          
-              const dLat = (lat2 - lat1) * Math.PI / 180;
-              const dLon = (lon2 - lon1) * Math.PI / 180;
-          
-              const a =
-                Math.sin(dLat / 2) ** 2 +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon / 2) ** 2;
-          
-              const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-              const distanceInKm = R * c;
-          
-              console.log(distanceInKm, 'distance');
-          
-              // Updated scoring formula
-              if (distanceInKm <= 39) {
-                score = ((40 - distanceInKm) / 40) * 100;
-              } else {
-                score = 0;
-              }
-          
+                const R = 6371; // Earth's radius in km
+                const lat1 = parseFloat(filterLat);
+                const lon1 = parseFloat(filterLng);
+                const lat2 = parseFloat(propertyLat);
+                const lon2 = parseFloat(propertyLng);
+
+                const dLat = (lat2 - lat1) * Math.PI / 180;
+                const dLon = (lon2 - lon1) * Math.PI / 180;
+
+                const a =
+                    Math.sin(dLat / 2) ** 2 +
+                    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                    Math.sin(dLon / 2) ** 2;
+
+                const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+                const distanceInKm = R * c;
+
+                console.log(distanceInKm, 'distance');
+
+                // Updated scoring formula
+                if (distanceInKm <= 39) {
+                    score = ((40 - distanceInKm) / 40) * 100;
+                } else {
+                    score = 0;
+                }
+
             } catch (error) {
-              score = 0;
+                score = 0;
             }
-        }else{
+        } else {
             score = 100;
         }
         return score;
@@ -209,39 +209,39 @@ const commonFunction = {
         if (!propertyMetaDetails) {
             console.error("propertyMetaDetails is undefined");
             return 0;
-          }
-        
-          if (!amenitiesIdObjectWithValue || Object.keys(amenitiesIdObjectWithValue).length === 0) {
+        }
+
+        if (!amenitiesIdObjectWithValue || Object.keys(amenitiesIdObjectWithValue).length === 0) {
             return 100;
-          }
-        
-          const bedRoomFields = await getPropertyMetaByKey(propertyMetaDetails); // <-- FIXED
-          let totalFilters = 0;
-          let matchedFilters = 0;
-        
-          for (const [amenityId, amenityValue] of Object.entries(amenitiesIdObjectWithValue)) {
+        }
+
+        const bedRoomFields = await getPropertyMetaByKey(propertyMetaDetails); // <-- FIXED
+        let totalFilters = 0;
+        let matchedFilters = 0;
+
+        for (const [amenityId, amenityValue] of Object.entries(amenitiesIdObjectWithValue)) {
             totalFilters++;
-        
+
             let matched = false;
-            
+
             for (const meta of bedRoomFields) {
-              if (
-                meta.property_type_listings.id === amenityId &&
-                String(meta.value) === String(amenityValue)
-              ) {
-                matched = true;
-                break;
-              }
+                if (
+                    meta.property_type_listings.id === amenityId &&
+                    String(meta.value) === String(amenityValue)
+                ) {
+                    matched = true;
+                    break;
+                }
             }
-        
+
             if (matched) {
-              matchedFilters++;
+                matchedFilters++;
             }
-          }
-  
-          const score = totalFilters > 0 ? (matchedFilters / totalFilters) * 100 : 0;
-         
-          return parseFloat(score.toFixed(2));
+        }
+
+        const score = totalFilters > 0 ? (matchedFilters / totalFilters) * 100 : 0;
+
+        return parseFloat(score.toFixed(2));
     },
     calculateYearScore: async (propertyMetaDetails, targetKey, amenitiesIdObjectWithValue) => {
         if (!propertyMetaDetails) {
@@ -287,6 +287,27 @@ const commonFunction = {
             year_amenities: 0
         }
     },
+    dashboardYesterdayCount: async (yesterdayCount, todayCount) => {
+        let percentageChange = 0;
+        let changeType = '';
+        let flag = 1;
+
+        if (yesterdayCount === 0 && todayCount > 0) {
+            // If yesterday was 0 and today has projects, it's infinite growth
+            percentageChange = 100; // or you could show "∞" or "New"
+            changeType = '+';
+        } else if (yesterdayCount > 0 && todayCount === 0) {
+            // If yesterday had projects but today has 0, it's a 100% decrease
+            percentageChange = -100;
+            changeType = '-';
+            flag = 0
+        } else if (yesterdayCount > 0) {
+            percentageChange = ((todayCount - yesterdayCount) / yesterdayCount) * 100;
+            changeType = todayCount > yesterdayCount ? '+' :
+                todayCount < yesterdayCount ? '-' : '';
+        }
+        return { percentage: percentageChange, changeType: changeType, flag: flag, text: `${changeType}${percentageChange}%` }
+    }
 
 };
 export default commonFunction;
