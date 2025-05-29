@@ -1,8 +1,8 @@
 import { PrismaClient } from '@prisma/client';
 import response from '../components/utils/response.js';
 import commonFunction from "../components/utils/commonFunction.js";
-import { startOfWeek, addWeeks, subWeeks } from 'date-fns';
-import { startOfMonth, endOfMonth } from 'date-fns';
+import { startOfWeek, eachDayOfInterval, format } from 'date-fns';
+import { startOfMonth, endOfMonth, endOfWeek, endOfDay } from 'date-fns';
 import { addDays, isAfter, startOfDay } from 'date-fns';
 import { getFirestore, collection, getDocs, doc, query, where, serverTimestamp, onSnapshot, orderBy, limit, Timestamp } from "firebase/firestore";
 
@@ -233,7 +233,7 @@ export const getList = async (req, res) => {
         }
     });
 
-      const todayPropertyLikeCount = await prisma.propertyLike.count({
+    const todayPropertyLikeCount = await prisma.propertyLike.count({
         where: {
             ...whereCondition,
             created_at: {
@@ -488,6 +488,41 @@ export const getList = async (req, res) => {
     // console.log(chartResponseData, ' >>>>>>>>>>>>>> chartResponseData');
     // END BAR CHART
 
+
+    const now = new Date();
+        const startWeekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday start
+        const weekEnd = endOfWeek(now, { weekStartsOn: 1 });     // Sunday end
+        
+        // Get all days in the current week
+        const weekDays = eachDayOfInterval({
+            start: startWeekStart,
+            end: weekEnd
+        });
+        
+        // Create labels array (e.g., ['15 Jan', '16 Jan', '17 Jan', ...])
+        const labels = weekDays.map(day => format(day, 'd MMM'));
+        
+        // Get data for each day
+        const data = await Promise.all(
+            weekDays.map(async (day) => {
+                const dayStart = startOfDay(day);
+                const dayEnd = endOfDay(day);
+                
+                const count = await prisma.propertyVisit.count({
+                    where: {
+                        created_at: {
+                            gte: dayStart,
+                            lte: dayEnd
+                        }
+                    }
+                });
+                
+                return count;
+            })
+        );
+        
+
+
     const responseData = {
         total_users: totalUsersCount,
         project_yesterday: projectYesterday, 
@@ -504,7 +539,12 @@ export const getList = async (req, res) => {
         active_agency: activeAgency,
         property_visit_count: visitCount,
         property_visit_yesterday: propertVisitYesterday,
-        chartResponseData: chartResponseData
+        chartResponseData: chartResponseData,
+        visit: {
+            labels,
+            data,
+            period: `Week of ${format(weekStart, 'd MMM')} - ${format(weekEnd, 'd MMM')}`
+        }
     }
     response.success(res, res.__('messages.dashboardList'), responseData);
     // } catch (error) {

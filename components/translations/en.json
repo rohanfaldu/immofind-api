@@ -253,7 +253,8 @@
 		"visitAcceptedSuccessfully": "Visit accepted successfully",
 		"visitDeclinedSuccessfully": "Visit declined successfully",
 		"something went wrong": "something went wrong",
-		"emailAddresAlreadyExists": "Email or phone number has already been registered."
+		"emailAddresAlreadyExists": "Email or phone number has already been registered.",
+		"Server error": "messages.Server error"
 	},
 	"messages.Data retrieved successfully.": "messages.Data retrieved successfully."
 }
