@@ -6,7 +6,6 @@ import jwt from 'jsonwebtoken';
 
 // Initialize Prisma Client
 const prisma = new PrismaClient();
-
 // Create Neighborhood
 export const createNeighborhood = async (req, res) => {
   try {
