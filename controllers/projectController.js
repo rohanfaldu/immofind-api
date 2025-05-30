@@ -1301,6 +1301,25 @@ export const createProject = async (req, res) => {
       }),
     };
 
+    const notificationTitleTranslation = await prisma.langTranslations.create({
+      data: {
+        en_string: `New Project Created: ${title_en}`,
+        fr_string: `Nouveau projet créé: ${title_fr}`,
+        created_by: user_id,
+      },
+    });
+ 
+    // Create Notification Record
+    await prisma.notification.create({
+      data: {
+        user_id: user_id,
+        title: notificationTitleTranslation.id,
+        url: `/project/${createdProject.slug}`,
+        type: 'PROJECT',
+        action: 'CREATED',
+        status: true,
+      },
+    });
     return await response.success(res, res.__('messages.projectCreatedSuccessfully'), simplifiedProject);
   } catch (error) {
     console.error('Error creating project:', error);

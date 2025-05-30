@@ -242,7 +242,11 @@
 		"visitAcceptedSuccessfully": "Visit accepted successfully",
 		"visitDeclinedSuccessfully": "Visit declined successfully",
 		"something went wrong": "something went wrong",
-		"emailAddresAlreadyExists": "L'e-mail ou le numéro de téléphone a déjà été enregistré."
-	},
-	"No Property Found": "No Property Found"
+		"emailAddresAlreadyExists": "L'e-mail ou le numéro de téléphone a déjà été enregistré.",
+		"chatCreatedSuccessfully": "Chat créé avec succès.",
+		"chatUpdateSuccessfully": "Chat mis à jour avec succès.",
+		"Data retrieved successfully.": "Data retrieved successfully.",
+		"invalidIdFormat": "Invalid ID format",
+		"No Property Found": "No Property Found"
+	}
 }

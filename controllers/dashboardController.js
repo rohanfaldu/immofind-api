@@ -162,397 +162,399 @@ export const getDailyCountsForRange = async (collectionName, inputStartDate = nu
     }
 };
 
-
 export const getList = async (req, res) => {
-    // try {
-    const userInfo = await commonFunction.getLoginUser(req.user.id);
-    const totalNormalUsersCount = await prisma.users.count({ where: { roles: { name: 'user' } } });
-    const totalAgencyUsersCount = await prisma.users.count({ where: { roles: { name: 'agency' } } });
-    const totalDeveloperUsersCount = await prisma.users.count({ where: { roles: { name: 'developer' } } });
-    const totalUsersCount = await prisma.users.count();
-    const whereCondition = (userInfo !== 'admin') ? { user_id: req.user.id } : {};
-    const totalProjectCount = await prisma.projectDetails.count({ where: { ...whereCondition } });
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    // Get start and end of yesterday
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-
-    const todayProjectCount = await prisma.projectDetails.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: today,
-                lt: tomorrow
-            }
-        }
-    });
-
-    // Yesterday's count
-    const yesterdayProjectCount = await prisma.projectDetails.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: yesterday,
-                lt: today
-            }
-        }
-    });
-    const projectYesterday =  await commonFunction.dashboardYesterdayCount(yesterdayProjectCount, todayProjectCount);
-
-    const todayPropertyCount = await prisma.propertyDetails.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: today,
-                lt: tomorrow
-            }
-        }
-    });
-
-    // Yesterday's count
-    const yesterdayPropertyCount = await prisma.propertyDetails.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: yesterday,
-                lt: today
-            }
-        }
-    });
-    const propertyYesterday =  await commonFunction.dashboardYesterdayCount(yesterdayPropertyCount, todayPropertyCount);
-
-    const totalPropertyCount = await prisma.propertyDetails.count({ where: { ...whereCondition, status: true } });
-    const likeCount = await prisma.propertyLike.count({
-        where: {
-            property_publisher: req.user.id  // Adjust this based on your actual field name
-        }
-    });
-
-    const todayPropertyLikeCount = await prisma.propertyLike.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: today,
-                lt: tomorrow
-            }
-        }
-    });
-
-    // Yesterday's count
-    const yesterdayPropertyLikeCount = await prisma.propertyLike.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: yesterday,
-                lt: today
-            }
-        }
-    });
-    const propertyLikeYesterday =  await commonFunction.dashboardYesterdayCount(yesterdayPropertyLikeCount, todayPropertyLikeCount);
-
-    const viewCount = await prisma.propertyView.count({
-        where: {
-            property_publisher: req.user.id  // Adjust this based on your actual field name
-        }
-    });
-
-        const todayPropertyViewCount = await prisma.propertyView.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: today,
-                lt: tomorrow
-            }
-        }
-    });
-
-    // Yesterday's count
-    const yesterdayPropertyViewCount = await prisma.propertyView.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: yesterday,
-                lt: today
-            }
-        }
-    });
-    const propertyViewYesterday =  await commonFunction.dashboardYesterdayCount(yesterdayPropertyViewCount, todayPropertyViewCount);
-
-
-    const commentCount = await prisma.propertyComment.count({
-        where: {
-            property_owner_id: req.user.id  // Adjust this based on your actual field name
-        }
-    });
-
-         const todayPropertyCommentCount = await prisma.propertyView.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: today,
-                lt: tomorrow
-            }
-        }
-    });
-
-    // Yesterday's count
-    const yesterdayPropertyCommentCount = await prisma.propertyView.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: yesterday,
-                lt: today
-            }
-        }
-    });
-    const propertCommentYesterday =  await commonFunction.dashboardYesterdayCount(yesterdayPropertyCommentCount, todayPropertyCommentCount);
-
-
-    const visitCount = await prisma.propertyVisit.count({});
-
+  try {
+    const userId = req.user.id;
+    const userInfo = await commonFunction.getLoginUser(userId);
+    const isAdmin = userInfo === 'admin';
     
-         const todayPropertyVisitCount = await prisma.propertyVisit.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: today,
-                lt: tomorrow
-            }
-        }
-    });
+    // Define date ranges once
+    const dateRanges = await commonFunction.getDateRanges();
+    const whereCondition = isAdmin ? {} : { user_id: userId };
+    
+    // Execute all database queries in parallel
+    const [
+      userCounts,
+      projectCounts,
+      propertyCounts,
+      engagementCounts,
+      chartData,
+      weeklyData
+    ] = await Promise.all([
+      getUserCounts(),
+      getProjectCounts(whereCondition, dateRanges),
+      getPropertyCounts(whereCondition, dateRanges),
+      getEngagementCounts(userId, whereCondition, dateRanges),
+      getChartData(userId, dateRanges),
+      getWeeklyVisitChatData(dateRanges)
+    ]);
 
-    // Yesterday's count
-    const yesterdayPropertyVisitCount = await prisma.propertyVisit.count({
-        where: {
-            ...whereCondition,
-            created_at: {
-                gte: yesterday,
-                lt: today
-            }
-        }
-    });
-    const propertVisitYesterday =  await commonFunction.dashboardYesterdayCount(yesterdayPropertyVisitCount, todayPropertyVisitCount);
+    // Calculate conversation rate
+    const conversationRate = engagementCounts.visitCount > 0 
+      ? ((engagementCounts.visitCount - engagementCounts.totalChatCount) / engagementCounts.visitCount * 100).toFixed(2)
+      : 0;
 
-    const activeDeveloper = await prisma.users.count({ where: { role_id: "c326e1e2-6f82-4af4-ba25-06029eba688f" } });
-    const activeAgency = await prisma.users.count({ where: { role_id: "c326e1e2-6f82-4af4-ba25-06029eba6569" } });
-
-    // START BAR CHART
-
-    const currentYear = new Date().getFullYear();
-    const allMonths = Array.from({ length: 12 }, (_, i) =>
-        new Date(currentYear, i, 1)
-    );
-    const collectionName = process.env.FIRBASE_COLLECTION_NAME;
-
-    // Monthly Data
-    const monthlyLikes = await Promise.all(
-        allMonths.map(async (monthStart) => {
-            const monthEnd = endOfMonth(monthStart);
-            return await prisma.propertyLike.count({
-                where: {
-                    property_publisher: req.user.id,
-                    created_at: {
-                        gte: monthStart,
-                        lte: monthEnd,
-                    },
-                },
-            });
-        })
-    );
-
-    const monthlyComments = await Promise.all(
-        allMonths.map(async (monthStart) => {
-            const monthEnd = endOfMonth(monthStart);
-            return await prisma.propertyComment.count({
-                where: {
-                    property_owner_id: req.user.id,
-                    created_at: {
-                        gte: monthStart,
-                        lte: monthEnd,
-                    },
-                },
-            });
-        })
-    );
-
-    const monthlyLabels = allMonths.map(date =>
-        date.toLocaleString("default", { month: "short" }) // Jan, Feb, ...
-    );
-
-
-
-    // Weekly Data
-    const startMonth = startOfMonth(new Date()); // e.g. 30/04/2025
-    const endMonth = endOfMonth(new Date());     // e.g. 31/05/2025
-    let weekStart = startMonth; // Start from first day of month
-
-    const weeklyLikes = [];
-    const weeklyComments = [];
-    const weeklyChats = [];
-    const weeklyLabels = [];
-
-    const startDate = new Date(startMonth);
-    const endDate = new Date(endMonth);
-
-
-    while (weekStart <= endMonth) {
-        const weekEnd = new Date(Math.min(addDays(weekStart, 6).getTime(), endMonth.getTime())); // Ensure we don't exceed month end
-
-        const likeCount = await prisma.propertyLike.count({
-            where: {
-                property_publisher: req.user.id,
-                created_at: { gte: weekStart, lt: addDays(weekEnd, 1) }, // inclusive of weekEnd
-            },
-        });
-
-        const commentCount = await prisma.propertyComment.count({
-            where: {
-                property_owner_id: req.user.id,
-                created_at: { gte: weekStart, lt: addDays(weekEnd, 1) },
-            },
-        });
-
-        weeklyLikes.push(likeCount);
-        weeklyComments.push(commentCount);
-        // weeklyChats.push(chatCount); // Replace with Firestore chat count logic if needed
-        weeklyLabels.push(`${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`);
-
-        weekStart = addDays(weekStart, 7); // Move to next week
-    }
-
-
-    // Daily Data (This month)
-    const dailyLikes = [];
-    const dailyComments = [];
-    const dailyChats = [];
-    const dailyLabels = [];
-
-    let day = startOfDay(startMonth);
-    while (!isAfter(day, endMonth)) {
-        const nextDay = addDays(day, 1);
-
-        const likeCount = await prisma.propertyLike.count({
-            where: {
-                property_publisher: req.user.id,
-                created_at: { gte: day, lt: nextDay },
-            },
-        });
-
-        const commentCount = await prisma.propertyComment.count({
-            where: {
-                property_owner_id: req.user.id,
-                created_at: { gte: day, lt: nextDay },
-            },
-        });
-
-        dailyLikes.push(likeCount);
-        dailyComments.push(commentCount);
-        // dailyChats.push(chatCount);
-        dailyLabels.push(day.toLocaleDateString());
-
-        day = nextDay;
-    }
-
-    const countMonthly = await getMonthlyCountsFromFirebase(collectionName);
-    const countWeekly = await getWeeklyCountsFromFirebase(collectionName);
-    const countDaily = await getDailyCountsForRange(collectionName);
-
-    // ✅ Final Structured Response
-    const chartResponseData = {
-        daily: {
-            labels: dailyLabels,
-            likes: dailyLikes,
-            comments: dailyComments,
-            chat: countDaily,
-        },
-        weekly: {
-            labels: weeklyLabels,
-            likes: weeklyLikes,
-            comments: weeklyComments,
-            chat: countWeekly
-
-        },
-        monthly: {
-            labels: monthlyLabels,
-            likes: monthlyLikes,
-            comments: monthlyComments,
-            chat: countMonthly,
-        }
+    // Prepare response
+    const responseData = {
+      total_users: userCounts.totalUsersCount,
+      project_yesterday: await commonFunction.dashboardYesterdayCount(
+        projectCounts.yesterdayProjectCount, 
+        projectCounts.todayProjectCount
+      ),
+      project_count: projectCounts.totalProjectCount,
+      property_count: propertyCounts.totalPropertyCount,
+      property_yesterday: await commonFunction.dashboardYesterdayCount(
+        propertyCounts.yesterdayPropertyCount, 
+        propertyCounts.todayPropertyCount
+      ),
+      property_like_count: engagementCounts.likeCount,
+      property_like_yesterday: await commonFunction.dashboardYesterdayCount(
+        engagementCounts.yesterdayPropertyLikeCount, 
+        engagementCounts.todayPropertyLikeCount
+      ),
+      property_view_count: engagementCounts.viewCount,
+      property_view_yesterday: await commonFunction.dashboardYesterdayCount(
+        engagementCounts.yesterdayPropertyViewCount, 
+        engagementCounts.todayPropertyViewCount
+      ),
+      property_comment_count: engagementCounts.commentCount,
+      property_comment_yesterday: await commonFunction.dashboardYesterdayCount(
+        engagementCounts.yesterdayPropertyCommentCount, 
+        engagementCounts.todayPropertyCommentCount
+      ),
+      active_developer: userCounts.activeDeveloper,
+      active_agency: userCounts.activeAgency,
+      property_visit_count: engagementCounts.visitCount,
+      property_chat_count: engagementCounts.totalChatCount,
+      conversation_rate: parseFloat(conversationRate),
+      property_visit_yesterday: await commonFunction.dashboardYesterdayCount(
+        engagementCounts.yesterdayPropertyVisitCount, 
+        engagementCounts.todayPropertyVisitCount
+      ),
+      chart_response_data: chartData,
+      lead_info: weeklyData
     };
 
-    // console.log(chartResponseData, ' >>>>>>>>>>>>>> chartResponseData');
-    // END BAR CHART
-
-
-    const now = new Date();
-        const startWeekStart = startOfWeek(now, { weekStartsOn: 1 }); // Monday start
-        const weekEnd = endOfWeek(now, { weekStartsOn: 1 });     // Sunday end
-        
-        // Get all days in the current week
-        const weekDays = eachDayOfInterval({
-            start: startWeekStart,
-            end: weekEnd
-        });
-        
-        // Create labels array (e.g., ['15 Jan', '16 Jan', '17 Jan', ...])
-        const labels = weekDays.map(day => format(day, 'd MMM'));
-        
-        // Get data for each day
-        const data = await Promise.all(
-            weekDays.map(async (day) => {
-                const dayStart = startOfDay(day);
-                const dayEnd = endOfDay(day);
-                
-                const count = await prisma.propertyVisit.count({
-                    where: {
-                        created_at: {
-                            gte: dayStart,
-                            lte: dayEnd
-                        }
-                    }
-                });
-                
-                return count;
-            })
-        );
-        
-
-
-    const responseData = {
-        total_users: totalUsersCount,
-        project_yesterday: projectYesterday, 
-        project_count: totalProjectCount,
-        property_count: totalPropertyCount,
-        property_yesterday: propertyYesterday,
-        property_like_count: likeCount,
-        property_like_yesterday: propertyLikeYesterday,
-        property_view_count: viewCount,
-        property_view_yesterday: propertyViewYesterday,
-        property_comment_count: commentCount,
-        property_comment_yesterday: propertCommentYesterday,
-        active_developer: activeDeveloper,
-        active_agency: activeAgency,
-        property_visit_count: visitCount,
-        property_visit_yesterday: propertVisitYesterday,
-        chartResponseData: chartResponseData,
-        visit: {
-            labels,
-            data,
-            period: `Week of ${format(weekStart, 'd MMM')} - ${format(weekEnd, 'd MMM')}`
-        }
-    }
     response.success(res, res.__('messages.dashboardList'), responseData);
-    // } catch (error) {
-    //     response.serverError(res, error);
-    // }
+  } catch (error) {
+    console.error('Dashboard API Error:', error);
+    response.serverError(res, error);
+  }
+};
+
+// Helper function to define all date ranges
+
+
+// Optimized user counts query
+const getUserCounts = async() => {
+  const [totalUsersCount, userRoleCounts, activeDeveloper, activeAgency] = await Promise.all([
+    prisma.users.count(),
+    prisma.users.groupBy({
+      by: ['role_id'],
+      where: {
+        roles: {
+          name: { in: ['user', 'agency', 'developer'] }
+        }
+      },
+      _count: true
+    }),
+    prisma.users.count({ where: { role_id: "c326e1e2-6f82-4af4-ba25-06029eba688f" } }),
+    prisma.users.count({ where: { role_id: "c326e1e2-6f82-4af4-ba25-06029eba6569" } })
+  ]);
+
+  return {
+    totalUsersCount,
+    activeDeveloper,
+    activeAgency
+  };
 }
 
+// Optimized project counts
+const getProjectCounts = async (whereCondition, dateRanges) => {
+  const { today, tomorrow, yesterday } = dateRanges;
+  
+  const [totalProjectCount, todayProjectCount, yesterdayProjectCount] = await Promise.all([
+    prisma.projectDetails.count({ where: whereCondition }),
+    prisma.projectDetails.count({
+      where: {
+        ...whereCondition,
+        created_at: { gte: today, lt: tomorrow }
+      }
+    }),
+    prisma.projectDetails.count({
+      where: {
+        ...whereCondition,
+        created_at: { gte: yesterday, lt: today }
+      }
+    })
+  ]);
 
+  return { totalProjectCount, todayProjectCount, yesterdayProjectCount };
+}
+
+// Optimized property counts
+const getPropertyCounts = async (whereCondition, dateRanges) => {
+  const { today, tomorrow, yesterday } = dateRanges;
+  
+  const [totalPropertyCount, todayPropertyCount, yesterdayPropertyCount] = await Promise.all([
+    prisma.propertyDetails.count({ where: { ...whereCondition, status: true } }),
+    prisma.propertyDetails.count({
+      where: {
+        ...whereCondition,
+        created_at: { gte: today, lt: tomorrow }
+      }
+    }),
+    prisma.propertyDetails.count({
+      where: {
+        ...whereCondition,
+        created_at: { gte: yesterday, lt: today }
+      }
+    })
+  ]);
+
+  return { totalPropertyCount, todayPropertyCount, yesterdayPropertyCount };
+}
+
+// Optimized engagement counts (likes, views, comments, visits)
+const getEngagementCounts = async (userId, whereCondition, dateRanges) => {
+  const { today, tomorrow, yesterday } = dateRanges;
+  
+  const engagementQueries = [
+    // Total counts
+    prisma.propertyLike.count({ where: { property_publisher: userId } }),
+    prisma.propertyView.count({ where: { property_publisher: userId } }),
+    prisma.propertyComment.count({ where: { property_owner_id: userId } }),
+    prisma.propertyVisit.count({}),
+    prisma.propertyChat.count({}),
+    
+    // Today counts
+    prisma.propertyLike.count({
+      where: { ...whereCondition, created_at: { gte: today, lt: tomorrow } }
+    }),
+    prisma.propertyView.count({
+      where: { ...whereCondition, created_at: { gte: today, lt: tomorrow } }
+    }),
+    prisma.propertyComment.count({
+      where: { ...whereCondition, created_at: { gte: today, lt: tomorrow } }
+    }),
+    prisma.propertyVisit.count({
+      where: { ...whereCondition, created_at: { gte: today, lt: tomorrow } }
+    }),
+    
+    // Yesterday counts
+    prisma.propertyLike.count({
+      where: { ...whereCondition, created_at: { gte: yesterday, lt: today } }
+    }),
+    prisma.propertyView.count({
+      where: { ...whereCondition, created_at: { gte: yesterday, lt: today } }
+    }),
+    prisma.propertyComment.count({
+      where: { ...whereCondition, created_at: { gte: yesterday, lt: today } }
+    }),
+    prisma.propertyVisit.count({
+      where: { ...whereCondition, created_at: { gte: yesterday, lt: today } }
+    })
+  ];
+
+  const [
+    likeCount, viewCount, commentCount, visitCount, totalChatCount,
+    todayPropertyLikeCount, todayPropertyViewCount, todayPropertyCommentCount, todayPropertyVisitCount,
+    yesterdayPropertyLikeCount, yesterdayPropertyViewCount, yesterdayPropertyCommentCount, yesterdayPropertyVisitCount
+  ] = await Promise.all(engagementQueries);
+
+  return {
+    likeCount, viewCount, commentCount, visitCount, totalChatCount,
+    todayPropertyLikeCount, todayPropertyViewCount, todayPropertyCommentCount, todayPropertyVisitCount,
+    yesterdayPropertyLikeCount, yesterdayPropertyViewCount, yesterdayPropertyCommentCount, yesterdayPropertyVisitCount
+  };
+}
+
+// Optimized chart data generation
+const getChartData = async (userId, dateRanges) => {
+  const { allMonths, startMonth, endMonth } = dateRanges;
+  
+  // Get Firebase data in parallel
+  const collectionName = process.env.FIRBASE_COLLECTION_NAME;
+  const [countMonthly, countWeekly, countDaily] = await Promise.all([
+    getMonthlyCountsFromFirebase(collectionName),
+    getWeeklyCountsFromFirebase(collectionName),
+    getDailyCountsForRange(collectionName)
+  ]);
+
+  // Generate monthly data
+  const [monthlyLikes, monthlyComments] = await Promise.all([
+    getMonthlyEngagementData(userId, allMonths, 'propertyLike', 'property_publisher'),
+    getMonthlyEngagementData(userId, allMonths, 'propertyComment', 'property_owner_id')
+  ]);
+
+  // Generate weekly data
+  const weeklyData = await getWeeklyEngagementData(userId, startMonth, endMonth);
+  
+  // Generate daily data
+  const dailyData = await getDailyEngagementData(userId, startMonth, endMonth);
+
+  const monthlyLabels = allMonths.map(date =>
+    date.toLocaleString("default", { month: "short" })
+  );
+
+  return {
+    daily: {
+      labels: dailyData.labels,
+      likes: dailyData.likes,
+      comments: dailyData.comments,
+      chat: countDaily,
+    },
+    weekly: {
+      labels: weeklyData.labels,
+      likes: weeklyData.likes,
+      comments: weeklyData.comments,
+      chat: countWeekly
+    },
+    monthly: {
+      labels: monthlyLabels,
+      likes: monthlyLikes,
+      comments: monthlyComments,
+      chat: countMonthly,
+    }
+  };
+}
+
+// Helper function for monthly engagement data
+const getMonthlyEngagementData = async (userId, allMonths, table, userField) => {
+  return Promise.all(
+    allMonths.map(async (monthStart) => {
+      const monthEnd = endOfMonth(monthStart);
+      return await prisma[table].count({
+        where: {
+          [userField]: userId,
+          created_at: { gte: monthStart, lte: monthEnd },
+        },
+      });
+    })
+  );
+}
+
+// Helper function for weekly engagement data
+const getWeeklyEngagementData = async (userId, startMonth, endMonth) => {
+  const weeklyLikes = [];
+  const weeklyComments = [];
+  const weeklyLabels = [];
+  let weekStart = startMonth;
+
+  while (weekStart <= endMonth) {
+    const weekEnd = new Date(Math.min(addDays(weekStart, 6).getTime(), endMonth.getTime()));
+    
+    const [likeCount, commentCount] = await Promise.all([
+      prisma.propertyLike.count({
+        where: {
+          property_publisher: userId,
+          created_at: { gte: weekStart, lt: addDays(weekEnd, 1) },
+        },
+      }),
+      prisma.propertyComment.count({
+        where: {
+          property_owner_id: userId,
+          created_at: { gte: weekStart, lt: addDays(weekEnd, 1) },
+        },
+      })
+    ]);
+
+    weeklyLikes.push(likeCount);
+    weeklyComments.push(commentCount);
+    weeklyLabels.push(`${weekStart.toLocaleDateString()} - ${weekEnd.toLocaleDateString()}`);
+    
+    weekStart = addDays(weekStart, 7);
+  }
+
+  return { labels: weeklyLabels, likes: weeklyLikes, comments: weeklyComments };
+}
+
+// Helper function for daily engagement data
+const getDailyEngagementData = async (userId, startMonth, endMonth) => {
+  const dailyLikes = [];
+  const dailyComments = [];
+  const dailyLabels = [];
+  let day = startOfDay(startMonth);
+
+  const dailyPromises = [];
+  const days = [];
+  
+  while (!isAfter(day, endMonth)) {
+    days.push(new Date(day));
+    day = addDays(day, 1);
+  }
+
+  const dailyData = await Promise.all(
+    days.map(async (currentDay) => {
+      const nextDay = addDays(currentDay, 1);
+      
+      const [likeCount, commentCount] = await Promise.all([
+        prisma.propertyLike.count({
+          where: {
+            property_publisher: userId,
+            created_at: { gte: currentDay, lt: nextDay },
+          },
+        }),
+        prisma.propertyComment.count({
+          where: {
+            property_owner_id: userId,
+            created_at: { gte: currentDay, lt: nextDay },
+          },
+        })
+      ]);
+
+      return {
+        likes: likeCount,
+        comments: commentCount,
+        label: currentDay.toLocaleDateString()
+      };
+    })
+  );
+
+  return {
+    likes: dailyData.map(d => d.likes),
+    comments: dailyData.map(d => d.comments),
+    labels: dailyData.map(d => d.label)
+  };
+}
+
+// Optimized weekly visit and chat data
+const getWeeklyVisitChatData = async (dateRanges) => {
+  const { startWeekStart, weekEnd } = dateRanges;
+  
+  const weekDays = eachDayOfInterval({
+    start: startWeekStart,
+    end: weekEnd
+  });
+
+  const labels = weekDays.map(day => format(day, 'd MMM'));
+
+  const [visitData, chatData] = await Promise.all([
+    Promise.all(
+      weekDays.map(async (day) => {
+        const dayStart = startOfDay(day);
+        const dayEnd = endOfDay(day);
+        return await prisma.propertyVisit.count({
+          where: { created_at: { gte: dayStart, lte: dayEnd } }
+        });
+      })
+    ),
+    Promise.all(
+      weekDays.map(async (day) => {
+        const dayStart = startOfDay(day);
+        const dayEnd = endOfDay(day);
+        return await prisma.propertyChat.count({
+          where: { created_at: { gte: dayStart, lte: dayEnd } }
+        });
+      })
+    )
+  ]);
+
+  return {
+    visit: { labels, visitData },
+    chat: { labels, data: chatData }
+  };
+}
 
 export const getLikes = async (req, res) => {
     const userId = req.user.id;

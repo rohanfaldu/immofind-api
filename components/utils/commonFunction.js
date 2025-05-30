@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 import { PrismaClient } from '@prisma/client';
 
+import { startOfDay, endOfDay, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addDays, eachDayOfInterval, format, isAfter } from 'date-fns';
+
 // Load environment variables
 dotenv.config();
 const prisma = new PrismaClient();
@@ -307,7 +309,28 @@ const commonFunction = {
                 todayCount < yesterdayCount ? '-' : '';
         }
         return { percentage: percentageChange, changeType: changeType, flag: flag, text: `${changeType}${percentageChange}%` }
+    },
+    getDateRanges: () => {
+      const today = startOfDay(new Date());
+      const tomorrow = addDays(today, 1);
+      const yesterday = addDays(today, -1);
+      const currentYear = new Date().getFullYear();
+      const startMonth = startOfMonth(new Date());
+      const endMonth = endOfMonth(new Date());
+      const startWeekStart = startOfWeek(new Date(), { weekStartsOn: 1 });
+      const weekEnd = endOfWeek(new Date(), { weekStartsOn: 1 });
+    
+      return {
+        today,
+        tomorrow,
+        yesterday,
+        currentYear,
+        startMonth,
+        endMonth,
+        startWeekStart,
+        weekEnd,
+        allMonths: Array.from({ length: 12 }, (_, i) => new Date(currentYear, i, 1))
+      };
     }
-
 };
 export default commonFunction;

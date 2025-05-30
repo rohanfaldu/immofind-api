@@ -156,7 +156,8 @@ model LangTranslations {
   lang_translations_blog_description                               Blog[]   @relation("lang_translation_blog_description") 
   lang_translations_auth                                           Author[]
   states                                                           States?
-
+  lang_translations_notification                                   Notification[]         @relation("lang_translations_notification")
+ 
   @@map("lang_translations")
 }
 
@@ -453,7 +454,8 @@ model Users {
   UserActivity         UserActivity[]    @relation("UserActivity")
   roles                Roles             @relation(fields: [role_id], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "role_foreign_key")
   recommended_user     PropertyRecommended[]        @relation("user_property_recommended_key")
-
+  chat_user            PropertyChat[]        @relation("user_property_chat_key")
+  user_notification    Notification[]        @relation("user_notification_key")
   @@map("users")
 }
 
@@ -625,6 +627,43 @@ model PropertyRecommended {
   @@map("property_recommended")
 }
 
+model PropertyChat {
+  id                                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  property_id                           String                  @db.Uuid
+  user_id                               String                  @db.Uuid
+  count                                 Int               @default(0)
+  created_at                            DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at                            DateTime?               @default(now()) @db.Timestamp(6)
+  user_property_chat                    Users?                  @relation("user_property_chat_key", fields:[user_id], references: [id])
+
+  @@map("property_chat")
+}
+
+model Notification {
+  id                                    String                  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id                               String                  @db.Uuid
+  title                                 String                  @db.Uuid
+  url                                   String?                 @db.VarChar
+  type                                  NotificationType
+  action                                NotificationAction     
+  status                                Boolean                 @default(true)
+  created_at                            DateTime?               @default(now()) @db.Timestamp(6)
+  updated_at                            DateTime?               @default(now()) @db.Timestamp(6)
+  lang_translations_notification        LangTranslations?       @relation("lang_translations_notification", fields: [title], references: [id])
+  user_notification                     Users?                  @relation("user_notification_key", fields:[user_id], references: [id])
+ 
+  @@map("notification")
+}
+ 
+enum NotificationType {
+  PROJECT 
+  PROPERTY 
+}
+ 
+enum NotificationAction {
+  CREATED
+  UPDATED
+}
 
 enum AgencyType {
   BASIC

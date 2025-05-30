@@ -254,7 +254,11 @@
 		"visitDeclinedSuccessfully": "Visit declined successfully",
 		"something went wrong": "something went wrong",
 		"emailAddresAlreadyExists": "Email or phone number has already been registered.",
-		"Server error": "messages.Server error"
+		"Server error": "messages.Server error",
+		"chatCreatedSuccessfully": "Chat created successfully.",
+		"chatUpdateSuccessfully": "Chat updated successfully.",
+		"invalidIdFormat": "Invalid ID format",
+		"Data retrieved successfully.": "Data retrieved successfully."
 	},
 	"messages.Data retrieved successfully.": "messages.Data retrieved successfully."
 }

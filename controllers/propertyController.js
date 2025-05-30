@@ -1941,6 +1941,25 @@ export const createProperty = async (req, res) => {
           : createdProperty.neighborhoods.langTranslation.en_string
         : null,
     };
+    const notificationTitleTranslation = await prisma.langTranslations.create({
+      data: {
+        en_string: `New Property Created: ${title_en}`,
+        fr_string: `Nouvelle propriété créée: ${title_fr}`,
+        created_by: user_id,
+      },
+    });
+ 
+    // Create Notification Record
+    await prisma.notification.create({
+      data: {
+        user_id: user_id,
+        title: notificationTitleTranslation.id,
+        url: `/property/${newProperty.slug}`,
+        type: 'PROPERTY',
+        action: 'CREATED',
+        status: true,
+      },
+    });
     return await response.success(res, res.__('messages.propertyCreatedSuccessfully'), simplifiedProperty);
   } catch (error) {
     console.error('Error creating property:', error);
